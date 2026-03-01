@@ -1,14 +1,35 @@
-# 📊 Market Regime Engine v3.4
+# 📊 Market Regime Engine v4.3
 
-Probabilistic crypto market regime detection with LP intelligence and asset allocation.
+Probabilistic crypto market regime detection with LP intelligence, asset allocation, and cycle-aware signals.
 
 ## Current Versions
 
 | Component | Version | Status |
 |-----------|---------|--------|
 | Market Regime Engine | v3.4 | Production |
+| **SPOT Signal Policy** | **v4.3** | **Production** |
 | LP Intelligence | v2.0.2 | Production |
 | Asset Allocation | v1.4.1 | Production |
+
+## 🆕 What's New in v4.3
+
+### Cycle Position Modifier
+
+**Не продавать на дне. Не покупать на вершине.**
+
+| Situation | Action |
+|-----------|--------|
+| SELL + Bottom ≥50% | Dampen signal |
+| SELL + Bottom ≥70% | **Invert to BUY** |
+| BUY + Top ≥50% | Dampen signal |
+| BUY + Top ≥70% | **Invert to SELL** |
+
+```
+Raw: SELL -30%
+× Confidence 11% = -3%
+× Cycle dampener 0.67 (63% bottom) = -2%
+→ HOLD (dampened)
+```
 
 ## Quick Start
 
@@ -30,12 +51,19 @@ python backtest.py
 
 📚 All documentation is in the `/docs` folder:
 
-- **[MARKET_REGIME_ENGINE_v3.4.md](docs/MARKET_REGIME_ENGINE_v3.4.md)** — Regime detection (latest)
-- **[MARKET_REGIME_ENGINE_v3.3.md](docs/MARKET_REGIME_ENGINE_v3.3.md)** — Full specification
-- **[LP_INTELLIGENCE_SYSTEM_v2.0.2.md](docs/LP_INTELLIGENCE_SYSTEM_v2.0.2.md)** — LP policy (latest)
-- **[LP_INTELLIGENCE_SYSTEM_v2.0.1.md](docs/LP_INTELLIGENCE_SYSTEM_v2.0.1.md)** — LP policy (full spec)
-- **[ASSET_ALLOCATION_POLICY_v1.4.1.md](docs/ASSET_ALLOCATION_POLICY_v1.4.1.md)** — Asset allocation (latest)
-- **[ASSET_ALLOCATION_POLICY_v1_4.md](docs/ASSET_ALLOCATION_POLICY_v1_4.md)** — Asset allocation (full spec)
+### Core
+- **[SPOT_SIGNAL_POLICY_v4.3.md](docs/SPOT_SIGNAL_POLICY_v4.3.md)** — SPOT Signal Policy (latest) ⭐
+- **[MARKET_REGIME_ENGINE_v3.4.md](docs/MARKET_REGIME_ENGINE_v3.4.md)** — Regime detection
+- **[ASSET_ALLOCATION_POLICY_v1.4.1.md](docs/ASSET_ALLOCATION_POLICY_v1.4.1.md)** — Asset allocation
+
+### LP
+- **[LP_INTELLIGENCE_SYSTEM_v2.0.2.md](docs/LP_INTELLIGENCE_SYSTEM_v2.0.2.md)** — LP policy
+- **[lp_hedge_policy.md](docs/lp_hedge_policy.md)** — LP hedging
+
+### Full Specifications
+- [MARKET_REGIME_ENGINE_v3.3.md](docs/MARKET_REGIME_ENGINE_v3.3.md)
+- [LP_INTELLIGENCE_SYSTEM_v2.0.1.md](docs/LP_INTELLIGENCE_SYSTEM_v2.0.1.md)
+- [ASSET_ALLOCATION_POLICY_v1_4.md](docs/ASSET_ALLOCATION_POLICY_v1_4.md)
 
 ## Architecture
 
@@ -51,17 +79,33 @@ python backtest.py
           ┌────────────────┼────────────────┐
           ▼                ▼                ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  LP INTELLIGENCE │ │ ASSET ALLOCATION│ │   TELEGRAM      │
-│     (v2.0.1)     │ │     (v1.4)      │ │    OUTPUT       │
+│  SPOT SIGNAL    │ │  LP INTELLIGENCE │ │   TELEGRAM      │
+│    (v4.3)       │ │     (v2.0.2)     │ │    OUTPUT       │
 ├─────────────────┤ ├─────────────────┤ ├─────────────────┤
-│ • Vol decompose │ │ • Counter-cyclic│ │ • Rich comments │
-│ • Dual risk     │ │ • Don't sell    │ │ • Probabilities │
-│ • LP regimes    │ │   panic         │ │ • LP matrix     │
-│ • Fee/variance  │ │ • Buy fear      │ │                 │
+│ • Cycle modifier│ │ • Vol decompose │ │ • Visual scales │
+│ • Don't sell    │ │ • Dual risk     │ │ • Probabilities │
+│   at bottom     │ │ • LP regimes    │ │ • Reasons       │
+│ • Conf adjust   │ │ • Fee/variance  │ │                 │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
 
-## Key Features (v3.4)
+## Key Features
+
+### SPOT Signal Policy (v4.3)
+
+**Signal Flow:**
+```
+Raw Signal → × Confidence → × Cycle Modifier → Threshold → Final Signal
+```
+
+**Thresholds:**
+| Range | Signal |
+|-------|--------|
+| ≤ -15% | STRONG_SELL |
+| -15% to -5% | SELL |
+| -5% to +5% | HOLD |
+| +5% to +15% | BUY |
+| ≥ +15% | STRONG_BUY |
 
 ### Regime Detection
 - 4 regimes: BULL, BEAR, RANGE, TRANSITION
@@ -72,12 +116,65 @@ python backtest.py
 - **Don't sell panic**: Blocks SELL when momentum < -0.70 AND vol_z > 1.5
 - **Buy fear**: Accumulate on extreme panic + deep drawdown
 - **Sell greed**: Take profit on euphoria + big rally
-- **Mean reversion**: In RANGE regime
 
 ### LP Intelligence
 - Volatility decomposition (trend/range/jump)
 - Dual risk model (directional vs LP-specific)
 - 8 LP regimes with specific policies
+
+## Output Example (v4.3)
+
+```
+BULL ─── RANGE ─── TRANSITION ─── BEAR
+                                   ▲
+
+🔴 BEAR (39d)
+[█░░░░░░░░░] 11%
+↓ Downside pressure. Dir: ↓ 0.64
+
+Regime probabilities:
+BULL       █░░░░░░░░░░░ 11%
+BEAR       ████░░░░░░░░ 34%
+RANGE      █░░░░░░░░░░░ 8%
+TRANSITION █████░░░░░░░ 45%
+
+→ Повышенный структурный риск...
+
+⚠️ RISK SCALE
+NORMAL ─── ELEVATED ─── TAIL ─── CRISIS
+                                ▲
+
+📊 SPOT SIGNAL
+┌─────────────────────────────┐
+│ ⬇️ STRONG SELL              │
+│ ⬇️ SELL                     │
+│ ➡️ HOLD              ◀──── │
+│ ⬆️ BUY                      │
+│ ⬆️ STRONG BUY               │
+└─────────────────────────────┘
+
+Phase: MID_BEAR ~ (conf: 11%)
+Cycle: [██░░░░░░░░] 25/100
+
+Bottom ░░░░▓▓▓▓▓▓ 63% ~
+Top    ░░░░░░░░▓▓ 20% ~
+
+BTC: HOLD (dampened)
+ETH: HOLD (dampened)
+
+Reasons:
+  • ⚠️ SELL близко к дну (63%) — сигнал ослаблен
+  • Затяжной медвежий тренд
+  • Низкая уверенность модели (11%)
+
+🔵 LP: Good, but hedge needed
+  Exposure: 40% | Range: wide
+  Fees vs IL: 2.5x ✓
+  Hedge: REQUIRED
+  → LP профитабелен, но высокий направленный риск
+
+v4.3
+```
 
 ## Backtest Results
 
@@ -87,47 +184,6 @@ Metric              v1.3.1    v1.4    Improvement
 Sells at bottom     39%       13%     -26% ✅
 Sells at top        0%        14%     +14% ✅
 Buys at bottom      3%        5%      +2%
-```
-
-## Output Example (v3.4)
-
-```
-🚨 ALERT: TAIL RISK
-BTC $70,751
-
-🔴 BEAR
-   Phase: 8d mature · Confidence: 18%
-   Tail risk: ACTIVE ↓
-
-Probabilities:
-   BULL       ░░░░░░░░░░░░ 0.04
-   BEAR       ██████░░░░░░ 0.55
-   RANGE      ░░░░░░░░░░░░ 0.03
-   TRANSITION ████░░░░░░░░ 0.38
-
-→ Паника на рынке. Возможно близко дно — не лучшее время продавать.
-
-📉 DIRECTIONAL
-   BTC: HOLD
-   ETH: HOLD
-   → COUNTER-CYCLICAL: Not selling into panic
-
-💧 LP POLICY
-
-          Dir Risk →
-      ┌───────┬───────┐
-  LP↑ │ Q3   │ Q1   │
-      │ spot  │ ideal │
-      ├───────┼───────┤
-  LP↓ │ Q4   │[Q2]  │
-      │ exit  │ LP    │
-      └───────┴───────┘
-
-   Dir: -0.82 · LP: +0.20 · F/V: 1.2x
-   Exposure: 4% (max 20%)
-   → LP opportunity есть, но капитал ограничен.
-
-v3.4 · LP v2.0.1 · AA v1.4
 ```
 
 ## GitHub Actions Setup
