@@ -199,7 +199,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # 3. SPOT SIGNAL - Cycle Position Engine
     # ══════════════════════════════════════════════════════
-    spot_lines = _format_spot_signal(allocation, conf_adj, regime, risk_level)
+    spot_lines = _format_spot_signal(allocation, conf_adj, regime, risk_level, output)
     lines.extend(spot_lines)
     lines.append("")
     
@@ -279,7 +279,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════
-    lines.append("v4.0")
+    lines.append("v4.1")
     
     return "\n".join(lines)
 
@@ -508,7 +508,8 @@ def format_short(output: dict, lp_policy=None, allocation=None) -> str:
 # SPOT SIGNAL WITH CYCLE POSITION
 # ============================================================
 
-def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_level: float) -> list:
+def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_level: float, 
+                         output: dict = None) -> list:
     """
     Форматирует блок SPOT SIGNAL с использованием Cycle Position Engine.
     
@@ -520,11 +521,14 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
     # Get cycle position data if available
     btc_cycle = None
     eth_cycle = None
+    data_source = "engine"  # Track where data comes from
     
     if CYCLE_ENGINE_AVAILABLE:
         try:
             _, btc_cycle = get_cycle_position("BTC")
             _, eth_cycle = get_cycle_position("ETH")
+            if btc_cycle:
+                data_source = "cycle_api"
         except Exception as e:
             logger.warning(f"Cycle position fetch failed: {e}")
     
@@ -539,7 +543,7 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         bt_signal = btc_cycle.bottom_top_signal
         reasons = btc_cycle.reasons
     else:
-        # Fallback: derive from allocation
+        # Smart fallback: derive from allocation + regime data
         btc = allocation.get("btc", {}) if allocation else {}
         btc_action = btc.get("action", "HOLD")
         btc_size = btc.get("size_pct", 0)
@@ -557,12 +561,103 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
             action = ActionSignal.HOLD if CYCLE_ENGINE_AVAILABLE else "HOLD"
         
         action_conf = conf_adj
-        phase = None
-        cycle_pos = 50
-        bottom_prox = 0.5
-        top_prox = 0.5
+        
+        # === SMART FALLBACK: Estimate bottom/top from regime ===
+        # Use regime + risk_level + confidence to estimate cycle position
+        
+        # Extract more data from output if available
+        probs = output.get("probabilities", {}) if output else {}
+        prob_bear = probs.get("BEAR", 0)
+        prob_bull = probs.get("BULL", 0)
+        
+        meta = output.get("metadata", {}) if output else {}
+        days_in_regime = meta.get("days_in_regime", 0)
+        vol_z = meta.get("vol_z", 0)
+        
+        # Estimate phase based on regime
+        if regime == "BEAR":
+            if days_in_regime > 30 and risk_level < -0.5:
+                phase_str = "CAPITULATION"
+                bottom_prox = 0.7 + min(0.2, abs(risk_level) * 0.2)
+                top_prox = 0.1
+                cycle_pos = 15
+            elif days_in_regime > 14:
+                phase_str = "MID_BEAR"
+                bottom_prox = 0.5 + min(0.2, abs(risk_level) * 0.2)
+                top_prox = 0.2
+                cycle_pos = 25
+            else:
+                phase_str = "EARLY_BEAR"
+                bottom_prox = 0.3
+                top_prox = 0.4
+                cycle_pos = 35
+        elif regime == "BULL":
+            if days_in_regime > 30 and risk_level > 0.5:
+                phase_str = "LATE_BULL"
+                bottom_prox = 0.1
+                top_prox = 0.7 + min(0.2, risk_level * 0.2)
+                cycle_pos = 85
+            elif days_in_regime > 14:
+                phase_str = "MID_BULL"
+                bottom_prox = 0.2
+                top_prox = 0.5
+                cycle_pos = 65
+            else:
+                phase_str = "EARLY_BULL"
+                bottom_prox = 0.4
+                top_prox = 0.3
+                cycle_pos = 45
+        elif regime == "TRANSITION":
+            if risk_level < -0.3:
+                phase_str = "DISTRIBUTION"
+                bottom_prox = 0.3
+                top_prox = 0.5
+                cycle_pos = 60
+            elif risk_level > 0.3:
+                phase_str = "ACCUMULATION"
+                bottom_prox = 0.5
+                top_prox = 0.3
+                cycle_pos = 30
+            else:
+                phase_str = "TRANSITION"
+                bottom_prox = 0.4
+                top_prox = 0.4
+                cycle_pos = 50
+        else:  # RANGE
+            phase_str = "RANGE"
+            bottom_prox = 0.35
+            top_prox = 0.35
+            cycle_pos = 50
+        
+        # Adjust by volatility
+        if vol_z > 2.0:
+            # Extreme volatility pushes closer to extremes
+            if bottom_prox > top_prox:
+                bottom_prox = min(0.9, bottom_prox + 0.1)
+            else:
+                top_prox = min(0.9, top_prox + 0.1)
+        
+        phase = phase_str
         bt_signal = None
+        
+        # Generate reasons from regime data
         reasons = []
+        if regime == "BEAR" and days_in_regime > 30:
+            reasons.append("Затяжной медвежий тренд")
+        elif regime == "BULL" and days_in_regime > 30:
+            reasons.append("Зрелый бычий рынок")
+        
+        if conf_adj < 0.25:
+            reasons.append(f"Низкая уверенность модели ({int(conf_adj*100)}%)")
+        
+        if vol_z > 1.5:
+            reasons.append("Повышенная волатильность")
+        
+        if abs(risk_level) > 0.5:
+            if risk_level < 0:
+                reasons.append("Сильное давление вниз")
+            else:
+                reasons.append("Сильное давление вверх")
     
     # Get action string
     if CYCLE_ENGINE_AVAILABLE and hasattr(action, 'value'):
@@ -595,9 +690,10 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
     lines.append("")
     
     # ═══ PHASE & CYCLE POSITION ═══
-    if phase and CYCLE_ENGINE_AVAILABLE:
+    if phase:
         phase_str = phase.value if hasattr(phase, 'value') else str(phase)
-        lines.append(f"Phase: {phase_str} (conf: {int(action_conf*100)}%)")
+        source_marker = "" if data_source == "cycle_api" else " ~"  # ~ means estimated
+        lines.append(f"Phase: {phase_str}{source_marker} (conf: {int(action_conf*100)}%)")
         
         # Cycle position bar (0 = bottom, 100 = top)
         cycle_filled = int(cycle_pos / 10)
@@ -610,8 +706,9 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         filled = int(value * width)
         return "░" * (width - filled) + "▓" * filled
     
-    lines.append(f"Bottom {prox_bar(bottom_prox)} {int(bottom_prox*100)}%")
-    lines.append(f"Top    {prox_bar(top_prox)} {int(top_prox*100)}%")
+    est_marker = " ~" if data_source == "engine" else ""
+    lines.append(f"Bottom {prox_bar(bottom_prox)} {int(bottom_prox*100)}%{est_marker}")
+    lines.append(f"Top    {prox_bar(top_prox)} {int(top_prox*100)}%{est_marker}")
     lines.append("")
     
     # ═══ BTC/ETH SIGNALS ═══
