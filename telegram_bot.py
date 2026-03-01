@@ -279,7 +279,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════
-    lines.append("v4.1")
+    lines.append("v4.2")
     
     return "\n".join(lines)
 
@@ -548,14 +548,21 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         btc_action = btc.get("action", "HOLD")
         btc_size = btc.get("size_pct", 0)
         
-        # Map allocation action to ActionSignal
-        if btc_size <= -0.25:
+        # IMPORTANT: Use ADJUSTED size for signal determination
+        # Raw -30% with 11% confidence = -3% adjusted = HOLD
+        adj_btc_size = btc_size * conf_adj
+        
+        # Thresholds for ADJUSTED values
+        # ±5% = noise (HOLD)
+        # ±5-15% = actionable signal (BUY/SELL)
+        # ±15%+ = strong signal (STRONG_BUY/STRONG_SELL)
+        if adj_btc_size <= -0.15:
             action = ActionSignal.STRONG_SELL if CYCLE_ENGINE_AVAILABLE else "STRONG_SELL"
-        elif btc_size < 0:
+        elif adj_btc_size <= -0.05:
             action = ActionSignal.SELL if CYCLE_ENGINE_AVAILABLE else "SELL"
-        elif btc_size >= 0.25:
+        elif adj_btc_size >= 0.15:
             action = ActionSignal.STRONG_BUY if CYCLE_ENGINE_AVAILABLE else "STRONG_BUY"
-        elif btc_size > 0:
+        elif adj_btc_size >= 0.05:
             action = ActionSignal.BUY if CYCLE_ENGINE_AVAILABLE else "BUY"
         else:
             action = ActionSignal.HOLD if CYCLE_ENGINE_AVAILABLE else "HOLD"
@@ -650,6 +657,11 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         if conf_adj < 0.25:
             reasons.append(f"Низкая уверенность модели ({int(conf_adj*100)}%)")
         
+        # Check if raw signal exists but adjusted is HOLD
+        if btc_size != 0 and abs(adj_btc_size) < 0.05:
+            raw_signal = "SELL" if btc_size < 0 else "BUY"
+            reasons.append(f"Сигнал {raw_signal} ослаблен низкой уверенностью → HOLD")
+        
         if vol_z > 1.5:
             reasons.append("Повышенная волатильность")
         
@@ -721,15 +733,36 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         adj_btc = btc_size * conf_adj
         adj_eth = eth_size * conf_adj
         
-        if btc_size != 0:
-            btc_action_str = "SELL" if btc_size < 0 else "BUY"
-            lines.append(f"BTC: {btc_action_str} {btc_size:+.0%} (adjusted: {adj_btc:+.0%})")
-        if eth_size != 0:
-            eth_action_str = "SELL" if eth_size < 0 else "BUY"
-            lines.append(f"ETH: {eth_action_str} {eth_size:+.0%} (adjusted: {adj_eth:+.0%})")
+        def get_signal_str(adj_size):
+            """Determine signal based on adjusted size"""
+            if adj_size <= -0.15:
+                return "STRONG_SELL"
+            elif adj_size <= -0.05:
+                return "SELL"
+            elif adj_size >= 0.15:
+                return "STRONG_BUY"
+            elif adj_size >= 0.05:
+                return "BUY"
+            else:
+                return "HOLD"
         
-        if btc_size == 0 and eth_size == 0:
+        btc_signal = get_signal_str(adj_btc)
+        eth_signal = get_signal_str(adj_eth)
+        
+        # Show actual actionable signal
+        if btc_signal == "HOLD" and btc_size != 0:
+            # Signal exists but too weak after confidence adjustment
+            lines.append(f"BTC: HOLD (signal weak: {adj_btc:+.0%})")
+        elif btc_size != 0:
+            lines.append(f"BTC: {btc_signal} {adj_btc:+.0%}")
+        else:
             lines.append("BTC: HOLD")
+        
+        if eth_signal == "HOLD" and eth_size != 0:
+            lines.append(f"ETH: HOLD (signal weak: {adj_eth:+.0%})")
+        elif eth_size != 0:
+            lines.append(f"ETH: {eth_signal} {adj_eth:+.0%}")
+        else:
             lines.append("ETH: HOLD")
     
     lines.append("")
