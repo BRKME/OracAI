@@ -279,7 +279,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════
-    lines.append("v4.2")
+    lines.append("v4.3")
     
     return "\n".join(lines)
 
@@ -552,21 +552,6 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         # Raw -30% with 11% confidence = -3% adjusted = HOLD
         adj_btc_size = btc_size * conf_adj
         
-        # Thresholds for ADJUSTED values
-        # ±5% = noise (HOLD)
-        # ±5-15% = actionable signal (BUY/SELL)
-        # ±15%+ = strong signal (STRONG_BUY/STRONG_SELL)
-        if adj_btc_size <= -0.15:
-            action = ActionSignal.STRONG_SELL if CYCLE_ENGINE_AVAILABLE else "STRONG_SELL"
-        elif adj_btc_size <= -0.05:
-            action = ActionSignal.SELL if CYCLE_ENGINE_AVAILABLE else "SELL"
-        elif adj_btc_size >= 0.15:
-            action = ActionSignal.STRONG_BUY if CYCLE_ENGINE_AVAILABLE else "STRONG_BUY"
-        elif adj_btc_size >= 0.05:
-            action = ActionSignal.BUY if CYCLE_ENGINE_AVAILABLE else "BUY"
-        else:
-            action = ActionSignal.HOLD if CYCLE_ENGINE_AVAILABLE else "HOLD"
-        
         action_conf = conf_adj
         
         # === SMART FALLBACK: Estimate bottom/top from regime ===
@@ -647,8 +632,67 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         phase = phase_str
         bt_signal = None
         
+        # ═══════════════════════════════════════════════════════
+        # CYCLE MODIFIER: Adjust signal based on cycle position
+        # ═══════════════════════════════════════════════════════
+        # Selling at bottom = bad idea
+        # Buying at top = bad idea
+        
+        cycle_adjusted_size = adj_btc_size
+        cycle_conflict = None
+        
+        if bottom_prox >= 0.5 and adj_btc_size < 0:
+            # Near bottom + SELL signal = CONFLICT
+            # Reduce sell signal proportionally to bottom proximity
+            sell_dampener = 1.0 - (bottom_prox - 0.3)  # 0.5 bottom → 0.8x, 0.7 bottom → 0.6x
+            sell_dampener = max(0.0, min(1.0, sell_dampener))
+            cycle_adjusted_size = adj_btc_size * sell_dampener
+            
+            if bottom_prox >= 0.7:
+                # Very close to bottom - consider contrarian BUY
+                cycle_conflict = "BOTTOM"
+                cycle_adjusted_size = min(0.05, abs(adj_btc_size) * 0.3)  # Flip to small BUY
+            elif bottom_prox >= 0.5:
+                cycle_conflict = "NEAR_BOTTOM"
+        
+        elif top_prox >= 0.5 and adj_btc_size > 0:
+            # Near top + BUY signal = CONFLICT
+            buy_dampener = 1.0 - (top_prox - 0.3)
+            buy_dampener = max(0.0, min(1.0, buy_dampener))
+            cycle_adjusted_size = adj_btc_size * buy_dampener
+            
+            if top_prox >= 0.7:
+                # Very close to top - consider contrarian SELL
+                cycle_conflict = "TOP"
+                cycle_adjusted_size = max(-0.05, -abs(adj_btc_size) * 0.3)  # Flip to small SELL
+            elif top_prox >= 0.5:
+                cycle_conflict = "NEAR_TOP"
+        
+        # Determine final action based on CYCLE-ADJUSTED size
+        if cycle_adjusted_size <= -0.15:
+            action = ActionSignal.STRONG_SELL if CYCLE_ENGINE_AVAILABLE else "STRONG_SELL"
+        elif cycle_adjusted_size <= -0.05:
+            action = ActionSignal.SELL if CYCLE_ENGINE_AVAILABLE else "SELL"
+        elif cycle_adjusted_size >= 0.15:
+            action = ActionSignal.STRONG_BUY if CYCLE_ENGINE_AVAILABLE else "STRONG_BUY"
+        elif cycle_adjusted_size >= 0.05:
+            action = ActionSignal.BUY if CYCLE_ENGINE_AVAILABLE else "BUY"
+        else:
+            action = ActionSignal.HOLD if CYCLE_ENGINE_AVAILABLE else "HOLD"
+        
         # Generate reasons from regime data
         reasons = []
+        
+        # Cycle conflict reason (most important)
+        if cycle_conflict == "BOTTOM":
+            reasons.append(f"⚠️ SELL на дне ({int(bottom_prox*100)}%) — сигнал инвертирован")
+        elif cycle_conflict == "NEAR_BOTTOM":
+            reasons.append(f"⚠️ SELL близко к дну ({int(bottom_prox*100)}%) — сигнал ослаблен")
+        elif cycle_conflict == "TOP":
+            reasons.append(f"⚠️ BUY на вершине ({int(top_prox*100)}%) — сигнал инвертирован")
+        elif cycle_conflict == "NEAR_TOP":
+            reasons.append(f"⚠️ BUY близко к вершине ({int(top_prox*100)}%) — сигнал ослаблен")
+        
         if regime == "BEAR" and days_in_regime > 30:
             reasons.append("Затяжной медвежий тренд")
         elif regime == "BULL" and days_in_regime > 30:
@@ -657,8 +701,8 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         if conf_adj < 0.25:
             reasons.append(f"Низкая уверенность модели ({int(conf_adj*100)}%)")
         
-        # Check if raw signal exists but adjusted is HOLD
-        if btc_size != 0 and abs(adj_btc_size) < 0.05:
+        # Check if raw signal exists but adjusted is HOLD (and no cycle conflict)
+        if not cycle_conflict and btc_size != 0 and abs(adj_btc_size) < 0.05:
             raw_signal = "SELL" if btc_size < 0 else "BUY"
             reasons.append(f"Сигнал {raw_signal} ослаблен низкой уверенностью → HOLD")
         
@@ -733,6 +777,34 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         adj_btc = btc_size * conf_adj
         adj_eth = eth_size * conf_adj
         
+        def apply_cycle_modifier(adj_size, bottom_p, top_p):
+            """Apply cycle position modifier to signal"""
+            cycle_adj = adj_size
+            conflict = None
+            
+            if bottom_p >= 0.5 and adj_size < 0:
+                # Near bottom + SELL = conflict
+                dampener = 1.0 - (bottom_p - 0.3)
+                dampener = max(0.0, min(1.0, dampener))
+                cycle_adj = adj_size * dampener
+                if bottom_p >= 0.7:
+                    conflict = "BOTTOM"
+                    cycle_adj = min(0.05, abs(adj_size) * 0.3)
+                elif bottom_p >= 0.5:
+                    conflict = "NEAR_BOTTOM"
+            elif top_p >= 0.5 and adj_size > 0:
+                # Near top + BUY = conflict
+                dampener = 1.0 - (top_p - 0.3)
+                dampener = max(0.0, min(1.0, dampener))
+                cycle_adj = adj_size * dampener
+                if top_p >= 0.7:
+                    conflict = "TOP"
+                    cycle_adj = max(-0.05, -abs(adj_size) * 0.3)
+                elif top_p >= 0.5:
+                    conflict = "NEAR_TOP"
+            
+            return cycle_adj, conflict
+        
         def get_signal_str(adj_size):
             """Determine signal based on adjusted size"""
             if adj_size <= -0.15:
@@ -746,22 +818,35 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
             else:
                 return "HOLD"
         
-        btc_signal = get_signal_str(adj_btc)
-        eth_signal = get_signal_str(adj_eth)
+        # Apply cycle modifier
+        cycle_btc, btc_conflict = apply_cycle_modifier(adj_btc, bottom_prox, top_prox)
+        cycle_eth, eth_conflict = apply_cycle_modifier(adj_eth, bottom_prox, top_prox)
         
-        # Show actual actionable signal
-        if btc_signal == "HOLD" and btc_size != 0:
-            # Signal exists but too weak after confidence adjustment
+        btc_signal = get_signal_str(cycle_btc)
+        eth_signal = get_signal_str(cycle_eth)
+        
+        # Show actual actionable signal with cycle adjustment
+        if btc_conflict:
+            if btc_conflict in ["BOTTOM", "TOP"]:
+                lines.append(f"BTC: {btc_signal} {cycle_btc:+.0%} (⚠️ cycle override)")
+            else:
+                lines.append(f"BTC: {btc_signal} {cycle_btc:+.0%} (dampened)")
+        elif btc_signal == "HOLD" and btc_size != 0:
             lines.append(f"BTC: HOLD (signal weak: {adj_btc:+.0%})")
         elif btc_size != 0:
-            lines.append(f"BTC: {btc_signal} {adj_btc:+.0%}")
+            lines.append(f"BTC: {btc_signal} {cycle_btc:+.0%}")
         else:
             lines.append("BTC: HOLD")
         
-        if eth_signal == "HOLD" and eth_size != 0:
+        if eth_conflict:
+            if eth_conflict in ["BOTTOM", "TOP"]:
+                lines.append(f"ETH: {eth_signal} {cycle_eth:+.0%} (⚠️ cycle override)")
+            else:
+                lines.append(f"ETH: {eth_signal} {cycle_eth:+.0%} (dampened)")
+        elif eth_signal == "HOLD" and eth_size != 0:
             lines.append(f"ETH: HOLD (signal weak: {adj_eth:+.0%})")
         elif eth_size != 0:
-            lines.append(f"ETH: {eth_signal} {adj_eth:+.0%}")
+            lines.append(f"ETH: {eth_signal} {cycle_eth:+.0%}")
         else:
             lines.append("ETH: HOLD")
     
