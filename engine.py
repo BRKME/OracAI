@@ -632,6 +632,27 @@ class RegimeEngine:
             oi_history = np.append(oi_history, oi_current)
         oi_history = oi_history[-120:]
 
+        # ── 2.5 RSI inputs (multi-timeframe) ────────────────────
+        rsi_data = raw_data.get("rsi", {})
+        btc_rsi = rsi_data.get("btc", {})
+        eth_rsi = rsi_data.get("eth", {})
+        
+        rsi_1d = btc_rsi.get("rsi_1d")  # Daily RSI-14 (strategic)
+        rsi_2h = btc_rsi.get("rsi_2h")  # 2-hour RSI-14 (tactical)
+        rsi_1d_7 = btc_rsi.get("rsi_1d_7")  # Daily RSI-7 (momentum)
+        rsi_source = btc_rsi.get("source", "none")
+        
+        # RSI-based flags
+        if rsi_1d is not None:
+            if rsi_1d >= 80:
+                flags.append("RSI_OVERBOUGHT")
+            elif rsi_1d <= 20:
+                flags.append("RSI_OVERSOLD")
+            elif rsi_1d >= 70:
+                flags.append("RSI_HIGH")
+            elif rsi_1d <= 30:
+                flags.append("RSI_LOW")
+
         # ── 3. Macro inputs ───────────────────────────────────
         fred_df = raw_data.get("fred")
         dxy_arr = np.array([])
@@ -825,6 +846,13 @@ class RegimeEngine:
                 "eth_price": float(eth_price) if eth_price else None,
                 # v1.4: 30d returns for counter-cyclical logic
                 "returns_30d": round((close[-1] / close[-30] - 1), 4) if len(close) >= 30 else 0.0,
+                # v4.3: Multi-timeframe RSI
+                "rsi": {
+                    "rsi_1d": rsi_1d,       # Daily RSI-14 (strategic)
+                    "rsi_2h": rsi_2h,       # 2-hour RSI-14 (tactical)
+                    "rsi_1d_7": rsi_1d_7,   # Daily RSI-7 (momentum)
+                    "source": rsi_source,
+                },
             },
         }
 

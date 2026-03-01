@@ -51,6 +51,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     struct_break = norm.get("break_active", False)
     mom = buckets.get("Momentum", 0)
     
+    # RSI data
+    rsi_data = meta.get("rsi", {})
+    rsi_1d = rsi_data.get("rsi_1d")
+    rsi_2h = rsi_data.get("rsi_2h")
+    rsi_1d_7 = rsi_data.get("rsi_1d_7")
+    rsi_source = rsi_data.get("source", "none")
+    
     # Tail risk
     tail_active = False
     tail_polarity = None
@@ -199,7 +206,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # 3. SPOT SIGNAL - Cycle Position Engine
     # ══════════════════════════════════════════════════════
-    spot_lines = _format_spot_signal(allocation, conf_adj, regime, risk_level, output)
+    spot_lines = _format_spot_signal(allocation, conf_adj, regime, risk_level, output, rsi_1d, rsi_2h)
     lines.extend(spot_lines)
     lines.append("")
     
@@ -279,7 +286,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════
-    lines.append("v4.3")
+    lines.append("v4.4")
     
     return "\n".join(lines)
 
@@ -509,7 +516,7 @@ def format_short(output: dict, lp_policy=None, allocation=None) -> str:
 # ============================================================
 
 def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_level: float, 
-                         output: dict = None) -> list:
+                         output: dict = None, rsi_1d: float = None, rsi_2h: float = None) -> list:
     """
     Форматирует блок SPOT SIGNAL с использованием Cycle Position Engine.
     
@@ -629,6 +636,26 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
             else:
                 top_prox = min(0.9, top_prox + 0.1)
         
+        # ═══ RSI ADJUSTMENT ═══
+        # RSI is a key indicator for cycle position
+        if rsi_1d is not None:
+            if rsi_1d <= 25:
+                # Deeply oversold - increase bottom proximity
+                bottom_prox = min(0.95, bottom_prox + 0.25)
+                top_prox = max(0.05, top_prox - 0.2)
+            elif rsi_1d <= 35:
+                # Oversold
+                bottom_prox = min(0.85, bottom_prox + 0.15)
+                top_prox = max(0.1, top_prox - 0.1)
+            elif rsi_1d >= 75:
+                # Deeply overbought - increase top proximity
+                top_prox = min(0.95, top_prox + 0.25)
+                bottom_prox = max(0.05, bottom_prox - 0.2)
+            elif rsi_1d >= 65:
+                # Overbought
+                top_prox = min(0.85, top_prox + 0.15)
+                bottom_prox = max(0.1, bottom_prox - 0.1)
+        
         phase = phase_str
         bt_signal = None
         
@@ -709,6 +736,17 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         if vol_z > 1.5:
             reasons.append("Повышенная волатильность")
         
+        # RSI reasons
+        if rsi_1d is not None:
+            if rsi_1d <= 25:
+                reasons.append(f"🟢 RSI oversold ({rsi_1d:.0f}) — покупка выгоднее")
+            elif rsi_1d <= 35:
+                reasons.append(f"RSI низкий ({rsi_1d:.0f})")
+            elif rsi_1d >= 75:
+                reasons.append(f"🔴 RSI overbought ({rsi_1d:.0f}) — продажа выгоднее")
+            elif rsi_1d >= 65:
+                reasons.append(f"RSI высокий ({rsi_1d:.0f})")
+        
         if abs(risk_level) > 0.5:
             if risk_level < 0:
                 reasons.append("Сильное давление вниз")
@@ -755,6 +793,29 @@ def _format_spot_signal(allocation: dict, conf_adj: float, regime: str, risk_lev
         cycle_filled = int(cycle_pos / 10)
         cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
         lines.append(f"Cycle: [{cycle_bar}] {int(cycle_pos)}/100")
+        lines.append("")
+    
+    # ═══ RSI INDICATORS ═══
+    if rsi_1d is not None or rsi_2h is not None:
+        rsi_line = "RSI:"
+        if rsi_1d is not None:
+            # RSI status
+            if rsi_1d <= 30:
+                rsi_status = "🟢"
+            elif rsi_1d >= 70:
+                rsi_status = "🔴"
+            else:
+                rsi_status = "⚪"
+            rsi_line += f" {rsi_status} 1D={rsi_1d:.0f}"
+        if rsi_2h is not None:
+            if rsi_2h <= 30:
+                rsi_2h_status = "↓"
+            elif rsi_2h >= 70:
+                rsi_2h_status = "↑"
+            else:
+                rsi_2h_status = "→"
+            rsi_line += f" | 2H={rsi_2h:.0f}{rsi_2h_status}"
+        lines.append(rsi_line)
         lines.append("")
     
     # ═══ BOTTOM/TOP PROXIMITY ═══

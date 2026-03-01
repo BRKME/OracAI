@@ -352,6 +352,220 @@ def fetch_open_interest_with_fallback() -> Optional[float]:
 
 
 # ============================================================
+# RSI — MULTI-TIMEFRAME (Binance SPOT + Bybit fallback)
+# ============================================================
+
+def calculate_rsi(closes: list, period: int = 14) -> float:
+    """
+    Calculate RSI from close prices.
+    
+    Args:
+        closes: List of close prices (oldest to newest)
+        period: RSI period (default 14)
+    
+    Returns:
+        RSI value (0-100)
+    """
+    if len(closes) < period + 1:
+        return 50.0  # Neutral default
+    
+    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+    
+    gains = [d if d > 0 else 0 for d in deltas[-period:]]
+    losses = [-d if d < 0 else 0 for d in deltas[-period:]]
+    
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+    
+    if avg_loss == 0:
+        return 100.0
+    
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    
+    return round(rsi, 2)
+
+
+def fetch_binance_klines(symbol: str = "BTCUSDT", interval: str = "1d", limit: int = 100) -> list:
+    """
+    Fetch klines from Binance SPOT API.
+    Works without authentication, no geo-restrictions on SPOT.
+    
+    Args:
+        symbol: Trading pair (BTCUSDT, ETHUSDT)
+        interval: 1m, 5m, 15m, 1h, 2h, 4h, 1d, 1w
+        limit: Number of candles (max 1000)
+    
+    Returns:
+        List of close prices (oldest to newest)
+    """
+    url = "https://api.binance.com/api/v3/klines"
+    params = {"symbol": symbol, "interval": interval, "limit": limit}
+    
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        # Kline format: [open_time, open, high, low, close, volume, ...]
+        closes = [float(candle[4]) for candle in data]
+        return closes
+    except Exception as e:
+        logger.warning(f"Binance klines failed: {e}")
+        return []
+
+
+def fetch_bybit_klines(symbol: str = "BTCUSDT", interval: str = "D", limit: int = 100) -> list:
+    """
+    Fetch klines from Bybit API (fallback).
+    
+    Args:
+        symbol: Trading pair
+        interval: 1, 3, 5, 15, 30, 60, 120, 240, 360, 720, D, W, M
+        limit: Number of candles (max 1000)
+    
+    Returns:
+        List of close prices (oldest to newest)
+    """
+    url = "https://api.bybit.com/v5/market/kline"
+    params = {"category": "spot", "symbol": symbol, "interval": interval, "limit": limit}
+    
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json().get("result", {}).get("list", [])
+        
+        if not data:
+            return []
+        
+        # Bybit returns newest first, reverse it
+        # Format: [startTime, open, high, low, close, volume, turnover]
+        closes = [float(candle[4]) for candle in reversed(data)]
+        return closes
+    except Exception as e:
+        logger.warning(f"Bybit klines failed: {e}")
+        return []
+
+
+def fetch_yahoo_klines(symbol: str = "BTC-USD", period: str = "60d", interval: str = "1d") -> list:
+    """
+    Fetch klines from Yahoo Finance (final fallback).
+    Works everywhere including GitHub Actions.
+    
+    Args:
+        symbol: Yahoo ticker (BTC-USD, ETH-USD)
+        period: 1d, 5d, 1mo, 3mo, 6mo, 1y
+        interval: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo
+    
+    Returns:
+        List of close prices (oldest to newest)
+    """
+    try:
+        import yfinance as yf
+        data = yf.download(symbol, period=period, interval=interval, progress=False)
+        
+        if data.empty:
+            return []
+        
+        closes = data["Close"].values.tolist()
+        return closes
+    except Exception as e:
+        logger.warning(f"Yahoo klines failed: {e}")
+        return []
+
+
+def fetch_rsi_multi_timeframe(symbol: str = "BTCUSDT") -> dict:
+    """
+    Fetch RSI for multiple timeframes.
+    
+    Returns:
+        {
+            "rsi_1d": float,      # Daily RSI-14 (strategy)
+            "rsi_2h": float,      # 2-hour RSI-14 (tactical)
+            "rsi_1d_7": float,    # Daily RSI-7 (momentum)
+            "source": str         # "binance", "bybit", or "yahoo"
+        }
+    """
+    result = {
+        "rsi_1d": None,
+        "rsi_2h": None,
+        "rsi_1d_7": None,
+        "source": None
+    }
+    
+    # Map symbol to Yahoo ticker
+    yahoo_map = {"BTCUSDT": "BTC-USD", "ETHUSDT": "ETH-USD"}
+    yahoo_symbol = yahoo_map.get(symbol, "BTC-USD")
+    
+    # ═══ TRY BINANCE FIRST ═══
+    
+    # Daily RSI (need 30+ candles for stable RSI-14)
+    closes_1d = fetch_binance_klines(symbol, "1d", 50)
+    if closes_1d and len(closes_1d) >= 15:
+        result["rsi_1d"] = calculate_rsi(closes_1d, 14)
+        result["rsi_1d_7"] = calculate_rsi(closes_1d, 7)
+        result["source"] = "binance"
+        logger.info(f"  ✓ RSI Daily: {result['rsi_1d']:.1f} (Binance)")
+    
+    # 2-hour RSI
+    closes_2h = fetch_binance_klines(symbol, "2h", 50)
+    if closes_2h and len(closes_2h) >= 15:
+        result["rsi_2h"] = calculate_rsi(closes_2h, 14)
+        logger.info(f"  ✓ RSI 2h: {result['rsi_2h']:.1f} (Binance)")
+    
+    # ═══ FALLBACK TO BYBIT ═══
+    if result["rsi_1d"] is None:
+        closes_1d = fetch_bybit_klines(symbol, "D", 50)
+        if closes_1d and len(closes_1d) >= 15:
+            result["rsi_1d"] = calculate_rsi(closes_1d, 14)
+            result["rsi_1d_7"] = calculate_rsi(closes_1d, 7)
+            result["source"] = "bybit"
+            logger.info(f"  ✓ RSI Daily: {result['rsi_1d']:.1f} (Bybit fallback)")
+    
+    if result["rsi_2h"] is None:
+        closes_2h = fetch_bybit_klines(symbol, "120", 50)  # 120 = 2 hours
+        if closes_2h and len(closes_2h) >= 15:
+            result["rsi_2h"] = calculate_rsi(closes_2h, 14)
+            logger.info(f"  ✓ RSI 2h: {result['rsi_2h']:.1f} (Bybit fallback)")
+    
+    # ═══ FINAL FALLBACK: YAHOO FINANCE ═══
+    if result["rsi_1d"] is None:
+        closes_1d = fetch_yahoo_klines(yahoo_symbol, "60d", "1d")
+        if closes_1d and len(closes_1d) >= 15:
+            result["rsi_1d"] = calculate_rsi(closes_1d, 14)
+            result["rsi_1d_7"] = calculate_rsi(closes_1d, 7)
+            result["source"] = "yahoo"
+            logger.info(f"  ✓ RSI Daily: {result['rsi_1d']:.1f} (Yahoo fallback)")
+    
+    if result["rsi_2h"] is None:
+        # Yahoo doesn't have good 2h data, try 1h as approximation
+        closes_1h = fetch_yahoo_klines(yahoo_symbol, "5d", "1h")
+        if closes_1h and len(closes_1h) >= 15:
+            result["rsi_2h"] = calculate_rsi(closes_1h, 14)
+            logger.info(f"  ✓ RSI 1h (approx 2h): {result['rsi_2h']:.1f} (Yahoo fallback)")
+    
+    return result
+
+
+def fetch_rsi_with_fallback() -> dict:
+    """
+    Fetch RSI for BTC and ETH.
+    
+    Returns:
+        {
+            "btc": {"rsi_1d": float, "rsi_2h": float, "rsi_1d_7": float, "source": str},
+            "eth": {"rsi_1d": float, "rsi_2h": float, "rsi_1d_7": float, "source": str}
+        }
+    """
+    logger.info("📊 Fetching RSI...")
+    
+    btc_rsi = fetch_rsi_multi_timeframe("BTCUSDT")
+    eth_rsi = fetch_rsi_multi_timeframe("ETHUSDT")
+    
+    return {"btc": btc_rsi, "eth": eth_rsi}
+
+
+# ============================================================
 # FEAR & GREED (no auth)
 # ============================================================
 
@@ -469,12 +683,13 @@ def fetch_all_data() -> dict:
         "global": None,
         "market_cap_history": None,
         "fear_greed": None,
+        "rsi": None,  # NEW: Multi-timeframe RSI
         "yahoo": None,
         "fred": None,
         "quality": {
             "completeness": 1.0, 
             "sources_available": 0, 
-            "sources_total": 8,
+            "sources_total": 9,  # Updated from 8 to 9
             "failed_sources": []
         },
         "fetch_time": datetime.utcnow().isoformat(),
@@ -552,8 +767,18 @@ def fetch_all_data() -> dict:
     else:
         failed_sources.append("F&G")
 
-    # ── 7. Yahoo macro ──────────────────────────────────────
-    logger.info("  [7/8] Yahoo macro (DXY, SPX, Gold)...")
+    # ── 7. RSI Multi-timeframe (Binance → Bybit) ────────────
+    logger.info("  [7/9] RSI (Daily + 2h)...")
+    result["rsi"] = fetch_rsi_with_fallback()
+    if result["rsi"]["btc"]["rsi_1d"] is not None:
+        sources_ok += 1
+        btc_rsi = result["rsi"]["btc"]
+        logger.info(f"  ✓ BTC RSI: 1d={btc_rsi['rsi_1d']:.1f}, 2h={btc_rsi['rsi_2h']:.1f if btc_rsi['rsi_2h'] else 'N/A'}")
+    else:
+        failed_sources.append("RSI")
+
+    # ── 8. Yahoo macro ──────────────────────────────────────
+    logger.info("  [8/9] Yahoo macro (DXY, SPX, Gold)...")
     result["yahoo"] = fetch_yahoo_series({
         "DXY": "DX-Y.NYB",
         "SPX": "^GSPC",
@@ -565,8 +790,8 @@ def fetch_all_data() -> dict:
     else:
         failed_sources.append("Yahoo")
 
-    # ── 8. FRED ─────────────────────────────────────────────
-    logger.info("  [8/8] FRED (yields, M2)...")
+    # ── 9. FRED ─────────────────────────────────────────────
+    logger.info("  [9/9] FRED (yields, M2)...")
     result["fred"] = fetch_fred_series({
         "US_10Y": "DGS10",
         "US_2Y": "DGS2",
