@@ -272,11 +272,6 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    if failed_sources:
-        display_flags.append(f"Нет данных: {', '.join(failed_sources)}")
-    elif data_quality < 0.85:
-        display_flags.append("Partial data — проверь источники")
-    
     if display_flags:
         lines.append("FLAGS")
         for f in display_flags:
@@ -284,9 +279,48 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         lines.append("")
     
     # ══════════════════════════════════════════════════════
+    # 6. DATA STATUS - Show missing critical data
+    # ══════════════════════════════════════════════════════
+    data_warnings = []
+    
+    # RSI status
+    if rsi_1d is None:
+        data_warnings.append("⚠️ RSI Daily недоступен (Binance/Bybit/Yahoo)")
+    if rsi_2h is None and rsi_1d is not None:
+        data_warnings.append("⚠️ RSI 2h недоступен")
+    
+    # Other critical sources
+    if failed_sources:
+        critical_missing = [s for s in failed_sources if s in ["BTC Price", "F&G", "Funding", "OI"]]
+        if critical_missing:
+            data_warnings.append(f"⚠️ Нет данных: {', '.join(critical_missing)}")
+        
+        non_critical = [s for s in failed_sources if s not in ["BTC Price", "F&G", "Funding", "OI"]]
+        if non_critical and not critical_missing:
+            data_warnings.append(f"ℹ️ Нет: {', '.join(non_critical)}")
+    
+    if data_quality < 0.7:
+        data_warnings.append(f"⚠️ Качество данных: {int(data_quality*100)}%")
+    
+    if data_warnings:
+        lines.append("📡 DATA STATUS")
+        for w in data_warnings:
+            lines.append(f"  {w}")
+        lines.append("")
+    
+    # ══════════════════════════════════════════════════════
     # FOOTER
     # ══════════════════════════════════════════════════════
-    lines.append("v4.4")
+    # Show data sources summary
+    sources_ok = []
+    if rsi_source:
+        sources_ok.append(f"RSI:{rsi_source}")
+    
+    footer_parts = ["v4.5"]
+    if sources_ok:
+        footer_parts.append(" | ".join(sources_ok))
+    
+    lines.append(" · ".join(footer_parts))
     
     return "\n".join(lines)
 
