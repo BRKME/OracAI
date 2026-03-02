@@ -604,7 +604,7 @@ class RegimeEngine:
         else:
             tmc = np.array([])
 
-        glob = raw_data.get("global", {})
+        glob = raw_data.get("global") or {}
         btc_dom_current = glob.get("btc_dominance", None)
         eth_price = glob.get("eth_price", None)
 
