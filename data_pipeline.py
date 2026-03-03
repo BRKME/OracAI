@@ -1,9 +1,8 @@
 """
-Data Pipeline v7.1 — PRODUCTION GRADE with Legacy Support
-- Исправлена Pydantic валидация (правильная конвертация list→float)
-- Добавлен адаптер для совместимости с main.py
-- Улучшена обработка ошибок
-- Стабильный API для legacy кода
+Data Pipeline v7.2 — PRODUCTION GRADE with FULL Legacy Support
+- Добавлена колонка quote_volume для engine.py
+- Полная совместимость со старым форматом
+- Все необходимые колонки для engine.py
 """
 
 import asyncio
@@ -29,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # ====================== КОНФИГУРАЦИЯ И ВЕРСИОНИРОВАНИЕ ======================
 
-PIPELINE_VERSION = "7.1.0"
+PIPELINE_VERSION = "7.2.0"
 SCHEMA_VERSION = "1.0.0"
 
 class PipelineConfig(BaseModel):
@@ -639,7 +638,7 @@ class DataPipeline:
 def convert_to_legacy_format(pipeline_result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Конвертирует результат нового пайплайна в старый формат,
-    который ожидает main.py
+    который ожидает main.py и engine.py
     """
     legacy = {
         "price": None,
@@ -666,17 +665,43 @@ def convert_to_legacy_format(pipeline_result: Dict[str, Any]) -> Dict[str, Any]:
             # Создаем DataFrame в старом формате
             df = pd.DataFrame({
                 "date": price_data["dates"],
-                "close": price_data["close"],
                 "open": price_data["open"],
                 "high": price_data["high"],
                 "low": price_data["low"],
+                "close": price_data["close"],
                 "volume": price_data["volume"]
             })
+            
+            # ✅ Добавляем quote_volume (volume * close) - ЭТО КРИТИЧЕСКИ ВАЖНО ДЛЯ ENGINE.PY
+            df["quote_volume"] = df["volume"] * df["close"]
+            
+            # ✅ Добавляем другие колонки, которые могут ожидаться
+            df["ticker"] = "BTC-USD"
+            df["symbol"] = "BTC-USD"
+            
+            # ✅ Добавляем returns если нужно
+            df["returns"] = df["close"].pct_change().fillna(0)
+            
+            # ✅ Конвертируем date в datetime для совместимости
+            df["date"] = pd.to_datetime(df["date"])
+            
+            # ✅ Сортируем по дате
+            df = df.sort_values("date").reset_index(drop=True)
+            
             legacy["price"] = df
             legacy["quality"]["sources_available"] += 1
-            logging.info(f"Converted price data: {len(df)} rows")
+            logging.info(f"Price data: {len(df)} rows, columns: {list(df.columns)}")
+            
+            # Проверяем наличие критических колонок
+            required_cols = ["close", "high", "low", "volume", "quote_volume"]
+            missing = [col for col in required_cols if col not in df.columns]
+            if missing:
+                logging.warning(f"Missing columns in price data: {missing}")
+            else:
+                logging.info("All required columns present")
+                
         except Exception as e:
-            logging.error(f"Failed to convert price data: {e}")
+            logging.error(f"Price conversion failed: {e}")
             legacy["quality"]["failed_sources"].append("price_conversion")
     
     # Completeness
@@ -767,7 +792,9 @@ if __name__ == "__main__":
     print(f"Price data: {'OK' if result['price'] is not None else 'FAILED'}")
     if result['price'] is not None:
         print(f"  Shape: {result['price'].shape}")
+        print(f"  Columns: {list(result['price'].columns)}")
         print(f"  Last price: ${result['price']['close'].iloc[-1]:,.2f}")
+        print(f"  Last quote_volume: {result['price']['quote_volume'].iloc[-1]:,.0f}")
     print(f"Sources OK: {result['quality']['sources_available']}/9")
     if result['quality']['failed_sources']:
         print(f"Failed: {result['quality']['failed_sources']}")
