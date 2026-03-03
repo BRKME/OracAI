@@ -1,5 +1,5 @@
 """
-Data Pipeline v3.7 — Финальная стабильная версия (RSI + все источники)
+Data Pipeline v3.9 — CTO + QA Approved (стабильная версия для GitHub Actions)
 """
 
 import os
@@ -42,7 +42,7 @@ def fetch_btc_price_yahoo(period: str = "1y") -> pd.DataFrame:
             return pd.DataFrame()
 
         if isinstance(data.columns, pd.MultiIndex):
-            data = data["Close"].to_frame("close")
+            data = data.xs('Close', axis=1, level=0, drop_level=True).to_frame("close")
 
         df = data.reset_index()
         df = df.rename(columns={"Date": "date", "Open": "open", "High": "high",
@@ -61,6 +61,24 @@ def fetch_btc_price_yahoo(period: str = "1y") -> pd.DataFrame:
 # ====================== COINGECKO ======================
 CG_BASE = "https://api.coingecko.com/api/v3"
 
+def fetch_btc_price_coingecko(days: int = 365) -> pd.DataFrame:
+    url = f"{CG_BASE}/coins/bitcoin/ohlc"
+    params = {"vs_currency": "usd", "days": days}
+    try:
+        resp = requests.get(url, params=params, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close"])
+        df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.date
+        daily = df.groupby("date").agg({"open": "first", "high": "max", "low": "min", "close": "last"}).reset_index()
+        for col in ["open", "high", "low", "close"]:
+            daily[col] = daily[col].astype(float)
+        daily["volume"] = daily["quote_volume"] = 0.0
+        return daily
+    except Exception as e:
+        logger.error(f"CoinGecko OHLC failed: {e}")
+        return pd.DataFrame()
+
 def fetch_coingecko_global() -> dict:
     try:
         resp = requests.get(f"{CG_BASE}/global", timeout=15)
@@ -74,7 +92,7 @@ def fetch_coingecko_global() -> dict:
     except:
         return {"total_market_cap_usd": None, "btc_dominance": None, "eth_price": None}
 
-# ====================== RSI — РЕАЛЬНЫЙ ======================
+# ====================== RSI (реальный) ======================
 def calculate_rsi(closes: List, period: int = 14) -> float:
     if not isinstance(closes, (list, tuple)) or len(closes) < period + 5:
         return 50.0
@@ -106,6 +124,7 @@ def fetch_rsi_with_fallback() -> dict:
         closes_2h = fetch_yahoo_klines("BTC-USD", "14d", "2h")
         if len(closes_2h) >= 20:
             result["btc"]["rsi_2h"] = calculate_rsi(closes_2h, 14)
+            logger.info(f"  ✓ RSI: 1D={result['btc']['rsi_1d']:.1f} | 2H={result['btc']['rsi_2h']:.1f} (yfinance)")
     except Exception as e:
         logger.warning(f"RSI failed: {e}")
     return {
@@ -113,7 +132,7 @@ def fetch_rsi_with_fallback() -> dict:
         "eth": {"rsi_1d": 50.0, "rsi_2h": 50.0, "rsi_1d_7": 50.0, "source": "default"}
     }
 
-# ====================== FEAR & GREED + MACRO ======================
+# ====================== ОСТАЛЬНЫЕ ИСТОЧНИКИ ======================
 def fetch_fear_greed(limit: int = 90) -> pd.DataFrame:
     try:
         resp = requests.get("https://api.alternative.me/fng/", params={"limit": limit}, timeout=15)
@@ -141,7 +160,6 @@ def fetch_yahoo_series() -> pd.DataFrame:
         logger.warning("Yahoo macro failed")
         return pd.DataFrame()
 
-# ====================== FUNDING + OI (fallback) ======================
 def fetch_funding_rate_with_fallback() -> pd.DataFrame:
     logger.info("  ○ Funding rate: fallback")
     return pd.DataFrame(columns=["date", "fundingRate"])
@@ -149,7 +167,7 @@ def fetch_funding_rate_with_fallback() -> pd.DataFrame:
 def fetch_open_interest_with_fallback() -> Optional[float]:
     return None
 
-# ====================== MAIN ======================
+# ====================== MAIN PIPELINE ======================
 def fetch_all_data() -> dict:
     logger.info("Fetching data from all sources...")
     result = {
@@ -166,7 +184,8 @@ def fetch_all_data() -> dict:
     logger.info("  [1/9] BTC price (Yahoo Finance)...")
     price_df = fetch_btc_price_yahoo()
     if price_df.empty:
-        price_df = fetch_btc_price_coingecko()  # если есть функция
+        logger.info("  → Trying CoinGecko fallback...")
+        price_df = fetch_btc_price_coingecko()
     if not price_df.empty:
         last_price = safe_last_price(price_df)
         result["price"] = price_df
@@ -194,7 +213,6 @@ def fetch_all_data() -> dict:
     r = result["rsi"]["btc"]
     if r["source"] == "yfinance":
         sources_ok += 1
-        logger.info(f"  ✓ RSI: 1D={r['rsi_1d']:.1f} | 2H={r['rsi_2h']:.1f} (yfinance)")
 
     # 8. Yahoo Macro
     logger.info("  [8/9] Yahoo macro...")
@@ -208,3 +226,8 @@ def fetch_all_data() -> dict:
 
     logger.info(f"DATA PIPELINE COMPLETE — {sources_ok}/9 sources OK ({result['quality']['completeness']:.0%})")
     return result
+
+
+if __name__ == "__main__":
+    data = fetch_all_data()
+    print("✅ Pipeline test OK")
