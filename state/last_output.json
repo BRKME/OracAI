@@ -1,32 +1,31 @@
 {
   "risk": {
-    "risk_level": -0.7423,
+    "risk_level": -0.7441,
     "risk_state": "RISK_OFF",
     "strength": "extreme",
     "risk_exposure_cap": 0.1,
     "confidence_gated": false,
     "reasons": [
-      "TRANSITION dominant",
       "BEAR pressure"
     ]
   },
   "regime": "BEAR",
   "probabilities": {
-    "BULL": 0.0639,
-    "BEAR": 0.5201,
-    "RANGE": 0.0648,
-    "TRANSITION": 0.3512
+    "BULL": 0.061,
+    "BEAR": 0.5462,
+    "RANGE": 0.0653,
+    "TRANSITION": 0.3275
   },
   "confidence": {
-    "base": 0.2349,
-    "quality_adjusted": 0.1312,
+    "base": 0.2463,
+    "quality_adjusted": 0.1376,
     "churn_penalty": 1.0,
     "switches_30d": 0
   },
   "buckets": {
     "Momentum": -0.792,
     "Stability": -0.129,
-    "Rotation": 0.8049,
+    "Rotation": 0.5251,
     "Sentiment": -0.3156,
     "Macro": 0.0
   },
@@ -44,8 +43,8 @@
       "depth_z": 0.0
     },
     "rotation": {
-      "velocity_z": 1.8901483544022661,
-      "accel_z": -0.8229748679773097
+      "velocity_z": 1.73322082138717,
+      "accel_z": -1.2870778411706352
     },
     "sentiment": {
       "fg_score": -1.0,
@@ -54,7 +53,7 @@
       "fg_raw": 14
     },
     "macro": {
-      "dollar_signal": -2.300271517965826,
+      "dollar_signal": -2.2629121040223823,
       "rate_signal": null,
       "yc_z": null,
       "m2_z": null
@@ -62,27 +61,27 @@
   },
   "cross_asset": {
     "corr_BTC_SPX": -0.224,
-    "corr_BTC_Gold": -0.098,
+    "corr_BTC_Gold": -0.096,
     "macro_weight_boost": 1.0
   },
   "bucket_health": {
     "effective_dimensionality": 4,
     "pairwise_correlations": {
-      "Momentum/Stability": 0.527,
-      "Momentum/Rotation": 0.165,
-      "Momentum/Sentiment": -0.149,
+      "Momentum/Stability": 0.494,
+      "Momentum/Rotation": 0.16,
+      "Momentum/Sentiment": -0.147,
       "Momentum/Macro": -0.541,
-      "Stability/Rotation": 0.333,
-      "Stability/Sentiment": 0.125,
-      "Stability/Macro": -0.482,
-      "Rotation/Sentiment": 0.393,
-      "Rotation/Macro": -0.196,
-      "Sentiment/Macro": -0.221
+      "Stability/Rotation": 0.351,
+      "Stability/Sentiment": 0.105,
+      "Stability/Macro": -0.464,
+      "Rotation/Sentiment": 0.383,
+      "Rotation/Macro": -0.195,
+      "Sentiment/Macro": -0.22
     },
     "flags": [
-      "ANOMALOUS_CORR_Momentum_Stability: 0.53",
+      "ANOMALOUS_CORR_Momentum_Stability: 0.49",
       "ANOMALOUS_CORR_Momentum_Macro: -0.54",
-      "ANOMALOUS_CORR_Stability_Macro: -0.48"
+      "ANOMALOUS_CORR_Stability_Macro: -0.46"
     ]
   },
   "regime_dynamics": {
@@ -123,9 +122,9 @@
   "risk_flags": [
     "DATA_QUALITY_DEGRADED",
     "MACRO_DATA_INSUFFICIENT",
-    "ANOMALOUS_CORR_Momentum_Stability: 0.53",
+    "ANOMALOUS_CORR_Momentum_Stability: 0.49",
     "ANOMALOUS_CORR_Momentum_Macro: -0.54",
-    "ANOMALOUS_CORR_Stability_Macro: -0.48",
+    "ANOMALOUS_CORR_Stability_Macro: -0.46",
     "TRANSITION_STICKY: self-transition=0.93"
   ],
   "normalization": {
@@ -135,13 +134,13 @@
   },
   "metadata": {
     "model_version": "3.3",
-    "days_in_regime": 44,
+    "days_in_regime": 45,
     "temperature": 1.0,
     "smoothing_alpha": 0.2,
     "vol_z": 0.3224,
     "data_completeness": 0.44,
     "failed_sources": [],
-    "timestamp": "2026-03-03T18:33:16.506463",
+    "timestamp": "2026-03-03T18:37:29.259124",
     "btc_price": 65884.0,
     "eth_price": null,
     "returns_30d": -0.3815,
@@ -157,7 +156,7 @@
     "risk_lp": -0.26,
     "risk_quadrant": "Q4",
     "fee_variance_ratio": 0.42,
-    "uncertainty_value": 0.77,
+    "uncertainty_value": 0.76,
     "trend_persistence": 0.631,
     "vol_structure": "LOW_VOL",
     "max_exposure": 0.0,
@@ -177,7 +176,7 @@
     "btc": {
       "action": "STRONG_SELL",
       "size_pct": -0.3,
-      "confidence": 0.1312,
+      "confidence": 0.1376,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
@@ -188,7 +187,7 @@
     "eth": {
       "action": "STRONG_SELL",
       "size_pct": -0.5,
-      "confidence": 0.1312,
+      "confidence": 0.1376,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
