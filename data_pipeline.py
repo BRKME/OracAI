@@ -1,5 +1,5 @@
 """
-Data Pipeline v3.9 — CTO + QA Approved (стабильная версия для GitHub Actions)
+Data Pipeline v4.0 — CTO + QA Approved (финальная стабильная версия)
 """
 
 import os
@@ -32,7 +32,7 @@ def fetch_yahoo_klines(symbol: str = "BTC-USD", period: str = "90d", interval: s
             return []
         return data["Close"].dropna().astype(float).tolist()
     except Exception as e:
-        logger.warning(f"yfinance klines failed: {e}")
+        logger.warning(f"yfinance klines {interval} failed: {e}")
         return []
 
 def fetch_btc_price_yahoo(period: str = "1y") -> pd.DataFrame:
@@ -41,8 +41,9 @@ def fetch_btc_price_yahoo(period: str = "1y") -> pd.DataFrame:
         if data.empty:
             return pd.DataFrame()
 
+        # Фикс MultiIndex (CTO fix)
         if isinstance(data.columns, pd.MultiIndex):
-            data = data.xs('Close', axis=1, level=0, drop_level=True).to_frame("close")
+            data = data.xs('Close', axis=1, level=0, drop_level=True).to_frame(name="close")
 
         df = data.reset_index()
         df = df.rename(columns={"Date": "date", "Open": "open", "High": "high",
@@ -92,7 +93,7 @@ def fetch_coingecko_global() -> dict:
     except:
         return {"total_market_cap_usd": None, "btc_dominance": None, "eth_price": None}
 
-# ====================== RSI (реальный) ======================
+# ====================== RSI (реальный через 1h) ======================
 def calculate_rsi(closes: List, period: int = 14) -> float:
     if not isinstance(closes, (list, tuple)) or len(closes) < period + 5:
         return 50.0
@@ -121,7 +122,7 @@ def fetch_rsi_with_fallback() -> dict:
             result["btc"]["rsi_1d_7"] = calculate_rsi(closes_1d, 7)
             result["btc"]["source"] = "yfinance"
 
-        closes_2h = fetch_yahoo_klines("BTC-USD", "14d", "2h")
+        closes_2h = fetch_yahoo_klines("BTC-USD", "14d", "1h")  # ← исправлено на 1h
         if len(closes_2h) >= 20:
             result["btc"]["rsi_2h"] = calculate_rsi(closes_2h, 14)
             logger.info(f"  ✓ RSI: 1D={result['btc']['rsi_1d']:.1f} | 2H={result['btc']['rsi_2h']:.1f} (yfinance)")
