@@ -361,9 +361,200 @@ class SourceMetrics:
 
 # ====================== РЕАЛЬНЫЕ ИСТОЧНИКИ ДАННЫХ ======================
 
-# (YahooPriceSource, CoinGeckoPriceSource и DataPipeline без изменений)
+class DataSource(abc.ABC):
+    """Абстрактный источник данных"""
+    
+    def __init__(self, name: str, source_type: SourceType, network: AsyncNetworkClient):
+        self.name = name
+        self.source_type = source_type
+        self.network = network
+    
+    @abc.abstractmethod
+    async def fetch(self, **kwargs) -> Result:
+        pass
 
-# ====================== ПУБЛИЧНЫЙ API (STABLE CONTRACT) ======================
+class YahooPriceSource(DataSource):
+    """Yahoo Finance источник цен"""
+    
+    def __init__(self, network: AsyncNetworkClient):
+        super().__init__("yahoo_price", SourceType.YAHOO, network)
+    
+    async def fetch(self, symbol: str = "BTC-USD", period: str = "1y") -> Result[PriceData]:
+        try:
+            data = await self.network.run_sync(
+                yf.download,
+                symbol,
+                period=period,
+                progress=False,
+                auto_adjust=True
+            )
+            
+            if data.empty:
+                return Result.fail("Empty response", self.source_type)
+            
+            if isinstance(data.columns, pd.MultiIndex):
+                if "Close" in data.columns.get_level_values(0):
+                    close_series = data["Close"]
+                else:
+                    close_series = data.iloc[:, 0]
+            elif isinstance(data, pd.DataFrame):
+                close_series = data["Close"] if "Close" in data.columns else data.iloc[:, 0]
+            else:
+                close_series = data
+            
+            dates = pd.to_datetime(close_series.index).date.tolist()
+            closes = close_series.values.tolist()
+            
+            price_data = PriceData(
+                dates=dates,
+                open=closes,
+                high=closes,
+                low=closes,
+                close=closes,
+                volume=[0.0] * len(closes),
+                source=self.source_type,
+                quality=DataQuality.DEGRADED,
+                fetch_timestamp=datetime.utcnow()
+            )
+            
+            return Result.ok(price_data, self.source_type)
+            
+        except Exception as e:
+            return Result.fail(f"{type(e).__name__}: {str(e)}", self.source_type)
+
+class CoinGeckoPriceSource(DataSource):
+    """CoinGecko источник цен"""
+    
+    def __init__(self, network: AsyncNetworkClient):
+        super().__init__("coingecko_price", SourceType.COINGECKO, network)
+        self.base_url = "https://api.coingecko.com/api/v3"
+    
+    async def fetch(self, coin: str = "bitcoin", days: int = 365) -> Result[PriceData]:
+        url = f"{self.base_url}/coins/{coin}/ohlc"
+        params = {"vs_currency": "usd", "days": min(days, 90)}
+        
+        response = await self.network.get(
+            self.name,
+            url,
+            self.source_type,
+            params=params
+        )
+        
+        if not response.success:
+            return Result.fail(response.error, self.source_type)
+        
+        try:
+            data = response.value.json()
+            if not isinstance(data, list) or not data:
+                return Result.fail("Invalid response format", self.source_type)
+            
+            df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close"])
+            df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.date
+            
+            if df["date"].duplicated().any():
+                df = df.groupby("date").agg({
+                    "open": "first",
+                    "high": "max",
+                    "low": "min",
+                    "close": "last"
+                }).reset_index()
+            
+            price_data = PriceData(
+                dates=df["date"].tolist(),
+                open=df["open"].tolist(),
+                high=df["high"].tolist(),
+                low=df["low"].tolist(),
+                close=df["close"].tolist(),
+                volume=[0.0] * len(df),
+                source=self.source_type,
+                quality=DataQuality.OK,
+                fetch_timestamp=datetime.utcnow()
+            )
+            
+            return Result.ok(price_data, self.source_type)
+            
+        except Exception as e:
+            return Result.fail(f"Parse error: {type(e).__name__}", self.source_type)
+
+# ====================== ОСНОВНОЙ ПАЙПЛАЙН ======================
+
+class DataPipeline:
+    """Production-grade пайплайн"""
+    
+    def __init__(self, config: Optional[PipelineConfig] = None):
+        self.config = config or PipelineConfig()
+        self.network = AsyncNetworkClient(self.config)
+        
+        self.sources: Dict[str, DataSource] = {}
+        
+        if "yahoo" in self.config.enabled_sources:
+            self.sources["price_yahoo"] = YahooPriceSource(self.network)
+        
+        if "coingecko" in self.config.enabled_sources:
+            self.sources["price_coingecko"] = CoinGeckoPriceSource(self.network)
+        
+        self.validator = TimeSeriesValidator()
+        self.logger = logging.getLogger(__name__)
+    
+    async def fetch_price(self) -> Result[PriceData]:
+        primary = self.config.primary_price_source
+        if primary == "yahoo" and "price_yahoo" in self.sources:
+            result = await self.sources["price_yahoo"].fetch()
+            if result.success:
+                return result
+            self.logger.warning(f"Primary source failed: {result.error}")
+        
+        fallback = self.config.fallback_price_source
+        if fallback == "coingecko" and "price_coingecko" in self.sources:
+            result = await self.sources["price_coingecko"].fetch()
+            if result.success:
+                return Result.ok(result.value, SourceType.FALLBACK)
+        
+        return Result.fail("All price sources failed")
+    
+    async def run(self) -> PipelineResult:
+        start_time = time.time()
+        self.logger.info(f"Starting pipeline v{PIPELINE_VERSION}")
+        
+        result = PipelineResult(
+            quality_score=0.0,
+            config_snapshot=self.config.model_dump()
+        )
+        
+        price_result = await self.fetch_price()
+        if price_result.success:
+            warnings = self.validator.validate_dates(
+                price_result.value.dates,
+                self.config
+            )
+            price_result.value.warnings.extend(warnings)
+            
+            result.price = price_result.value
+            result.sources_ok.append(f"price:{price_result.source.value}")
+            result.warnings.extend([f"price:{w}" for w in warnings])
+        else:
+            result.sources_failed.append("price")
+            result.errors.append(f"price:{price_result.error}")
+        
+        total_sources = len(self.config.enabled_sources) + 2
+        result.quality_score = len(result.sources_ok) / total_sources if total_sources > 0 else 0.0
+        
+        result.execution_time_ms = int((time.time() - start_time) * 1000)
+        
+        for name, metrics in self.network.metrics.items():
+            self.logger.info(f"Source {name}: {metrics.to_dict()}")
+        
+        self.logger.info(
+            f"Pipeline complete: quality={result.quality_score:.1%}, "
+            f"time={result.execution_time_ms}ms"
+        )
+        
+        return result
+    
+    async def close(self):
+        await self.network.close()
+
+# ====================== ПУБЛИЧНЫЙ API ======================
 
 async def _run_pipeline_async(config: Optional[PipelineConfig] = None) -> Dict[str, Any]:
     """Внутренний async запуск пайплайна"""
@@ -381,3 +572,21 @@ def fetch_all_data(config: Optional[PipelineConfig] = None) -> Dict[str, Any]:
     Стабильный контракт для main.py.
     """
     return asyncio.run(_run_pipeline_async(config))
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+    )
+    
+    config = PipelineConfig(
+        timeout_seconds=15,
+        max_retries=3,
+        enabled_sources=["yahoo", "coingecko"],
+        primary_price_source="yahoo",
+        fallback_price_source="coingecko"
+    )
+    
+    result = fetch_all_data(config)
+    print(json.dumps(result, indent=2, default=str))
