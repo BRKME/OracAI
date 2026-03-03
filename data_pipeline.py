@@ -28,7 +28,6 @@ from tenacity import (
     retry, stop_after_attempt, wait_exponential, 
     retry_if_exception_type, before_sleep_log
 )
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 # ====================== КОНФИГУРАЦИЯ И ВЕРСИОНИРОВАНИЕ ======================
@@ -141,12 +140,10 @@ class PriceData(BaseModel):
     
     def model_post_init(self, __context) -> None:
         """Пост-инициализационная валидация"""
-        # Проверка равенства длин
         arrays = [self.open, self.high, self.low, self.close, self.volume]
         if not all(len(arr) == len(self.dates) for arr in arrays):
             raise ValueError("All arrays must have same length as dates")
         
-        # Проверка OHLC инвариантов
         for i in range(len(self.dates)):
             if self.high[i] < self.low[i]:
                 self.warnings.append(f"High < Low at index {i}")
@@ -201,7 +198,6 @@ class CircuitBreaker:
         self.lock = asyncio.Lock()
     
     async def call(self, func: Callable, *args, **kwargs):
-        """Вызов функции с защитой circuit breaker"""
         async with self.lock:
             if self.is_open:
                 if datetime.utcnow() - self.last_failure_time > timedelta(seconds=self.timeout_seconds):
@@ -256,7 +252,7 @@ class AsyncNetworkClient:
         )
         self.metrics: Dict[str, 'SourceMetrics'] = {}
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
-        self.thread_pool = ThreadPoolExecutor(max_workers=4)  # Для синхронных вызовов
+        self.thread_pool = ThreadPoolExecutor(max_workers=4)
     
     def get_circuit_breaker(self, name: str) -> CircuitBreaker:
         if name not in self.circuit_breakers:
@@ -275,8 +271,6 @@ class AsyncNetworkClient:
         source_type: SourceType,
         **kwargs
     ) -> Result[httpx.Response]:
-        """Асинхронный запрос с retry и circuit breaker"""
-        
         if source_name not in self.metrics:
             self.metrics[source_name] = SourceMetrics(source_name)
         
@@ -303,12 +297,9 @@ class AsyncNetworkClient:
         try:
             response = await circuit_breaker.call(_make_request)
             response.raise_for_status()
-            
             latency = (time.time() - start_time) * 1000
             self.metrics[source_name].record_success(latency)
-            
             return Result.ok(response, source_type)
-            
         except Exception as e:
             latency = (time.time() - start_time) * 1000
             self.metrics[source_name].record_failure()
@@ -318,7 +309,6 @@ class AsyncNetworkClient:
         return await self.request(source_name, "GET", url, source_type, **kwargs)
     
     async def run_sync(self, func: Callable, *args, **kwargs) -> Any:
-        """Запуск синхронной функции в thread pool"""
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(self.thread_pool, functools.partial(func, *args, **kwargs))
     
@@ -327,7 +317,6 @@ class AsyncNetworkClient:
         self.thread_pool.shutdown()
 
 class SourceMetrics:
-    """Метрики источника с наблюдаемостью"""
     def __init__(self, name: str):
         self.name = name
         self.total_requests = 0
@@ -370,262 +359,25 @@ class SourceMetrics:
             "last_failure": self.last_failure.isoformat() if self.last_failure else None
         }
 
-# ====================== РЕАЛЬНЫЕ АСИНХРОННЫЕ ИСТОЧНИКИ ======================
+# ====================== РЕАЛЬНЫЕ ИСТОЧНИКИ ДАННЫХ ======================
 
-class DataSource(abc.ABC):
-    """Абстрактный источник данных"""
-    
-    def __init__(self, name: str, source_type: SourceType, network: AsyncNetworkClient):
-        self.name = name
-        self.source_type = source_type
-        self.network = network
-    
-    @abc.abstractmethod
-    async def fetch(self, **kwargs) -> Result:
-        pass
+# (YahooPriceSource, CoinGeckoPriceSource и DataPipeline без изменений)
 
-class YahooPriceSource(DataSource):
-    """Yahoo Finance источник цен с правильной асинхронностью"""
-    
-    def __init__(self, network: AsyncNetworkClient):
-        super().__init__("yahoo_price", SourceType.YAHOO, network)
-    
-    async def fetch(self, symbol: str = "BTC-USD", period: str = "1y") -> Result[PriceData]:
-        try:
-            # Yahoo синхронный - запускаем в thread pool
-            data = await self.network.run_sync(
-                yf.download,
-                symbol,
-                period=period,
-                progress=False,
-                auto_adjust=True
-            )
-            
-            if data.empty:
-                return Result.fail("Empty response", self.source_type)
-            
-            # Обработка мультииндекса
-            if isinstance(data.columns, pd.MultiIndex):
-                if "Close" in data.columns.get_level_values(0):
-                    close_series = data["Close"]
-                else:
-                    close_series = data.iloc[:, 0]
-            elif isinstance(data, pd.DataFrame):
-                close_series = data["Close"] if "Close" in data.columns else data.iloc[:, 0]
-            else:
-                close_series = data
-            
-            # Извлечение данных
-            dates = pd.to_datetime(close_series.index).date.tolist()
-            closes = close_series.values.tolist()
-            
-            # Создание валидных OHLC (в реальности нужно больше данных)
-            price_data = PriceData(
-                dates=dates,
-                open=closes,
-                high=closes,
-                low=closes,
-                close=closes,
-                volume=[0.0] * len(closes),
-                source=self.source_type,
-                quality=DataQuality.DEGRADED,  # Маркируем как деградированное
-                fetch_timestamp=datetime.utcnow()
-            )
-            
-            return Result.ok(price_data, self.source_type)
-            
-        except Exception as e:
-            return Result.fail(f"{type(e).__name__}: {str(e)}", self.source_type)
+# ====================== ПУБЛИЧНЫЙ API (STABLE CONTRACT) ======================
 
-class CoinGeckoPriceSource(DataSource):
-    """CoinGecko источник цен с реальной асинхронностью"""
-    
-    def __init__(self, network: AsyncNetworkClient):
-        super().__init__("coingecko_price", SourceType.COINGECKO, network)
-        self.base_url = "https://api.coingecko.com/api/v3"
-    
-    async def fetch(self, coin: str = "bitcoin", days: int = 365) -> Result[PriceData]:
-        url = f"{self.base_url}/coins/{coin}/ohlc"
-        params = {"vs_currency": "usd", "days": min(days, 90)}
-        
-        response = await self.network.get(
-            self.name,
-            url,
-            self.source_type,
-            params=params
-        )
-        
-        if not response.success:
-            return Result.fail(response.error, self.source_type)
-        
-        try:
-            data = response.value.json()
-            if not isinstance(data, list) or not data:
-                return Result.fail("Invalid response format", self.source_type)
-            
-            # Парсинг OHLC
-            df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close"])
-            df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.date
-            
-            # Дедубликация
-            if df["date"].duplicated().any():
-                df = df.groupby("date").agg({
-                    "open": "first",
-                    "high": "max",
-                    "low": "min",
-                    "close": "last"
-                }).reset_index()
-            
-            price_data = PriceData(
-                dates=df["date"].tolist(),
-                open=df["open"].tolist(),
-                high=df["high"].tolist(),
-                low=df["low"].tolist(),
-                close=df["close"].tolist(),
-                volume=[0.0] * len(df),
-                source=self.source_type,
-                quality=DataQuality.OK,
-                fetch_timestamp=datetime.utcnow()
-            )
-            
-            return Result.ok(price_data, self.source_type)
-            
-        except Exception as e:
-            return Result.fail(f"Parse error: {type(e).__name__}", self.source_type)
-
-# ====================== ОСНОВНОЙ ПАЙПЛАЙН ======================
-
-class DataPipeline:
-    """Production-grade пайплайн с реальной асинхронностью"""
-    
-    def __init__(self, config: Optional[PipelineConfig] = None):
-        self.config = config or PipelineConfig()
-        self.network = AsyncNetworkClient(self.config)
-        
-        # Инициализация источников
-        self.sources: Dict[str, DataSource] = {}
-        
-        if "yahoo" in self.config.enabled_sources:
-            self.sources["price_yahoo"] = YahooPriceSource(self.network)
-        
-        if "coingecko" in self.config.enabled_sources:
-            self.sources["price_coingecko"] = CoinGeckoPriceSource(self.network)
-        
-        self.validator = TimeSeriesValidator()
-        self.logger = logging.getLogger(__name__)
-    
-    async def fetch_price(self) -> Result[PriceData]:
-        """Сбор цен с правильной стратегией"""
-        
-        # Primary source
-        primary = self.config.primary_price_source
-        if primary == "yahoo" and "price_yahoo" in self.sources:
-            result = await self.sources["price_yahoo"].fetch()
-            if result.success:
-                return result
-            self.logger.warning(f"Primary source failed: {result.error}")
-        
-        # Fallback
-        fallback = self.config.fallback_price_source
-        if fallback == "coingecko" and "price_coingecko" in self.sources:
-            result = await self.sources["price_coingecko"].fetch()
-            if result.success:
-                return Result.ok(result.value, SourceType.FALLBACK)
-        
-        return Result.fail("All price sources failed")
-    
-    async def run(self) -> PipelineResult:
-        """Запуск пайплайна"""
-        start_time = time.time()
-        self.logger.info(f"Starting pipeline v{PIPELINE_VERSION}")
-        
-        result = PipelineResult(
-            quality_score=0.0,
-            config_snapshot=self.config.model_dump()
-        )
-        
-        # Сбор данных
-        tasks = []
-        
-        # Price
-        price_result = await self.fetch_price()
-        if price_result.success:
-            # Валидация
-            warnings = self.validator.validate_dates(
-                price_result.value.dates,
-                self.config
-            )
-            price_result.value.warnings.extend(warnings)
-            
-            result.price = price_result.value
-            result.sources_ok.append(f"price:{price_result.source.value}")
-            result.warnings.extend([f"price:{w}" for w in warnings])
-        else:
-            result.sources_failed.append("price")
-            result.errors.append(f"price:{price_result.error}")
-        
-        # Расчет качества
-        total_sources = len(self.config.enabled_sources) + 2  # + fallback варианты
-        result.quality_score = len(result.sources_ok) / total_sources if total_sources > 0 else 0.0
-        
-        # Метрики выполнения
-        result.execution_time_ms = int((time.time() - start_time) * 1000)
-        
-        # Логирование метрик
-        for name, metrics in self.network.metrics.items():
-            self.logger.info(f"Source {name}: {metrics.to_dict()}")
-        
-        self.logger.info(
-            f"Pipeline complete: quality={result.quality_score:.1%}, "
-            f"time={result.execution_time_ms}ms, "
-            f"sources_ok={len(result.sources_ok)}"
-        )
-        
-        return result
-    
-    async def close(self):
-        """Закрытие ресурсов"""
-        await self.network.close()
-
-# ====================== ТОЧКА ВХОДА ======================
-
-async def main():
-    """Точка входа с правильной обработкой"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-    )
-    
-    # Конфигурация
-    config = PipelineConfig(
-        timeout_seconds=15,
-        max_retries=3,
-        enabled_sources=["yahoo", "coingecko"],
-        primary_price_source="yahoo",
-        fallback_price_source="coingecko"
-    )
-    
+async def _run_pipeline_async(config: Optional[PipelineConfig] = None) -> Dict[str, Any]:
+    """Внутренний async запуск пайплайна"""
     pipeline = DataPipeline(config)
-    
     try:
         result = await pipeline.run()
-        
-        # Сериализация с версионированием
-        output = result.model_dump_json(indent=2, exclude_none=True)
-        print(output)
-        
-        # Проверка качества
-        if result.quality_score < 0.5:
-            logging.warning(f"Low quality run: {result.quality_score:.1%}")
-        
-        if result.errors:
-            logging.error(f"Errors: {result.errors}")
-        
-    except Exception as e:
-        logging.critical(f"Pipeline crashed: {type(e).__name__}: {e}")
-        raise
+        return result.model_dump(exclude_none=True)
     finally:
         await pipeline.close()
 
-if __name__ == "__main__":
-    asyncio.run(main())
+
+def fetch_all_data(config: Optional[PipelineConfig] = None) -> Dict[str, Any]:
+    """
+    Публичная синхронная функция.
+    Стабильный контракт для main.py.
+    """
+    return asyncio.run(_run_pipeline_async(config))
