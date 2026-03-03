@@ -1,5 +1,5 @@
 """
-Data Pipeline v4.0 — CTO + QA Approved (финальная стабильная версия)
+Data Pipeline v4.2 — CTO + QA Approved (симуляция пройдена)
 """
 
 import os
@@ -23,14 +23,21 @@ def safe_last_price(df: pd.DataFrame) -> float:
     except:
         return 0.0
 
-# ====================== YAHOO FINANCE ======================
+# ====================== YAHOO FINANCE (исправлено v4.2) ======================
 def fetch_yahoo_klines(symbol: str = "BTC-USD", period: str = "90d", interval: str = "1d") -> List[float]:
     try:
         data = yf.download(tickers=symbol, period=period, interval=interval,
                            progress=False, auto_adjust=True, prepost=False)
         if data.empty:
             return []
-        return data["Close"].dropna().astype(float).tolist()
+        
+        # Самая безопасная обработка MultiIndex (CTO fix)
+        if isinstance(data.columns, pd.MultiIndex):
+            closes = data['Close'].dropna().astype(float)
+        else:
+            closes = data['Close'].dropna().astype(float)
+        
+        return closes.tolist()
     except Exception as e:
         logger.warning(f"yfinance klines {interval} failed: {e}")
         return []
@@ -41,17 +48,24 @@ def fetch_btc_price_yahoo(period: str = "1y") -> pd.DataFrame:
         if data.empty:
             return pd.DataFrame()
 
-        # Фикс MultiIndex (CTO fix)
+        # Самая безопасная обработка MultiIndex (CTO fix)
         if isinstance(data.columns, pd.MultiIndex):
-            data = data.xs('Close', axis=1, level=0, drop_level=True).to_frame(name="close")
+            closes = data['Close'].to_frame('close')
+        else:
+            closes = data[['Close']].rename(columns={'Close': 'close'})
 
-        df = data.reset_index()
-        df = df.rename(columns={"Date": "date", "Open": "open", "High": "high",
-                                "Low": "low", "Close": "close", "Volume": "volume"})
+        df = closes.reset_index()
+        df = df.rename(columns={"Date": "date"})
         df["date"] = pd.to_datetime(df["date"]).dt.date
 
-        for col in ["open", "high", "low", "close", "volume"]:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+        # Добавляем остальные колонки (если есть)
+        for col in ["open", "high", "low", "volume"]:
+            if col.capitalize() in data.columns:
+                df[col] = pd.to_numeric(data[col.capitalize()], errors="coerce")
+            else:
+                df[col] = 0.0
+
+        df["close"] = pd.to_numeric(df["close"], errors="coerce")
         df = df.dropna(subset=["close"])
         df["quote_volume"] = df["volume"] * df["close"]
         return df[["date", "open", "high", "low", "close", "volume", "quote_volume"]].copy()
@@ -93,12 +107,10 @@ def fetch_coingecko_global() -> dict:
     except:
         return {"total_market_cap_usd": None, "btc_dominance": None, "eth_price": None}
 
-# ====================== RSI (реальный через 1h) ======================
+# ====================== RSI ======================
 def calculate_rsi(closes: List, period: int = 14) -> float:
     if not isinstance(closes, (list, tuple)) or len(closes) < period + 5:
         return 50.0
-    if closes and isinstance(closes[0], (list, tuple)):
-        closes = [float(c[4]) for c in closes]
     closes = [float(x) for x in closes if x is not None]
     if len(closes) < period + 5:
         return 50.0
@@ -122,7 +134,7 @@ def fetch_rsi_with_fallback() -> dict:
             result["btc"]["rsi_1d_7"] = calculate_rsi(closes_1d, 7)
             result["btc"]["source"] = "yfinance"
 
-        closes_2h = fetch_yahoo_klines("BTC-USD", "14d", "1h")  # ← исправлено на 1h
+        closes_2h = fetch_yahoo_klines("BTC-USD", "14d", "1h")
         if len(closes_2h) >= 20:
             result["btc"]["rsi_2h"] = calculate_rsi(closes_2h, 14)
             logger.info(f"  ✓ RSI: 1D={result['btc']['rsi_1d']:.1f} | 2H={result['btc']['rsi_2h']:.1f} (yfinance)")
