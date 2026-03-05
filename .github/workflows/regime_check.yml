@@ -3,7 +3,7 @@ name: Regime Check
 on:
   schedule:
     # 06:00 MSK (03:30 UTC) - за 30 мин до LP
-    - cron: '0 3 * * *'
+    - cron: '0 2 * * *'
     # 18:00 MSK (15:30 UTC) - за 30 мин до LP
     - cron: '0 15 * * *'
   workflow_dispatch:
