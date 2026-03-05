@@ -3,7 +3,7 @@ name: LP Intelligence System
 on:
   schedule:
     # 6:30 MSK (04:00 UTC)
-    - cron: '30 3 * * *'
+    - cron: '0 3 * * *'
     # 18:30 MSK (16:00 UTC)
     - cron: '30 14 * * *'
   
