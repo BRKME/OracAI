@@ -372,18 +372,20 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     if lp_policy:
         lines.append("🔘 LP:")
         
-        # LP recommendation
-        if lp_policy.recommendation:
-            lines.append(lp_policy.recommendation)
+        # LP regime and quadrant
+        lp_regime_str = str(lp_policy.lp_regime.value) if hasattr(lp_policy.lp_regime, 'value') else str(lp_policy.lp_regime)
+        quadrant_str = str(lp_policy.risk_quadrant.value) if hasattr(lp_policy.risk_quadrant, 'value') else str(lp_policy.risk_quadrant)
+        lines.append(f"{lp_regime_str} ({quadrant_str})")
         
         # Exposure
         eff_exp = int(lp_policy.effective_exposure * 100)
-        range_str = "wide" if lp_policy.range_width == "wide" else "narrow" if lp_policy.range_width == "narrow" else "medium"
-        lines.append(f"Exposure: {eff_exp}% | Range: {range_str}")
+        max_exp = int(lp_policy.max_exposure * 100)
+        range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
+        lines.append(f"Exposure: {eff_exp}% (max {max_exp}%) | Range: {range_str}")
         
         # Fees vs IL
-        if hasattr(lp_policy, 'fee_to_variance_ratio'):
-            fv = lp_policy.fee_to_variance_ratio
+        if hasattr(lp_policy, 'fee_variance_ratio'):
+            fv = lp_policy.fee_variance_ratio
             fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
             lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
         
@@ -391,9 +393,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         hedge_str = "REQUIRED" if lp_policy.hedge_recommended else "optional"
         lines.append(f"Hedge: {hedge_str}")
         
-        # Comment
-        if lp_policy.comment:
-            lines.append(f"→ {lp_policy.comment}")
+        # Signals as comment
+        if hasattr(lp_policy, 'signals') and lp_policy.signals:
+            lines.append(f"→ {lp_policy.signals[0]}")
         
         lines.append("")
     
