@@ -1,4 +1,4 @@
-# 📊 Market Regime Engine v4.3
+# 📊 Market Regime Engine v4.5
 
 Probabilistic crypto market regime detection with LP intelligence, asset allocation, and cycle-aware signals.
 
@@ -7,15 +7,36 @@ Probabilistic crypto market regime detection with LP intelligence, asset allocat
 | Component | Version | Status |
 |-----------|---------|--------|
 | Market Regime Engine | v3.4 | Production |
-| **SPOT Signal Policy** | **v4.3** | **Production** |
+| **SPOT Signal Policy** | **v4.5** | **Production** |
+| **RSI Integration** | **v1.0** | **Production** |
 | LP Intelligence | v2.0.2 | Production |
 | Asset Allocation | v1.4.1 | Production |
 
-## 🆕 What's New in v4.3
+## 🆕 What's New in v4.5
+
+### Multi-Timeframe RSI
+
+| RSI | Period | Purpose |
+|-----|--------|---------|
+| **rsi_1d** | Daily RSI-14 | Strategic |
+| **rsi_2h** | 2-hour RSI-14 | Tactical |
+| **rsi_1d_7** | Daily RSI-7 | Momentum |
+
+**API Chain (железный!):**
+```
+Binance SPOT → Bybit SPOT → Yahoo Finance
+```
+
+### RSI Impact on Cycle Position
+
+| RSI | Effect |
+|-----|--------|
+| ≤25 | Bottom +25% (oversold) |
+| ≤35 | Bottom +15% |
+| ≥65 | Top +15% |
+| ≥75 | Top +25% (overbought) |
 
 ### Cycle Position Modifier
-
-**Не продавать на дне. Не покупать на вершине.**
 
 | Situation | Action |
 |-----------|--------|
@@ -24,11 +45,12 @@ Probabilistic crypto market regime detection with LP intelligence, asset allocat
 | BUY + Top ≥50% | Dampen signal |
 | BUY + Top ≥70% | **Invert to SELL** |
 
+### Data Status Section
+
 ```
-Raw: SELL -30%
-× Confidence 11% = -3%
-× Cycle dampener 0.67 (63% bottom) = -2%
-→ HOLD (dampened)
+📡 DATA STATUS
+  ⚠️ RSI Daily недоступен
+  ℹ️ Нет: FRED
 ```
 
 ## Quick Start
@@ -52,7 +74,7 @@ python backtest.py
 📚 All documentation is in the `/docs` folder:
 
 ### Core
-- **[SPOT_SIGNAL_POLICY_v4.3.md](docs/SPOT_SIGNAL_POLICY_v4.3.md)** — SPOT Signal Policy (latest) ⭐
+- **[SPOT_SIGNAL_POLICY_v4.5.md](docs/SPOT_SIGNAL_POLICY_v4.5.md)** — SPOT Signal Policy with RSI (latest) ⭐
 - **[MARKET_REGIME_ENGINE_v3.4.md](docs/MARKET_REGIME_ENGINE_v3.4.md)** — Regime detection
 - **[ASSET_ALLOCATION_POLICY_v1.4.1.md](docs/ASSET_ALLOCATION_POLICY_v1.4.1.md)** — Asset allocation
 
@@ -80,14 +102,26 @@ python backtest.py
           ▼                ▼                ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
 │  SPOT SIGNAL    │ │  LP INTELLIGENCE │ │   TELEGRAM      │
-│    (v4.3)       │ │     (v2.0.2)     │ │    OUTPUT       │
+│    (v4.5)       │ │     (v2.0.2)     │ │    OUTPUT       │
 ├─────────────────┤ ├─────────────────┤ ├─────────────────┤
-│ • Cycle modifier│ │ • Vol decompose │ │ • Visual scales │
-│ • Don't sell    │ │ • Dual risk     │ │ • Probabilities │
-│   at bottom     │ │ • LP regimes    │ │ • Reasons       │
-│ • Conf adjust   │ │ • Fee/variance  │ │                 │
+│ • RSI 1D/2H     │ │ • Vol decompose │ │ • Visual scales │
+│ • Cycle modifier│ │ • Dual risk     │ │ • Probabilities │
+│ • Don't sell    │ │ • LP regimes    │ │ • Data status   │
+│   at bottom     │ │ • Fee/variance  │ │ • RSI display   │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
 ```
+
+## Data Sources
+
+| Data | Source | Auth | Priority |
+|------|--------|------|----------|
+| **RSI** | Binance SPOT → Bybit → Yahoo | None | Critical |
+| BTC price, volume | Yahoo Finance / Binance | None | Critical |
+| Fear & Greed | alternative.me | None | Critical |
+| Funding, OI | Binance/OKX/Bybit | None | Critical |
+| Market cap, BTC.D | CoinGecko | None | Important |
+| DXY, SPX, Gold | Yahoo Finance | None | Non-critical |
+| US Treasury, M2 | FRED | Free key | Non-critical |
 
 ## Key Features
 
@@ -122,7 +156,7 @@ Raw Signal → × Confidence → × Cycle Modifier → Threshold → Final Signa
 - Dual risk model (directional vs LP-specific)
 - 8 LP regimes with specific policies
 
-## Output Example (v4.3)
+## Output Example (v4.5)
 
 ```
 BULL ─── RANGE ─── TRANSITION ─── BEAR
@@ -156,16 +190,18 @@ NORMAL ─── ELEVATED ─── TAIL ─── CRISIS
 Phase: MID_BEAR ~ (conf: 11%)
 Cycle: [██░░░░░░░░] 25/100
 
-Bottom ░░░░▓▓▓▓▓▓ 63% ~
-Top    ░░░░░░░░▓▓ 20% ~
+RSI: 🟢 1D=28 | 2H=35→
+
+Bottom ░░░░▓▓▓▓▓▓ 75% ~
+Top    ░░░▓░░░░░░ 10% ~
 
 BTC: HOLD (dampened)
 ETH: HOLD (dampened)
 
 Reasons:
-  • ⚠️ SELL близко к дну (63%) — сигнал ослаблен
+  • ⚠️ SELL близко к дну (75%) — сигнал ослаблен
+  • 🟢 RSI oversold (28) — покупка выгоднее
   • Затяжной медвежий тренд
-  • Низкая уверенность модели (11%)
 
 🔵 LP: Good, but hedge needed
   Exposure: 40% | Range: wide
@@ -173,7 +209,10 @@ Reasons:
   Hedge: REQUIRED
   → LP профитабелен, но высокий направленный риск
 
-v4.3
+📡 DATA STATUS
+  ℹ️ Нет: FRED
+
+v4.5 · RSI:binance
 ```
 
 ## Backtest Results
@@ -203,17 +242,6 @@ Go to **Settings → Secrets and variables → Actions** and add:
 ### 3. Enable GitHub Actions
 
 The engine runs at **07:00 UTC** and **19:00 UTC** daily.
-
-## Data Sources (all free)
-
-| Data | Source | Auth |
-|------|--------|------|
-| BTC price, volume | Yahoo Finance / Binance | None |
-| Market cap, BTC.D | CoinGecko | None |
-| Fear & Greed | alternative.me | None |
-| Funding, OI | Binance | None |
-| DXY, SPX, Gold | Yahoo Finance | None |
-| US Treasury, M2 | FRED | Free key |
 
 ## License
 
