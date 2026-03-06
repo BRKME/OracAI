@@ -110,22 +110,25 @@ def generate_market_analysis(
 ) -> str:
     """
     Generate AI-style market analysis.
-    Summary comes FIRST, then detailed breakdown.
+    Simplified - no duplication between summary and details.
     """
     parts = []
-    details = []
     
-    # === Generate Summary (Резюме) FIRST ===
+    # === Generate Summary FIRST ===
     if regime == "BEAR" and prob_trans > 0.35:
         summary = "Рынок в медвежьей фазе, но близок к переходу. Осторожность с шортами."
     elif regime == "BEAR" and conf_pct < 20:
         summary = "Медвежий тренд с низкой уверенностью. Возможны резкие развороты."
+    elif regime == "BEAR":
+        summary = f"Медвежий тренд. Давление вниз ({abs(dir_value):.2f})."
     elif regime == "BULL" and conf_pct > 50:
         summary = "Устойчивый бычий тренд. Работаем по тренду."
     elif regime == "BULL" and conf_pct < 30:
         summary = "Бычий тренд с низкой уверенностью. Возможны коррекции."
+    elif regime == "BULL":
+        summary = f"Бычий тренд. Давление вверх ({abs(dir_value):.2f})."
     elif regime == "TRANSITION":
-        summary = "Неопределённость. Ждём подтверждения направления."
+        summary = "Переходная фаза. Ждём подтверждения направления."
     elif regime == "RANGE":
         summary = "Боковик. Торгуем от границ диапазона."
     else:
@@ -133,21 +136,7 @@ def generate_market_analysis(
     
     parts.append(summary)
     
-    # === Details ===
-    
-    # Текущий вектор
-    if regime == "BEAR":
-        vector = f"Текущий вектор: Давление вниз ({abs(dir_value):.2f}), фаза BEAR активна."
-    elif regime == "BULL":
-        vector = f"Текущий вектор: Давление вверх ({abs(dir_value):.2f}), фаза BULL активна."
-    elif regime == "TRANSITION":
-        vector = "Текущий вектор: Переходная фаза, направление не определено."
-    else:
-        vector = "Текущий вектор: Боковое движение в диапазоне."
-    
-    details.append(vector)
-    
-    # Ключевое противоречие
+    # === Ключевое противоречие (only if exists) ===
     sorted_probs = sorted([
         ("BEAR", prob_bear),
         ("TRANSITION", prob_trans),
@@ -161,33 +150,25 @@ def generate_market_analysis(
     if abs(top1_prob - top2_prob) < 0.15 and top1_prob > 0.3 and top2_prob > 0.3:
         if "TRANSITION" in [top1, top2] and "BEAR" in [top1, top2]:
             conflict = (
-                f"Ключевое противоречие: Высокий процент TRANSITION ({int(prob_trans*100)}%) говорит о том, "
-                f"что нисходящая структура (BEAR {int(prob_bear*100)}%) нарушена или исчерпала себя. "
-                f"Рынок пытается развернуться, но продавцы всё ещё сильны (Dir: {abs(dir_value):.2f})."
+                f"Конфликт: TRANSITION ({int(prob_trans*100)}%) vs BEAR ({int(prob_bear*100)}%) — "
+                f"структура нарушена, но продавцы ещё сильны."
             )
-            details.append(conflict)
+            parts.append(conflict)
         elif "TRANSITION" in [top1, top2] and "BULL" in [top1, top2]:
             conflict = (
-                f"Ключевое противоречие: Конфликт BULL ({int(prob_bull*100)}%) и TRANSITION ({int(prob_trans*100)}%) "
-                f"указывает на неустойчивость роста. Возможна фиксация прибыли."
+                f"Конфликт: BULL ({int(prob_bull*100)}%) vs TRANSITION ({int(prob_trans*100)}%) — "
+                f"рост неустойчив, возможна коррекция."
             )
-            details.append(conflict)
+            parts.append(conflict)
     
     if struct_break:
-        details.append("Структура: BREAK — слом рыночной структуры, возможен разворот или ускорение.")
+        parts.append("Структура: BREAK — слом, возможен разворот или ускорение.")
     
-    # Низкая уверенность
+    # === Низкая уверенность ===
     if conf_pct < 25:
-        conf_text = (
-            f"Уверенность: Низкая уверенность модели ({conf_pct}%) означает, что любая из фаз "
-            f"может реализоваться с равной вероятностью, но движение будет резким."
-        )
-        details.append(conf_text)
+        parts.append(f"Уверенность: {conf_pct}% — высокая вероятность резких движений.")
     elif conf_pct < 40:
-        details.append(f"Уверенность: Умеренно низкая ({conf_pct}%), повышенная вероятность ложных сигналов.")
-    
-    # Combine: summary first, then details
-    parts.extend(details)
+        parts.append(f"Уверенность: {conf_pct}% — повышенный риск ложных сигналов.")
     
     return "\n".join(parts)
 
@@ -304,7 +285,59 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # ВЫВОД (AI Analysis) - Summary first
+    # ЦИКЛ РЫНКА (moved here, before Вывод)
+    # ══════════════════════════════════════════════════════
+    
+    days_in_regime = meta.get("days_in_regime", 0)
+    
+    if regime == "BEAR":
+        if days_in_regime > 30 and risk_level < -0.5:
+            phase = "CAPITULATION"
+            cycle_pos = 15
+        elif days_in_regime > 14:
+            phase = "MID_BEAR"
+            cycle_pos = 25
+        else:
+            phase = "EARLY_BEAR"
+            cycle_pos = 35
+    elif regime == "BULL":
+        if days_in_regime > 30 and risk_level > 0.5:
+            phase = "LATE_BULL"
+            cycle_pos = 85
+        elif days_in_regime > 14:
+            phase = "MID_BULL"
+            cycle_pos = 65
+        else:
+            phase = "EARLY_BULL"
+            cycle_pos = 45
+    elif regime == "TRANSITION":
+        if risk_level < -0.3:
+            phase = "DISTRIBUTION"
+            cycle_pos = 60
+        elif risk_level > 0.3:
+            phase = "ACCUMULATION"
+            cycle_pos = 30
+        else:
+            phase = "TRANSITION"
+            cycle_pos = 50
+    else:
+        phase = "RANGE"
+        cycle_pos = 50
+    
+    cycle_filled = int(cycle_pos / 10)
+    cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
+    
+    lines.append(f"Цикл: {phase} [{cycle_bar}] {cycle_pos}% от дна")
+    
+    # Wyckoff explanation
+    phase_explanation = WYCKOFF_PHASES.get(phase, "")
+    if phase_explanation:
+        lines.append(f"→ {phase_explanation}")
+    
+    lines.append("")
+    
+    # ══════════════════════════════════════════════════════
+    # ВЫВОД (AI Analysis) - Simplified, no duplication
     # ══════════════════════════════════════════════════════
     
     analysis = generate_market_analysis(
@@ -377,62 +410,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 4. ЦИКЛ РЫНКА
-    # ══════════════════════════════════════════════════════
-    
-    # Estimate phase and cycle position
-    days_in_regime = meta.get("days_in_regime", 0)
-    
-    if regime == "BEAR":
-        if days_in_regime > 30 and risk_level < -0.5:
-            phase = "CAPITULATION"
-            cycle_pos = 15
-        elif days_in_regime > 14:
-            phase = "MID_BEAR"
-            cycle_pos = 25
-        else:
-            phase = "EARLY_BEAR"
-            cycle_pos = 35
-    elif regime == "BULL":
-        if days_in_regime > 30 and risk_level > 0.5:
-            phase = "LATE_BULL"
-            cycle_pos = 85
-        elif days_in_regime > 14:
-            phase = "MID_BULL"
-            cycle_pos = 65
-        else:
-            phase = "EARLY_BULL"
-            cycle_pos = 45
-    elif regime == "TRANSITION":
-        if risk_level < -0.3:
-            phase = "DISTRIBUTION"
-            cycle_pos = 60
-        elif risk_level > 0.3:
-            phase = "ACCUMULATION"
-            cycle_pos = 30
-        else:
-            phase = "TRANSITION"
-            cycle_pos = 50
-    else:
-        phase = "RANGE"
-        cycle_pos = 50
-    
-    lines.append(f"🔘 Цикл рынка: {phase} (conf: {conf_pct}%)")
-    
-    cycle_filled = int(cycle_pos / 10)
-    cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
-    lines.append(f"Cycle: [{cycle_bar}] {cycle_pos}% от дна")
-    lines.append("")
-    
-    # Wyckoff explanation
-    phase_explanation = WYCKOFF_PHASES.get(phase, "")
-    if phase_explanation:
-        lines.append(f"Вывод: {phase_explanation}")
-    
-    lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # 5. СИГНАЛ ДНО-ВЕРШИНА (without BTC/ETH duplicate)
+    # 4. СИГНАЛ ДНО-ВЕРШИНА (without BTC/ETH duplicate)
     # ══════════════════════════════════════════════════════
     
     # Calculate bottom/top proximity
