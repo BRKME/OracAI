@@ -109,30 +109,45 @@ def generate_market_analysis(
     vol_z: float
 ) -> str:
     """
-    Generate AI-style market analysis based on the template.
-    
-    Template:
-    - Текущий вектор
-    - Ключевое противоречие (если есть)
-    - Интерпретация низкой уверенности (если применимо)
-    - Резюме
+    Generate AI-style market analysis.
+    Summary comes FIRST, then detailed breakdown.
     """
     parts = []
+    details = []
     
-    # === Текущий вектор ===
-    if regime == "BEAR":
-        vector = f"Давление вниз ({abs(dir_value):.2f}), фаза BEAR активна."
-    elif regime == "BULL":
-        vector = f"Давление вверх ({abs(dir_value):.2f}), фаза BULL активна."
+    # === Generate Summary (Резюме) FIRST ===
+    if regime == "BEAR" and prob_trans > 0.35:
+        summary = "Рынок в медвежьей фазе, но близок к переходу. Осторожность с шортами."
+    elif regime == "BEAR" and conf_pct < 20:
+        summary = "Медвежий тренд с низкой уверенностью. Возможны резкие развороты."
+    elif regime == "BULL" and conf_pct > 50:
+        summary = "Устойчивый бычий тренд. Работаем по тренду."
+    elif regime == "BULL" and conf_pct < 30:
+        summary = "Бычий тренд с низкой уверенностью. Возможны коррекции."
     elif regime == "TRANSITION":
-        vector = "Переходная фаза, направление не определено."
+        summary = "Неопределённость. Ждём подтверждения направления."
+    elif regime == "RANGE":
+        summary = "Боковик. Торгуем от границ диапазона."
     else:
-        vector = "Боковое движение в диапазоне."
+        summary = "Смешанные сигналы. Сниженный размер позиций."
     
-    parts.append(f"Текущий вектор: {vector}")
+    parts.append(summary)
     
-    # === Ключевое противоречие ===
-    # Check for conflict between top 2 probabilities
+    # === Details ===
+    
+    # Текущий вектор
+    if regime == "BEAR":
+        vector = f"Текущий вектор: Давление вниз ({abs(dir_value):.2f}), фаза BEAR активна."
+    elif regime == "BULL":
+        vector = f"Текущий вектор: Давление вверх ({abs(dir_value):.2f}), фаза BULL активна."
+    elif regime == "TRANSITION":
+        vector = "Текущий вектор: Переходная фаза, направление не определено."
+    else:
+        vector = "Текущий вектор: Боковое движение в диапазоне."
+    
+    details.append(vector)
+    
+    # Ключевое противоречие
     sorted_probs = sorted([
         ("BEAR", prob_bear),
         ("TRANSITION", prob_trans),
@@ -146,57 +161,44 @@ def generate_market_analysis(
     if abs(top1_prob - top2_prob) < 0.15 and top1_prob > 0.3 and top2_prob > 0.3:
         if "TRANSITION" in [top1, top2] and "BEAR" in [top1, top2]:
             conflict = (
-                f"Высокий процент TRANSITION ({int(prob_trans*100)}%) говорит о том, что нисходящая "
-                f"структура (BEAR {int(prob_bear*100)}%) нарушена или исчерпала себя. Рынок пытается "
-                f"развернуться или уйти в коррекцию. Однако метрика «Downside pressure» ({abs(dir_value):.2f}) "
-                f"говорит о том, что продавцы всё ещё сильны."
+                f"Ключевое противоречие: Высокий процент TRANSITION ({int(prob_trans*100)}%) говорит о том, "
+                f"что нисходящая структура (BEAR {int(prob_bear*100)}%) нарушена или исчерпала себя. "
+                f"Рынок пытается развернуться, но продавцы всё ещё сильны (Dir: {abs(dir_value):.2f})."
             )
-            parts.append(f"Ключевое противоречие: {conflict}")
+            details.append(conflict)
         elif "TRANSITION" in [top1, top2] and "BULL" in [top1, top2]:
             conflict = (
-                f"Конфликт BULL ({int(prob_bull*100)}%) и TRANSITION ({int(prob_trans*100)}%) "
-                f"указывает на неустойчивость роста. Возможна фиксация прибыли или коррекция."
+                f"Ключевое противоречие: Конфликт BULL ({int(prob_bull*100)}%) и TRANSITION ({int(prob_trans*100)}%) "
+                f"указывает на неустойчивость роста. Возможна фиксация прибыли."
             )
-            parts.append(f"Ключевое противоречие: {conflict}")
+            details.append(conflict)
     
     if struct_break:
-        parts.append("Структура: BREAK — слом рыночной структуры, возможен разворот или ускорение.")
+        details.append("Структура: BREAK — слом рыночной структуры, возможен разворот или ускорение.")
     
-    # === Низкая уверенность ===
+    # Низкая уверенность
     if conf_pct < 25:
         conf_text = (
-            f"Низкая уверенность модели ({conf_pct}%) означает, что любая из фаз "
-            f"(продолжение падения или переход в рост/флэт) может реализоваться "
-            f"с равной вероятностью, но движение будет резким."
+            f"Уверенность: Низкая уверенность модели ({conf_pct}%) означает, что любая из фаз "
+            f"может реализоваться с равной вероятностью, но движение будет резким."
         )
-        parts.append(f"Уверенность: {conf_text}")
+        details.append(conf_text)
     elif conf_pct < 40:
-        parts.append(f"Уверенность: Умеренно низкая ({conf_pct}%), повышенная вероятность ложных сигналов.")
+        details.append(f"Уверенность: Умеренно низкая ({conf_pct}%), повышенная вероятность ложных сигналов.")
     
-    # === Резюме ===
-    if regime == "BEAR" and prob_trans > 0.35:
-        summary = "Рынок в медвежьей фазе, но близок к переходу. Осторожность с шортами."
-    elif regime == "BEAR" and conf_pct < 20:
-        summary = "Медвежий тренд с низкой уверенностью. Возможны резкие развороты."
-    elif regime == "BULL" and conf_pct > 50:
-        summary = "Устойчивый бычий тренд. Работаем по тренду."
-    elif regime == "TRANSITION":
-        summary = "Неопределённость. Ждём подтверждения направления."
-    else:
-        summary = "Смешанные сигналы. Сниженный размер позиций."
-    
-    parts.append(f"Резюме: {summary}")
+    # Combine: summary first, then details
+    parts.extend(details)
     
     return "\n".join(parts)
 
 
 # ============================================================
-# MAIN FORMAT OUTPUT — v5.0 UI/UX
+# MAIN FORMAT OUTPUT — v5.1 UI/UX
 # ============================================================
 
 def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     """
-    New UI/UX format v5.0
+    New UI/UX format v5.1
     """
     meta = output.get("metadata", {})
     risk = output.get("risk", {})
@@ -221,7 +223,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     rsi_2h = rsi_data.get("rsi_2h")
     rsi_source = rsi_data.get("source", "none")
     
-    # Fear & Greed (from allocation meta if available)
+    # Fear & Greed
     fg_value = None
     fg_class = None
     if allocation:
@@ -241,6 +243,16 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     prob_range = probs.get("RANGE", 0)
     prob_trans = probs.get("TRANSITION", 0)
     
+    # Get allocation signals
+    btc = allocation.get("btc", {}) if allocation else {}
+    eth = allocation.get("eth", {}) if allocation else {}
+    btc_action = btc.get("action", "HOLD")
+    eth_action = eth.get("action", "HOLD")
+    btc_size = btc.get("size_pct", 0)
+    eth_size = eth.get("size_pct", 0)
+    adj_btc_size = btc_size * conf_adj
+    adj_eth_size = eth_size * conf_adj
+    
     lines = []
     
     # ══════════════════════════════════════════════════════
@@ -259,13 +271,12 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         fg_label = fg_class or ("Extreme Fear" if fg_value < 25 else "Fear" if fg_value < 45 else "Neutral" if fg_value < 55 else "Greed" if fg_value < 75 else "Extreme Greed")
         lines.append(f"{fg_label} ({fg_value})")
     
-    # RSI
+    # RSI (no emoji)
     if rsi_1d is not None or rsi_2h is not None:
-        rsi_icon, _ = calculate_rsi_status(rsi_1d)
         _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
         rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
         rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
-        lines.append(f"RSI: {rsi_icon} 1D={rsi_1d_str} | 2H={rsi_2h_str}")
+        lines.append(f"RSI: 1D={rsi_1d_str} | 2H={rsi_2h_str}")
     
     # Directional pressure
     if risk_level < 0:
@@ -276,7 +287,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # РЕЖИМ РЫНКА (Probabilities)
+    # РЕЖИМ РЫНКА (Probabilities) - aligned bars
     # ══════════════════════════════════════════════════════
     
     lines.append("Режим рынка:")
@@ -285,15 +296,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         filled = int(value * width)
         return "█" * filled + "░" * (width - filled)
     
-    lines.append(f"BULL       {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
-    lines.append(f"BEAR       {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
-    lines.append(f"RANGE      {make_prob_bar(prob_range)} {int(prob_range*100)}%")
-    lines.append(f"TRANSITION {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
+    lines.append(f"BULL       {make_prob_bar(prob_bull)} {int(prob_bull*100):2d}%")
+    lines.append(f"BEAR       {make_prob_bar(prob_bear)} {int(prob_bear*100):2d}%")
+    lines.append(f"RANGE      {make_prob_bar(prob_range)} {int(prob_range*100):2d}%")
+    lines.append(f"TRANSITION {make_prob_bar(prob_trans)} {int(prob_trans*100):2d}%")
     
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # ВЫВОД (AI Analysis)
+    # ВЫВОД (AI Analysis) - Summary first
     # ══════════════════════════════════════════════════════
     
     analysis = generate_market_analysis(
@@ -315,7 +326,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 2. РИСК
+    # 2. РИСК (without structure duplicate)
     # ══════════════════════════════════════════════════════
     
     # Determine risk state
@@ -337,125 +348,11 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append(f"→ {RISK_AIRPLANE.get(risk_state, '')}")
     lines.append("")
     
-    # Structure
-    if struct_break:
-        structure = "BREAK"
-    elif vol_z > 2.0:
-        structure = "EXPANSION"
-    elif vol_z < 0.5:
-        structure = "COMPRESSION"
-    elif regime == "BEAR":
-        structure = "BEAR"
-    elif regime == "BULL":
-        structure = "BULL"
-    elif regime == "RANGE":
-        structure = "RANGE"
-    else:
-        structure = "BREAK"
-    
-    lines.append(f"Структура рынка: {structure}")
-    lines.append(f"→ {STRUCTURE_AIRPLANE.get(structure, '')}")
-    lines.append("")
-    
     # ══════════════════════════════════════════════════════
-    # 3. SPOT SIGNAL
+    # 3. ТОРГОВЫЙ СИГНАЛ (BTC + ETH columns)
     # ══════════════════════════════════════════════════════
     
-    spot_lines = _format_spot_signal_v5(allocation, conf_adj, regime, risk_level, output, rsi_1d, rsi_2h)
-    lines.extend(spot_lines)
-    lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # 4. LP POLICY
-    # ══════════════════════════════════════════════════════
-    
-    if lp_policy:
-        lines.append("🔘 LP:")
-        
-        # LP regime and quadrant
-        lp_regime_str = str(lp_policy.lp_regime.value) if hasattr(lp_policy.lp_regime, 'value') else str(lp_policy.lp_regime)
-        quadrant_str = str(lp_policy.risk_quadrant.value) if hasattr(lp_policy.risk_quadrant, 'value') else str(lp_policy.risk_quadrant)
-        lines.append(f"{lp_regime_str} ({quadrant_str})")
-        
-        # Exposure
-        eff_exp = int(lp_policy.effective_exposure * 100)
-        max_exp = int(lp_policy.max_exposure * 100)
-        range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
-        lines.append(f"Exposure: {eff_exp}% (max {max_exp}%) | Range: {range_str}")
-        
-        # Fees vs IL
-        if hasattr(lp_policy, 'fee_variance_ratio'):
-            fv = lp_policy.fee_variance_ratio
-            fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
-            lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
-        
-        # Hedge
-        hedge_str = "REQUIRED" if lp_policy.hedge_recommended else "optional"
-        lines.append(f"Hedge: {hedge_str}")
-        
-        # Signals as comment
-        if hasattr(lp_policy, 'signals') and lp_policy.signals:
-            lines.append(f"→ {lp_policy.signals[0]}")
-        
-        lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # 5. DATA STATUS
-    # ══════════════════════════════════════════════════════
-    
-    data_quality = meta.get("data_completeness", 1.0)
-    failed_sources = meta.get("failed_sources", [])
-    
-    lines.append("📡 DATA STATUS")
-    lines.append(f"Качество данных: {int(data_quality*100)}%")
-    
-    # Detailed breakdown
-    if failed_sources:
-        lines.append(f"Недоступны: {', '.join(failed_sources)}")
-    
-    if rsi_1d is None:
-        lines.append("⚠️ RSI Daily недоступен")
-    
-    if data_quality < 0.9:
-        lines.append("⚠️ Качество данных ниже 90% — сигналы менее надёжны")
-    
-    lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # FOOTER
-    # ══════════════════════════════════════════════════════
-    
-    footer_parts = ["v5.0"]
-    if rsi_source and rsi_source != "none":
-        footer_parts.append(f"RSI:{rsi_source}")
-    
-    lines.append(" · ".join(footer_parts))
-    
-    return "\n".join(lines)
-
-
-# ============================================================
-# SPOT SIGNAL v5.0
-# ============================================================
-
-def _format_spot_signal_v5(allocation: dict, conf_adj: float, regime: str, risk_level: float,
-                            output: dict = None, rsi_1d: float = None, rsi_2h: float = None) -> list:
-    """Format SPOT SIGNAL section with new UI/UX."""
-    lines = []
-    
-    # Get allocation data
-    btc = allocation.get("btc", {}) if allocation else {}
-    eth = allocation.get("eth", {}) if allocation else {}
-    btc_action = btc.get("action", "HOLD")
-    eth_action = eth.get("action", "HOLD")
-    btc_size = btc.get("size_pct", 0)
-    eth_size = eth.get("size_pct", 0)
-    
-    # Adjusted size
-    adj_btc_size = btc_size * conf_adj
-    adj_eth_size = eth_size * conf_adj
-    
-    # Determine final signal based on adjusted size
+    # Determine signals
     def get_signal(adj_size):
         if adj_size <= -0.15:
             return "STRONG_SELL"
@@ -468,68 +365,112 @@ def _format_spot_signal_v5(allocation: dict, conf_adj: float, regime: str, risk_
         else:
             return "HOLD"
     
-    signal = get_signal(adj_btc_size)
+    btc_signal = get_signal(adj_btc_size)
+    eth_signal = get_signal(adj_eth_size)
     
-    # === Estimate cycle position from regime ===
-    meta = output.get("metadata", {}) if output else {}
-    days_in_regime = meta.get("days_in_regime", 0)
+    lines.append(f"🔘 Торговый сигнал:   BTC  ETH")
+    lines.append(f"STRONG_SELL {make_bar_simple(btc_signal == 'STRONG_SELL')}  {make_bar_simple(eth_signal == 'STRONG_SELL')}")
+    lines.append(f"SELL        {make_bar_simple(btc_signal == 'SELL')}  {make_bar_simple(eth_signal == 'SELL')}")
+    lines.append(f"HOLD        {make_bar_simple(btc_signal == 'HOLD')}  {make_bar_simple(eth_signal == 'HOLD')}")
+    lines.append(f"BUY         {make_bar_simple(btc_signal == 'BUY')}  {make_bar_simple(eth_signal == 'BUY')}")
+    lines.append(f"STRONG_BUY  {make_bar_simple(btc_signal == 'STRONG_BUY')}  {make_bar_simple(eth_signal == 'STRONG_BUY')}")
+    lines.append("")
+    
+    # ══════════════════════════════════════════════════════
+    # 4. ЦИКЛ РЫНКА
+    # ══════════════════════════════════════════════════════
     
     # Estimate phase and cycle position
+    days_in_regime = meta.get("days_in_regime", 0)
+    
     if regime == "BEAR":
         if days_in_regime > 30 and risk_level < -0.5:
             phase = "CAPITULATION"
-            bottom_prox = min(0.9, 0.7 + abs(risk_level) * 0.2)
-            top_prox = 0.1
             cycle_pos = 15
         elif days_in_regime > 14:
             phase = "MID_BEAR"
-            bottom_prox = min(0.7, 0.5 + abs(risk_level) * 0.2)
-            top_prox = 0.2
             cycle_pos = 25
         else:
             phase = "EARLY_BEAR"
-            bottom_prox = 0.3
-            top_prox = 0.4
             cycle_pos = 35
     elif regime == "BULL":
         if days_in_regime > 30 and risk_level > 0.5:
             phase = "LATE_BULL"
-            bottom_prox = 0.1
-            top_prox = min(0.9, 0.7 + risk_level * 0.2)
             cycle_pos = 85
         elif days_in_regime > 14:
             phase = "MID_BULL"
-            bottom_prox = 0.2
-            top_prox = 0.5
             cycle_pos = 65
         else:
             phase = "EARLY_BULL"
-            bottom_prox = 0.4
-            top_prox = 0.3
             cycle_pos = 45
     elif regime == "TRANSITION":
         if risk_level < -0.3:
             phase = "DISTRIBUTION"
-            bottom_prox = 0.3
-            top_prox = 0.5
             cycle_pos = 60
         elif risk_level > 0.3:
             phase = "ACCUMULATION"
-            bottom_prox = 0.5
-            top_prox = 0.3
             cycle_pos = 30
         else:
             phase = "TRANSITION"
-            bottom_prox = 0.4
-            top_prox = 0.4
             cycle_pos = 50
-    else:  # RANGE
+    else:
         phase = "RANGE"
-        bottom_prox = 0.35
-        top_prox = 0.35
         cycle_pos = 50
     
-    # RSI adjustment to cycle position
+    lines.append(f"🔘 Цикл рынка: {phase} (conf: {conf_pct}%)")
+    
+    cycle_filled = int(cycle_pos / 10)
+    cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
+    lines.append(f"Cycle: [{cycle_bar}] {cycle_pos}% от дна")
+    lines.append("")
+    
+    # Wyckoff explanation
+    phase_explanation = WYCKOFF_PHASES.get(phase, "")
+    if phase_explanation:
+        lines.append(f"Вывод: {phase_explanation}")
+    
+    lines.append("")
+    
+    # ══════════════════════════════════════════════════════
+    # 5. СИГНАЛ ДНО-ВЕРШИНА (without BTC/ETH duplicate)
+    # ══════════════════════════════════════════════════════
+    
+    # Calculate bottom/top proximity
+    if regime == "BEAR":
+        if days_in_regime > 30 and risk_level < -0.5:
+            bottom_prox = min(0.9, 0.7 + abs(risk_level) * 0.2)
+            top_prox = 0.1
+        elif days_in_regime > 14:
+            bottom_prox = min(0.7, 0.5 + abs(risk_level) * 0.2)
+            top_prox = 0.2
+        else:
+            bottom_prox = 0.3
+            top_prox = 0.4
+    elif regime == "BULL":
+        if days_in_regime > 30 and risk_level > 0.5:
+            bottom_prox = 0.1
+            top_prox = min(0.9, 0.7 + risk_level * 0.2)
+        elif days_in_regime > 14:
+            bottom_prox = 0.2
+            top_prox = 0.5
+        else:
+            bottom_prox = 0.4
+            top_prox = 0.3
+    elif regime == "TRANSITION":
+        if risk_level < -0.3:
+            bottom_prox = 0.3
+            top_prox = 0.5
+        elif risk_level > 0.3:
+            bottom_prox = 0.5
+            top_prox = 0.3
+        else:
+            bottom_prox = 0.4
+            top_prox = 0.4
+    else:
+        bottom_prox = 0.35
+        top_prox = 0.35
+    
+    # RSI adjustment
     if rsi_1d is not None:
         if rsi_1d <= 25:
             bottom_prox = min(0.95, bottom_prox + 0.25)
@@ -544,70 +485,103 @@ def _format_spot_signal_v5(allocation: dict, conf_adj: float, regime: str, risk_
             top_prox = min(0.85, top_prox + 0.15)
             bottom_prox = max(0.1, bottom_prox - 0.1)
     
-    # === SPOT SIGNAL header ===
-    lines.append(f"🔘 SPOT SIGNAL: {signal}")
-    lines.append(f"STRONG_SELL {make_bar_simple(signal == 'STRONG_SELL')}")
-    lines.append(f"SELL        {make_bar_simple(signal == 'SELL')}")
-    lines.append(f"HOLD        {make_bar_simple(signal == 'HOLD')}")
-    lines.append(f"BUY         {make_bar_simple(signal == 'BUY')}")
-    lines.append(f"STRONG_BUY  {make_bar_simple(signal == 'STRONG_BUY')}")
-    lines.append("")
-    
-    # === Cycle position ===
-    lines.append(f"🔘 Цикл рынка: {phase} (conf: {int(conf_adj*100)}%)")
-    
-    cycle_filled = int(cycle_pos / 10)
-    cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
-    lines.append(f"Cycle: [{cycle_bar}] {cycle_pos}/100")
-    lines.append("")
-    
-    # Wyckoff explanation
-    phase_explanation = WYCKOFF_PHASES.get(phase, "")
-    if phase_explanation:
-        lines.append(f"Вывод: {phase_explanation}")
-        
-        # Additional context based on cycle position
-        if cycle_pos < 30:
-            lines.append(f"Cycle ({cycle_pos}%) — киты ещё не накупились. Рост может быть не сразу.")
-        elif cycle_pos > 70:
-            lines.append(f"Cycle ({cycle_pos}%) — поздняя фаза, осторожность.")
-    
-    lines.append("")
-    
-    # === Bottom/Top signal ===
     lines.append("🔘 Сигнал Дно-Вершина:")
-    lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100)}%")
-    lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100)}%")
+    lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100):2d}%")
+    lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100):2d}%")
     lines.append("")
     
-    # BTC/ETH actions
-    btc_display = btc_action
-    eth_display = eth_action
-    
-    # Check if signal was dampened
-    if abs(adj_btc_size) < 0.05 and abs(btc_size) > 0.05:
-        btc_display = f"HOLD (signal weak: {int(adj_btc_size*100)}%)"
-    if abs(adj_eth_size) < 0.05 and abs(eth_size) > 0.05:
-        eth_display = f"HOLD (signal weak: {int(adj_eth_size*100)}%)"
-    
-    lines.append(f"BTC: {btc_display}")
-    lines.append(f"ETH: {eth_display}")
-    lines.append("")
-    
-    # Bottom/Top analysis
-    if bottom_prox >= 0.7:
-        lines.append("Вывод: 🟢 Высокая вероятность дна — покупка выгоднее продажи.")
-    elif bottom_prox >= 0.5:
-        lines.append("Вывод: Умеренная вероятность дна — осторожность с продажами.")
-    elif top_prox >= 0.7:
-        lines.append("Вывод: 🔴 Высокая вероятность вершины — фиксируем прибыль.")
-    elif top_prox >= 0.5:
-        lines.append("Вывод: Умеренная вероятность вершины — осторожность с покупками.")
+    # Smart conclusion based on bottom/top
+    if top_prox > bottom_prox + 0.15:
+        lines.append("Вывод: Рынок с большей вероятностью перегрет и может упасть, чем недооценён и готов расти.")
+    elif bottom_prox > top_prox + 0.15:
+        lines.append("Вывод: Рынок с большей вероятностью недооценён и может вырасти, чем перегрет и готов падать.")
+    elif bottom_prox >= 0.6:
+        lines.append("Вывод: Высокая вероятность дна — покупка выгоднее продажи.")
+    elif top_prox >= 0.6:
+        lines.append("Вывод: Высокая вероятность вершины — фиксируем прибыль.")
     else:
         lines.append("Вывод: Нейтральная зона — следуем сигналу модели.")
     
-    return lines
+    lines.append("")
+    
+    # ══════════════════════════════════════════════════════
+    # 6. LP POLICY
+    # ══════════════════════════════════════════════════════
+    
+    if lp_policy:
+        lines.append("🔘 LP:")
+        
+        # LP regime and quadrant
+        lp_regime_str = str(lp_policy.lp_regime.value) if hasattr(lp_policy.lp_regime, 'value') else str(lp_policy.lp_regime)
+        quadrant_str = str(lp_policy.risk_quadrant.value) if hasattr(lp_policy.risk_quadrant, 'value') else str(lp_policy.risk_quadrant)
+        lines.append(f"{lp_regime_str} ({quadrant_str})")
+        
+        # Exposure - only max
+        max_exp = int(lp_policy.max_exposure * 100)
+        range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
+        lines.append(f"Exposure: {max_exp}% | Range: {range_str}")
+        
+        # Fees vs IL
+        if hasattr(lp_policy, 'fee_variance_ratio'):
+            fv = lp_policy.fee_variance_ratio
+            fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
+            lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
+        
+        # Hedge
+        hedge_str = "REQUIRED" if lp_policy.hedge_recommended else "optional"
+        lines.append(f"Hedge: {hedge_str}")
+        
+        # Signals as comment (in Russian)
+        if hasattr(lp_policy, 'signals') and lp_policy.signals:
+            signal_ru = _translate_lp_signal(lp_policy.signals[0])
+            lines.append(f"→ {signal_ru}")
+        
+        lines.append("")
+    
+    # ══════════════════════════════════════════════════════
+    # 7. DATA STATUS
+    # ══════════════════════════════════════════════════════
+    
+    data_quality = meta.get("data_completeness", 1.0)
+    failed_sources = meta.get("failed_sources", [])
+    
+    lines.append("📡 DATA STATUS v5.1 OracAi")
+    lines.append(f"Качество данных: {int(data_quality*100)}%")
+    
+    if failed_sources:
+        lines.append(f"Недоступны: {', '.join(failed_sources)}")
+    
+    if rsi_1d is None:
+        lines.append("⚠️ RSI Daily недоступен")
+    
+    if data_quality < 0.9:
+        lines.append("⚠️ Качество данных ниже 90% — сигналы менее надёжны")
+    
+    return "\n".join(lines)
 
+
+def _translate_lp_signal(signal: str) -> str:
+    """Translate LP signals to Russian."""
+    translations = {
+        "High uncertainty → fee opportunity": "Высокая неопределённость → возможность заработать на комиссиях",
+        "Low vol → collect fees safely": "Низкая волатильность → безопасно собираем комиссии",
+        "Trending market → hedge required": "Трендовый рынок → хедж обязателен",
+        "High vol → reduce exposure": "Высокая волатильность → снижаем экспозицию",
+        "Directional risk high": "Высокий направленный риск",
+        "Volatility expansion": "Рост волатильности",
+        "Structure break": "Слом структуры",
+    }
+    
+    for en, ru in translations.items():
+        if en.lower() in signal.lower():
+            return ru
+    
+    return signal  # Return original if no translation found
+
+
+# ============================================================
+# SPOT SIGNAL v5.0
+# ============================================================
 
 # ============================================================
 # SHORT FORMAT
