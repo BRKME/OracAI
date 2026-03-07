@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 # DATA LOADING
 # ══════════════════════════════════════════════════════════════════
 
-def load_btc_data(days: int = 365) -> pd.DataFrame:
+def load_btc_data(days: int = 1095) -> pd.DataFrame:
     """Load BTC price history from Yahoo Finance."""
-    logger.info(f"Loading BTC data for {days} days...")
+    logger.info(f"Loading BTC data for {days} days (3 years)...")
     
     end = datetime.now()
     start = end - timedelta(days=days + 50)  # Extra for RSI warmup
@@ -74,7 +74,7 @@ def load_fear_greed_history() -> Dict[str, int]:
     logger.info("Loading Fear & Greed history...")
     
     try:
-        url = "https://api.alternative.me/fng/?limit=365&format=json"
+        url = "https://api.alternative.me/fng/?limit=1095&format=json"
         resp = requests.get(url, timeout=30)
         data = resp.json().get('data', [])
         
@@ -317,7 +317,7 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
     
     # Remove warmup period
     df = df.dropna().copy()
-    df = df.tail(365)  # Last year only
+    df = df.tail(1095)  # Last 3 years
     
     # Track state
     position = 0.0  # 0 = cash, 1 = fully invested
