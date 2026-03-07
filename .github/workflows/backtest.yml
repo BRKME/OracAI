@@ -1,9 +1,7 @@
-name: Backtest v5.3
+name: Backtest v5.4
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 0'  # Every Sunday 6:00 UTC
 
 jobs:
   backtest:
