@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def load_btc_data(days: int = 1095) -> pd.DataFrame:
     """Load BTC price history from Yahoo Finance."""
-    logger.info(f"Loading BTC data for {days} days (3 years)...")
+    logger.info(f"Loading BTC data for {days} days...")
     
     end = datetime.now()
     start = end - timedelta(days=days + 50)  # Extra for RSI warmup
@@ -708,8 +708,8 @@ def print_report(metrics: BacktestMetrics):
 def main():
     print("\n🚀 Starting Market Regime Engine v5.3 Backtest...\n")
     
-    # Load data
-    btc_data = load_btc_data(365)
+    # Load data - 3 years
+    btc_data = load_btc_data(1095)
     fg_data = load_fear_greed_history()
     
     # Run backtest
