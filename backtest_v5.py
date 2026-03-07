@@ -40,12 +40,22 @@ def load_btc_data(days: int = 365) -> pd.DataFrame:
     start = end - timedelta(days=days + 50)  # Extra for RSI warmup
     
     btc = yf.download("BTC-USD", start=start, end=end, progress=False)
-    btc = btc.reset_index()
-    btc.columns = ['date', 'open', 'high', 'low', 'close', 'adj_close', 'volume']
-    btc['date'] = pd.to_datetime(btc['date'])
-    btc = btc.set_index('date')
+    
+    # Handle MultiIndex columns (newer yfinance versions)
+    if isinstance(btc.columns, pd.MultiIndex):
+        btc.columns = btc.columns.get_level_values(0)
+    
+    # Standardize column names to lowercase
+    btc.columns = [c.lower().replace(' ', '_') for c in btc.columns]
+    
+    # Ensure we have required columns
+    if 'close' not in btc.columns and 'adj_close' in btc.columns:
+        btc['close'] = btc['adj_close']
     
     logger.info(f"Loaded {len(btc)} days of BTC data")
+    logger.info(f"Columns: {list(btc.columns)}")
+    logger.info(f"Date range: {btc.index[0]} to {btc.index[-1]}")
+    
     return btc
 
 
