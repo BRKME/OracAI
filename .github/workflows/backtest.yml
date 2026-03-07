@@ -1,0 +1,31 @@
+name: Backtest v5.3
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 0'  # Every Sunday 6:00 UTC
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install yfinance ta pandas numpy requests
+      
+      - name: Run Backtest
+        run: python backtest_v5.py
+      
+      - name: Save results
+        run: |
+          echo "Backtest completed at $(date)"
