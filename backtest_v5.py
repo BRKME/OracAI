@@ -241,11 +241,11 @@ def get_signal(regime: str, confidence: float, direction: float,
     """
     signal = "HOLD"
     
-    # RSI extremes - highest priority
-    if rsi < 30:
-        signal = "BUY"
-    elif rsi > 70:
-        signal = "SELL"
+    # RSI extremes - highest priority (contrarian)
+    if rsi < 25 and bottom_prox > 0.6:
+        signal = "BUY"  # Extreme oversold
+    elif rsi > 75 and top_prox > 0.6:
+        signal = "SELL"  # Extreme overbought
     
     # Regime-based signals
     elif regime == "BULL" and direction > 0.1:
@@ -253,13 +253,19 @@ def get_signal(regime: str, confidence: float, direction: float,
     elif regime == "BEAR" and direction < -0.1:
         signal = "SELL"
     
-    # Bottom/Top proximity
-    elif bottom_prox > 0.5:
+    # Bottom/Top proximity (only in matching regime)
+    elif bottom_prox > 0.6 and regime != "BEAR":
         signal = "BUY"
-    elif top_prox > 0.5:
+    elif top_prox > 0.6 and regime != "BULL":
         signal = "SELL"
     
-    # Risk state adjustment - reduce position in high risk
+    # CRITICAL: No BUY in BEAR, no SELL in BULL (except RSI extremes)
+    if regime == "BEAR" and signal == "BUY" and rsi > 30:
+        signal = "HOLD"
+    if regime == "BULL" and signal == "SELL" and rsi < 70:
+        signal = "HOLD"
+    
+    # Risk state - no BUY in crisis
     if risk_state == "CRISIS" and signal == "BUY":
         signal = "HOLD"
     
