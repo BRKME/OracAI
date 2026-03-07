@@ -239,34 +239,28 @@ def get_signal(regime: str, confidence: float, direction: float,
     """
     Generate trading signal based on regime.
     """
-    # Base signal from regime
-    if regime == "BULL" and confidence > 0.3:
-        if direction > 0.3:
-            signal = "BUY"
-        else:
-            signal = "HOLD"
-    elif regime == "BEAR" and confidence > 0.3:
-        if direction < -0.3:
-            signal = "SELL"
-        else:
-            signal = "HOLD"
-    elif regime == "TRANSITION":
-        signal = "HOLD"
-    else:  # RANGE
-        signal = "HOLD"
+    signal = "HOLD"
     
-    # Extreme RSI override
-    if rsi < 25 and bottom_prox > 0.6:
-        signal = "BUY"  # Oversold
-    elif rsi > 75 and top_prox > 0.6:
-        signal = "SELL"  # Overbought
+    # RSI extremes - highest priority
+    if rsi < 30:
+        signal = "BUY"
+    elif rsi > 70:
+        signal = "SELL"
     
-    # Risk state adjustment
-    if risk_state in ("TAIL", "CRISIS") and signal == "BUY":
-        signal = "HOLD"  # Don't buy in high risk
+    # Regime-based signals
+    elif regime == "BULL" and direction > 0.1:
+        signal = "BUY"
+    elif regime == "BEAR" and direction < -0.1:
+        signal = "SELL"
     
-    # Confidence damping
-    if confidence < 0.15:
+    # Bottom/Top proximity
+    elif bottom_prox > 0.5:
+        signal = "BUY"
+    elif top_prox > 0.5:
+        signal = "SELL"
+    
+    # Risk state adjustment - reduce position in high risk
+    if risk_state == "CRISIS" and signal == "BUY":
         signal = "HOLD"
     
     return signal
