@@ -506,8 +506,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
             lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
         
-        # Hedge
-        hedge_str = "REQUIRED" if lp_policy.hedge_recommended else "optional"
+        # Hedge - REQUIRED when TAIL or CRISIS risk
+        hedge_required = lp_policy.hedge_recommended or risk_state in ("TAIL", "CRISIS")
+        hedge_str = "REQUIRED" if hedge_required else "optional"
         lines.append(f"Hedge: {hedge_str}")
         
         # Signals as comment (in Russian)
@@ -524,7 +525,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    lines.append("📡 DATA STATUS v5.1 OracAi")
+    lines.append("📡 DATA STATUS v5.3 OracAi")
     lines.append(f"Качество данных: {int(data_quality*100)}%")
     
     if failed_sources:
