@@ -65,16 +65,16 @@ WYCKOFF_PHASES = {
 # ============================================================
 
 def make_bar(value: float, width: int = 10) -> str:
-    """Create visual bar: ░░░░▓▓▓▓▓▓"""
+    """Create visual bar with ASCII: [####......]"""
     if value is None:
         value = 0
     filled = int(value * width)
-    return "▓" * filled + "░" * (width - filled)
+    return "[" + "#" * filled + "." * (width - filled) + "]"
 
 
 def make_bar_simple(active: bool) -> str:
-    """Create simple bar: ░░ or ██"""
-    return "██" if active else "░░"
+    """Create simple bar: [#] or [.]"""
+    return "[#]" if active else "[.]"
 
 
 def calculate_rsi_status(rsi: float) -> tuple:
@@ -273,14 +273,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     
     lines.append("Режим рынка:")
     
-    def make_prob_bar(value, width=12):
+    def make_prob_bar(value, width=10):
         filled = int(value * width)
-        return "█" * filled + "░" * (width - filled)
+        return "[" + "#" * filled + "." * (width - filled) + "]"
     
-    lines.append(f"BULL       {make_prob_bar(prob_bull)} {int(prob_bull*100):2d}%")
-    lines.append(f"BEAR       {make_prob_bar(prob_bear)} {int(prob_bear*100):2d}%")
-    lines.append(f"RANGE      {make_prob_bar(prob_range)} {int(prob_range*100):2d}%")
-    lines.append(f"TRANSITION {make_prob_bar(prob_trans)} {int(prob_trans*100):2d}%")
+    # Compact format without alignment dependency
+    lines.append(f"BULL  {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
+    lines.append(f"BEAR  {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
+    lines.append(f"RANGE {make_prob_bar(prob_range)} {int(prob_range*100)}%")
+    lines.append(f"TRANS {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
     
     lines.append("")
     
@@ -325,9 +326,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         cycle_pos = 50
     
     cycle_filled = int(cycle_pos / 10)
-    cycle_bar = "█" * cycle_filled + "░" * (10 - cycle_filled)
+    cycle_bar = "#" * cycle_filled + "." * (10 - cycle_filled)
     
-    lines.append(f"Цикл: {phase} [{cycle_bar}] {cycle_pos}% от дна")
+    lines.append(f"Цикл: {phase} [{cycle_bar}] {cycle_pos}%")
     
     # Wyckoff explanation
     phase_explanation = WYCKOFF_PHASES.get(phase, "")
@@ -373,10 +374,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         risk_state = "NORMAL"
     
     lines.append("🔘 Риск:")
-    lines.append(f"NORMAL   {make_bar_simple(risk_state == 'NORMAL')}")
-    lines.append(f"ELEVATED {make_bar_simple(risk_state == 'ELEVATED')}")
-    lines.append(f"TAIL     {make_bar_simple(risk_state == 'TAIL')}")
-    lines.append(f"CRISIS   {make_bar_simple(risk_state == 'CRISIS')}")
+    lines.append(f"NORM {make_bar_simple(risk_state == 'NORMAL')}")
+    lines.append(f"ELEV {make_bar_simple(risk_state == 'ELEVATED')}")
+    lines.append(f"TAIL {make_bar_simple(risk_state == 'TAIL')}")
+    lines.append(f"CRIS {make_bar_simple(risk_state == 'CRISIS')}")
     lines.append("")
     lines.append(f"→ {RISK_AIRPLANE.get(risk_state, '')}")
     lines.append("")
@@ -401,12 +402,12 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     btc_signal = get_signal(adj_btc_size)
     eth_signal = get_signal(adj_eth_size)
     
-    lines.append(f"🔘 Торговый сигнал:   BTC  ETH")
-    lines.append(f"STRONG_SELL {make_bar_simple(btc_signal == 'STRONG_SELL')}  {make_bar_simple(eth_signal == 'STRONG_SELL')}")
-    lines.append(f"SELL        {make_bar_simple(btc_signal == 'SELL')}  {make_bar_simple(eth_signal == 'SELL')}")
-    lines.append(f"HOLD        {make_bar_simple(btc_signal == 'HOLD')}  {make_bar_simple(eth_signal == 'HOLD')}")
-    lines.append(f"BUY         {make_bar_simple(btc_signal == 'BUY')}  {make_bar_simple(eth_signal == 'BUY')}")
-    lines.append(f"STRONG_BUY  {make_bar_simple(btc_signal == 'STRONG_BUY')}  {make_bar_simple(eth_signal == 'STRONG_BUY')}")
+    lines.append(f"🔘 Сигнал: BTC  ETH")
+    lines.append(f"S-SELL {make_bar_simple(btc_signal == 'STRONG_SELL')} {make_bar_simple(eth_signal == 'STRONG_SELL')}")
+    lines.append(f"SELL   {make_bar_simple(btc_signal == 'SELL')} {make_bar_simple(eth_signal == 'SELL')}")
+    lines.append(f"HOLD   {make_bar_simple(btc_signal == 'HOLD')} {make_bar_simple(eth_signal == 'HOLD')}")
+    lines.append(f"BUY    {make_bar_simple(btc_signal == 'BUY')} {make_bar_simple(eth_signal == 'BUY')}")
+    lines.append(f"S-BUY  {make_bar_simple(btc_signal == 'STRONG_BUY')} {make_bar_simple(eth_signal == 'STRONG_BUY')}")
     lines.append("")
     
     # ══════════════════════════════════════════════════════
