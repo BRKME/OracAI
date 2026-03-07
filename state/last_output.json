@@ -1,8 +1,8 @@
 {
   "risk": {
-    "risk_level": -0.5433,
+    "risk_level": -0.3235,
     "risk_state": "RISK_OFF",
-    "strength": "strong",
+    "strength": "moderate",
     "risk_exposure_cap": 0.2,
     "confidence_gated": false,
     "reasons": [
@@ -11,78 +11,78 @@
   },
   "regime": "TRANSITION",
   "probabilities": {
-    "BULL": 0.2087,
-    "BEAR": 0.1778,
-    "RANGE": 0.0452,
-    "TRANSITION": 0.5683
+    "BULL": 0.3333,
+    "BEAR": 0.153,
+    "RANGE": 0.0437,
+    "TRANSITION": 0.47
   },
   "confidence": {
-    "base": 0.21,
-    "quality_adjusted": 0.1372,
+    "base": 0.174,
+    "quality_adjusted": 0.0973,
     "churn_penalty": 1.0,
     "switches_30d": 1
   },
   "buckets": {
-    "Momentum": 0.6314,
-    "Stability": -0.5986,
+    "Momentum": 0.6261,
+    "Stability": 0.7348,
     "Rotation": -1.0,
-    "Sentiment": -0.526,
-    "Macro": -0.9159
+    "Sentiment": -0.6748,
+    "Macro": -0.9613
   },
   "bucket_details": {
     "momentum": {
-      "roc_blend_z": 2.1246162691010917,
-      "trend_strength_z": 2.1249027312565527,
+      "roc_blend_z": 3.0,
+      "trend_strength_z": 2.3447166043661474,
       "alignment": -1.0,
       "dtmc_z": 3.0,
-      "absolute_momentum": -0.4742265244427517
+      "absolute_momentum": -0.4956549136781254
     },
     "stability": {
-      "neg_vol_z": -1.0040614304281583,
-      "liquidity_z": -0.310383767433269,
-      "depth_z": -0.3533596807660291
+      "neg_vol_z": 3.0,
+      "liquidity_z": -0.956500719280062,
+      "depth_z": -0.5218642143000944
     },
     "rotation": {
-      "velocity_z": -2.4196962176252512,
-      "accel_z": -2.74864550349349
+      "velocity_z": -2.5329008881072337,
+      "accel_z": -2.3385796042726303
     },
     "sentiment": {
       "fg_score": -1.0,
-      "funding_score": -1.0,
-      "oi_score": 0.8961259989589542,
+      "funding_score": -0.9299649821020876,
+      "oi_score": 0.18891133043164762,
       "fg_raw": 12
     },
     "macro": {
-      "dollar_signal": -1.7004542997553693,
+      "dollar_signal": -1.8516116279182007,
       "rate_signal": 0.11033432113555552,
       "yc_z": -1.477394406594453,
       "m2_z": -0.5516732694396144
     }
   },
   "cross_asset": {
-    "corr_BTC_SPX": 0.018,
-    "corr_BTC_Gold": 0.111,
+    "corr_BTC_SPX": -0.104,
+    "corr_BTC_Gold": 0.172,
     "macro_weight_boost": 1.0
   },
   "bucket_health": {
     "effective_dimensionality": 4,
     "pairwise_correlations": {
-      "Momentum/Stability": 0.344,
-      "Momentum/Rotation": -0.395,
-      "Momentum/Sentiment": -0.463,
-      "Momentum/Macro": -0.766,
-      "Stability/Rotation": -0.012,
-      "Stability/Sentiment": 0.025,
-      "Stability/Macro": -0.286,
-      "Rotation/Sentiment": 0.381,
-      "Rotation/Macro": 0.323,
-      "Sentiment/Macro": 0.384
+      "Momentum/Stability": 0.436,
+      "Momentum/Rotation": -0.444,
+      "Momentum/Sentiment": -0.508,
+      "Momentum/Macro": -0.795,
+      "Stability/Rotation": -0.122,
+      "Stability/Sentiment": -0.088,
+      "Stability/Macro": -0.398,
+      "Rotation/Sentiment": 0.413,
+      "Rotation/Macro": 0.39,
+      "Sentiment/Macro": 0.451
     },
     "flags": [
-      "ANOMALOUS_CORR_Momentum_Stability: 0.34",
-      "ANOMALOUS_CORR_Momentum_Sentiment: -0.46",
-      "ANOMALOUS_CORR_Momentum_Macro: -0.77",
-      "REDUNDANCY_Momentum_Macro: |corr|=0.77"
+      "ANOMALOUS_CORR_Momentum_Stability: 0.44",
+      "ANOMALOUS_CORR_Momentum_Sentiment: -0.51",
+      "ANOMALOUS_CORR_Momentum_Macro: -0.80",
+      "REDUNDANCY_Momentum_Macro: |corr|=0.80"
     ]
   },
   "regime_dynamics": {
@@ -107,9 +107,9 @@
       },
       "from_TRANSITION": {
         "BULL": 0.0,
-        "BEAR": 0.059,
+        "BEAR": 0.056,
         "RANGE": 0.0,
-        "TRANSITION": 0.941
+        "TRANSITION": 0.944
       }
     },
     "switches_30d": 1
@@ -121,10 +121,10 @@
   },
   "exposure_cap": 0.2,
   "risk_flags": [
-    "ANOMALOUS_CORR_Momentum_Stability: 0.34",
-    "ANOMALOUS_CORR_Momentum_Sentiment: -0.46",
-    "ANOMALOUS_CORR_Momentum_Macro: -0.77",
-    "REDUNDANCY_Momentum_Macro: |corr|=0.77",
+    "ANOMALOUS_CORR_Momentum_Stability: 0.44",
+    "ANOMALOUS_CORR_Momentum_Sentiment: -0.51",
+    "ANOMALOUS_CORR_Momentum_Macro: -0.80",
+    "REDUNDANCY_Momentum_Macro: |corr|=0.80",
     "TRANSITION_STICKY: self-transition=0.94"
   ],
   "normalization": {
@@ -134,50 +134,50 @@
   },
   "metadata": {
     "model_version": "3.3",
-    "days_in_regime": 3,
-    "temperature": 1.2,
-    "smoothing_alpha": 0.3,
-    "vol_z": 1.0041,
+    "days_in_regime": 4,
+    "temperature": 0.8,
+    "smoothing_alpha": 0.2,
+    "vol_z": -3.0,
     "data_completeness": 1.0,
     "failed_sources": [],
-    "timestamp": "2026-03-07T04:03:37.605593",
-    "btc_price": 68104.7109375,
+    "timestamp": "2026-03-07T15:12:47.251922",
+    "btc_price": 68000.640625,
     "eth_price": null,
-    "returns_30d": 0.0862,
+    "returns_30d": -0.0362,
     "rsi": {
-      "rsi_1d": 50.2,
-      "rsi_2h": 44.35,
-      "rsi_1d_7": 57.45,
+      "rsi_1d": 49.99,
+      "rsi_2h": 40.96,
+      "rsi_1d_7": 53.61,
       "source": "yahoo"
     }
   },
   "lp_policy": {
-    "lp_regime": "MEAN_REVERT",
-    "risk_lp": 0.34,
+    "lp_regime": "BREAKOUT",
+    "risk_lp": 0.18,
     "risk_quadrant": "Q2",
-    "fee_variance_ratio": 1.52,
+    "fee_variance_ratio": 5.0,
     "uncertainty_value": 1.0,
-    "trend_persistence": 0.473,
-    "vol_structure": "RANGE_DOMINANT",
-    "max_exposure": 0.4,
-    "effective_exposure": 0.1,
+    "trend_persistence": 0.737,
+    "vol_structure": "LOW_VOL",
+    "max_exposure": 0.2,
+    "effective_exposure": 0.07,
     "range_width": "wide",
     "rebalance": "cautious",
-    "hedge_recommended": true,
+    "hedge_recommended": false,
     "signals": [
       "High uncertainty \u2192 fee opportunity",
-      "Persistence high but unstable (churn)",
-      "Range-dominant volatility",
+      "High trend persistence \u2192 IL risk",
+      "Fee/Var 5.0x \u2192 profitable",
       "Q2: Dir risk high, LP opportunity exists",
       "Structural break \u2192 conservative"
     ],
-    "confidence": 0.71
+    "confidence": 0.61
   },
   "asset_allocation": {
     "btc": {
       "action": "STRONG_SELL",
       "size_pct": -0.3,
-      "confidence": 0.1372,
+      "confidence": 0.0973,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
@@ -188,7 +188,7 @@
     "eth": {
       "action": "STRONG_SELL",
       "size_pct": -0.5,
-      "confidence": 0.1372,
+      "confidence": 0.0973,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
