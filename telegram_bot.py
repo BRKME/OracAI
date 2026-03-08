@@ -442,23 +442,23 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     
     # Logic: buy at bottom, sell at top, in portions
     if bottom_prox >= 0.7:
-        action = "ПОКУПАТЬ"
-        action_note = f"Дно {int(bottom_prox*100)}%. Докупать частями (25-50%)."
+        action = "🟢 ПОКУПАТЬ"
+        action_note = f"Сильный сигнал дна ({int(bottom_prox*100)}%). Рынок перепродан — хорошая точка для покупки. Входить частями: 25-50% от запланированного объёма."
     elif bottom_prox >= 0.5 and top_prox < 0.4:
-        action = "ДОКУПИТЬ"
-        action_note = f"Дно {int(bottom_prox*100)}%. Можно добавить 10-20%."
+        action = "🟡 ДОКУПИТЬ"
+        action_note = f"Умеренный сигнал дна ({int(bottom_prox*100)}%). Можно добавить 10-20% к позиции. Не спешить — возможно падение ниже."
     elif top_prox >= 0.7:
-        action = "ПРОДАВАТЬ"
-        action_note = f"Вершина {int(top_prox*100)}%. Фиксировать частями (25-50%)."
+        action = "🔴 ПРОДАВАТЬ"
+        action_note = f"Сильный сигнал вершины ({int(top_prox*100)}%). Рынок перегрет — фиксировать прибыль. Продавать частями: 25-50% позиции."
     elif top_prox >= 0.5 and bottom_prox < 0.4:
-        action = "ФИКСИРОВАТЬ"
-        action_note = f"Вершина {int(top_prox*100)}%. Можно продать 10-20%."
+        action = "🟠 ФИКСИРОВАТЬ"
+        action_note = f"Умеренный сигнал вершины ({int(top_prox*100)}%). Можно продать 10-20% позиции. Не паниковать — рост ещё возможен."
     elif risk_state == "CRISIS":
-        action = "ЗАЩИТА"
-        action_note = "CRISIS. Сократить до 20-30%."
+        action = "⚫ ЗАЩИТА"
+        action_note = "Кризисный режим. Высокая волатильность, возможны резкие движения. Сократить позицию до 20-30% и ждать стабилизации."
     else:
-        action = "ДЕРЖАТЬ"
-        action_note = "Нет сигнала. Ничего не делать."
+        action = "⚪ ДЕРЖАТЬ"
+        action_note = f"Нейтральная зона (дно {int(bottom_prox*100)}%, верх {int(top_prox*100)}%). Нет явного сигнала — сохранять текущую позицию."
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
