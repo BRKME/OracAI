@@ -1,57 +1,59 @@
-# 📊 Market Regime Engine v5.4
+# 📊 Market Regime Engine v5.6
 
-Probabilistic crypto market regime detection with HODL-first strategy based on backtesting.
+Probabilistic crypto market regime detection with integrated action logic.
 
 ## Current Versions
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| **Market Regime Engine** | **v5.4** | **Production** |
-| Signal Policy | v5.4 HODL-first | Production |
-| RSI Integration | v1.0 | Production |
+| **Market Regime Engine** | **v5.6** | **Production** |
+| Signal Policy | v5.6 Integrated | Production |
+| Charts | EMA50/200 + RSI | Production |
 | LP Intelligence | v2.0.2 | Production |
 
-## 🆕 What's New in v5.4
+## 🆕 What's New in v5.6
 
-### HODL-First Strategy (Based on Backtest)
+### Integrated Action Logic
 
-**Backtest Results (3 years):**
-```
-Active Trading: +24%
-HODL:          +131%
-Conclusion:    HODL wins on bull market
-```
+Action now considers **Phase/Cycle**, not just Bottom/Top:
 
-**New Approach:**
-- Default: **HOLD** (no active trading)
-- SELL only in **CRISIS** (capital protection)
-- BUY only at extreme bottom (RSI<25 + Bottom>70%)
-- REDUCE at extreme top (RSI>80 + Top>80%)
+| Phase | Condition | Action |
+|-------|-----------|--------|
+| EARLY_BULL | bottom ≥30% | 🟡 ДОКУПИТЬ |
+| ACCUMULATION | bottom ≥30% | 🟡 ДОКУПИТЬ |
+| LATE_BULL | top ≥30% | 🟠 ФИКСИРОВАТЬ |
+| DISTRIBUTION | top ≥30% | 🟠 ФИКСИРОВАТЬ |
+| CAPITULATION | bottom ≥40% | 🟢 ПОКУПАТЬ |
 
-### Exposure Recommendations
+### Smart Hedge Logic
 
-| Condition | Exposure | Note |
-|-----------|----------|------|
-| CRISIS | 20% | Минимум. Защита капитала. |
-| TAIL | 50% | Сниженная. Высокий риск. |
-| BEAR | 60% | Осторожность. |
-| BULL + Conf>40% | 100% | Полная. Бычий тренд. |
-| Default | 80% | Стандартная. |
+| Risk | Confidence | Hedge |
+|------|------------|-------|
+| CRISIS/TAIL | Any | REQUIRED |
+| ELEVATED | <30% | REQUIRED |
+| ELEVATED | ≥30% | recommended |
+| NORMAL | Any | optional |
 
-### Signal Triggers (Rare!)
+### LP Exposure with Regime Modifier
 
-| Signal | Trigger | Action |
-|--------|---------|--------|
-| BUY | RSI<25 AND Bottom>70% | Extreme oversold |
-| SELL | CRISIS risk state | Capital protection |
-| REDUCE | RSI>80 AND Top>80% | Partial profit taking |
-| HOLD | All other cases | Default (HODL wins) |
+| Condition | Modifier |
+|-----------|----------|
+| BULL + conf>30% | +20% |
+| BEAR | -20% |
+| CRISIS | max 10% |
+| TAIL | max 30% |
+
+### Charts (BTC + ETH)
+
+- Daily timeframe, 1 year view
+- EMA50 (orange) + EMA200 (red)
+- RSI panel with 30/70 zones
 
 ## Quick Start
 
 ```bash
 pip install -r requirements.txt
-python main.py              # Full analysis
+python main.py              # Full analysis + charts
 python main.py --dry-run    # No Telegram
 python backtest_v5.py       # Backtest (3 years)
 ```
@@ -60,7 +62,7 @@ python backtest_v5.py       # Backtest (3 years)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MARKET REGIME ENGINE v5.4                 │
+│                    MARKET REGIME ENGINE v5.6                 │
 ├─────────────────────────────────────────────────────────────┤
 │  Inputs: BTC price, volume, funding, OI, macro, sentiment   │
 │  Output: BULL | BEAR | RANGE | TRANSITION + probabilities   │
@@ -69,14 +71,26 @@ python backtest_v5.py       # Backtest (3 years)
           ┌────────────────┼────────────────┐
           ▼                ▼                ▼
 ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│  SIGNAL v5.4    │ │  LP INTELLIGENCE │ │   TELEGRAM      │
-│  HODL-FIRST     │ │     (v2.0.2)     │ │    OUTPUT       │
+│  SIGNAL v5.6    │ │  LP INTELLIGENCE │ │   TELEGRAM      │
+│  INTEGRATED     │ │     (v2.0.2)     │ │    OUTPUT       │
 ├─────────────────┤ ├─────────────────┤ ├─────────────────┤
-│ • Default HOLD  │ │ • Vol decompose │ │ • ASCII bars    │
-│ • Exposure %    │ │ • Dual risk     │ │ • Probabilities │
-│ • BUY at bottom │ │ • LP regimes    │ │ • Data status   │
-│ • SELL in CRISIS│ │ • Fee/variance  │ │ • Mobile-ready  │
+│ • Phase-aware   │ │ • Vol decompose │ │ • BTC/ETH charts│
+│ • Smart hedge   │ │ • Regime-adj exp│ │ • ASCII bars    │
+│ • Bottom/Top    │ │ • LP regimes    │ │ • Mobile-ready  │
+│ • Cycle signals │ │ • Fee/variance  │ │ • Data status   │
 └─────────────────┘ └─────────────────┘ └─────────────────┘
+```
+
+## Action Priority
+
+```
+1. CRISIS → ⚫ ЗАЩИТА
+2. Bottom ≥70% → 🟢 ПОКУПАТЬ
+3. Top ≥70% → 🔴 ПРОДАВАТЬ
+4. Bottom ≥50% → 🟡 ДОКУПИТЬ
+5. Top ≥50% → 🟠 ФИКСИРОВАТЬ
+6. Phase modifier (EARLY_BULL, etc.)
+7. Default → ⚪ ДЕРЖАТЬ
 ```
 
 ## Backtest Results
@@ -84,56 +98,67 @@ python backtest_v5.py       # Backtest (3 years)
 ```
 Period: 3 years (1095 days)
 
-PERFORMANCE:
-Model Return:  +23.7%
-HODL Return:  +131.2%
+TIMING ACCURACY:
+Bottom: 65.0% ✅
+Top:    74.4% ✅
 
 REGIME ACCURACY:
-Overall:       60.1%
-BULL calls:    59.0%
-BEAR calls:    49.6%
+Overall: 60.1%
+BULL:    59.0%
+BEAR:    49.6%
 
-BOTTOM/TOP TIMING:
-Bottom accuracy: 65.0% ✅
-Top accuracy:    74.4% ✅
-
-CONCLUSION:
-→ Model NOT for active trading
-→ Model IS for risk management
-→ Use exposure recommendations
+USE FOR:
+✅ Position sizing
+✅ Bottom/Top timing
+✅ Risk management
+❌ Active trading
 ```
 
 ## Output Example
 
 ```
 🔘 Фаза рынка:
-TRANSITION (4d) | Conf. 13%
-RSI: 1D=50 | 2H=41→
+BULL (2d) | Conf. 45%
+RSI: 1D=50 | 2H=61↑
 
 Режим рынка:
-BULL  [###.......] 33%
-BEAR  [##........] 15%
-TRANS [#####.....] 47%
+BULL  [######....] 68%
+BEAR  [#.........] 10%
+TRANS [#.........] 17%
+
+Цикл: EARLY_BULL [####......] 45%
+→ Начало восходящего тренда. Первые покупки.
 
 🔘 Риск:
-TAIL [#]
+ELEV [#]
 
-🔘 Позиция:
-Рекомендуемая экспозиция: 50%
-→ Сниженная. Высокий риск.
+🔘 Действие: 🟡 ДОКУПИТЬ
+→ Фаза EARLY_BULL — начало роста. Добавить 10-20% к позиции.
 
 🔘 Сигнал Дно-Вершина:
-Bottom [###.......] 30%
-Top    [#####.....] 50%
+Bottom [####......] 40%
+Top    [###.......] 30%
 
-📡 DATA STATUS v5.4 OracAi
+🔘 LP:
+BREAKOUT (Q1)
+Exposure: 50% | Range: wide
+Hedge: REQUIRED
+
+📡 DATA STATUS v5.6 OracAi
 ```
 
 ## Documentation
 
-- `docs/SPOT_SIGNAL_POLICY_v5.4.md` — Signal Policy
-- `docs/MARKET_REGIME_ENGINE_v3.4.md` — Regime detection
+- `docs/SPOT_SIGNAL_POLICY_v5.6.md` — Signal Policy
+- `docs/BACKTEST_RESULTS_v5.4.md` — Backtest analysis
 - `docs/LP_INTELLIGENCE_SYSTEM_v2.0.2.md` — LP policy
+
+## Version History
+
+- **v5.6** — Integrated logic (phase + hedge + LP exposure)
+- v5.5 — BTC/ETH charts with EMA
+- v5.4 — HODL-first strategy
+- v5.3 — Mobile-friendly ASCII bars
 
 ## License
 

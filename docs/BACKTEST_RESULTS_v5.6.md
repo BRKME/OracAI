@@ -1,4 +1,4 @@
-# Backtest Results v5.4
+# Backtest Results v5.6
 
 ## Summary
 
@@ -64,23 +64,50 @@
 3. ❌ Missing 45% of crashes
 4. ❌ BEAR accuracy near random
 
+## Strategy v5.6
+
+Based on backtest, integrated logic:
+
+### Action Logic
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 1 | CRISIS | ⚫ ЗАЩИТА |
+| 2 | Bottom ≥70% | 🟢 ПОКУПАТЬ |
+| 3 | Top ≥70% | 🔴 ПРОДАВАТЬ |
+| 4 | Bottom ≥50% | 🟡 ДОКУПИТЬ |
+| 5 | Top ≥50% | 🟠 ФИКСИРОВАТЬ |
+| 6 | EARLY_BULL + bottom≥30% | 🟡 ДОКУПИТЬ |
+| 7 | LATE_BULL + top≥30% | 🟠 ФИКСИРОВАТЬ |
+| 8 | Default | ⚪ ДЕРЖАТЬ |
+
+### Hedge Logic
+
+| Risk | Confidence | Hedge |
+|------|------------|-------|
+| CRISIS/TAIL | Any | REQUIRED |
+| ELEVATED | <30% | REQUIRED |
+| ELEVATED | ≥30% | recommended |
+| NORMAL | Any | optional |
+
+### LP Exposure Modifier
+
+| Condition | Modifier |
+|-----------|----------|
+| BULL + conf>30% | +20% |
+| BEAR | -20% |
+| CRISIS | max 10% |
+| TAIL | max 30% |
+
 ## Recommendations
 
 ### DO USE for:
-- Risk management (exposure %)
+- Position sizing (exposure %)
 - Bottom/Top detection
-- Crisis warnings
+- Risk management (hedge decisions)
+- Phase-aware entry/exit
 
 ### DO NOT USE for:
-- Active trading signals
-- Frequent BUY/SELL decisions
+- Frequent trading signals
 - Short-term timing
-
-## Strategy v5.4
-
-Based on backtest:
-
-1. **Default HOLD** — Don't trade actively
-2. **Reduce exposure** in TAIL/CRISIS
-3. **BUY only** at extreme bottoms (RSI<25)
-4. **Trust Bottom/Top** signals more than regime
+- BEAR market predictions
