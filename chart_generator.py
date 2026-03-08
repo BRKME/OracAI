@@ -24,34 +24,13 @@ logger = logging.getLogger(__name__)
 plt.style.use('dark_background')
 
 
-def fetch_btc_data(days: int = 400) -> pd.DataFrame:
-    """Fetch BTC daily data."""
-    if yf is None:
-        logger.error("yfinance not installed")
-        return None
-    
-    end = datetime.now()
-    start = end - timedelta(days=days + 250)  # Extra for MA200
-    
-    try:
-        df = yf.download("BTC-USD", start=start, end=end, progress=False)
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        df.columns = [c.lower() for c in df.columns]
-        logger.info(f"Fetched {len(df)} days of BTC data")
-        return df
-    except Exception as e:
-        logger.error(f"Failed to fetch BTC data: {e}")
-        return None
-
-
 def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """Add MA50, MA200, RSI."""
+    """Add EMA50, EMA200, RSI."""
     df = df.copy()
     
-    # Moving averages
-    df['ma50'] = df['close'].rolling(window=50).mean()
-    df['ma200'] = df['close'].rolling(window=200).mean()
+    # Exponential Moving Averages (better than SMA for crypto)
+    df['ema50'] = df['close'].ewm(span=50, adjust=False).mean()
+    df['ema200'] = df['close'].ewm(span=200, adjust=False).mean()
     
     # RSI
     delta = df['close'].diff()
@@ -63,16 +42,37 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def generate_chart(days_to_show: int = 365) -> io.BytesIO:
+def fetch_crypto_data(symbol: str = "BTC-USD", days: int = 400) -> pd.DataFrame:
+    """Fetch crypto daily data."""
+    if yf is None:
+        logger.error("yfinance not installed")
+        return None
+    
+    end = datetime.now()
+    start = end - timedelta(days=days + 250)  # Extra for EMA200
+    
+    try:
+        df = yf.download(symbol, start=start, end=end, progress=False)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        df.columns = [c.lower() for c in df.columns]
+        logger.info(f"Fetched {len(df)} days of {symbol} data")
+        return df
+    except Exception as e:
+        logger.error(f"Failed to fetch {symbol} data: {e}")
+        return None
+
+
+def generate_chart(symbol: str = "BTC-USD", days_to_show: int = 365) -> io.BytesIO:
     """
     Generate chart PNG and return as BytesIO.
     
     Returns None if failed.
     """
     # Fetch data
-    df = fetch_btc_data(days_to_show + 30)
+    df = fetch_crypto_data(symbol, days_to_show + 30)
     if df is None or len(df) < 50:
-        logger.error("Not enough data for chart")
+        logger.error(f"Not enough data for {symbol} chart")
         return None
     
     # Calculate indicators
@@ -80,6 +80,9 @@ def generate_chart(days_to_show: int = 365) -> io.BytesIO:
     
     # Take last N days
     df = df.tail(days_to_show)
+    
+    # Get display name
+    name = symbol.replace("-USD", "")
     
     # Create figure with 2 subplots (price + RSI)
     fig, (ax1, ax2) = plt.subplots(
@@ -95,15 +98,15 @@ def generate_chart(days_to_show: int = 365) -> io.BytesIO:
     # === Price Chart ===
     dates = df.index
     
-    # Candlesticks (simplified as line + fill)
-    ax1.plot(dates, df['close'], color='#00d4ff', linewidth=1.5, label='BTC')
+    # Price line
+    ax1.plot(dates, df['close'], color='#00d4ff', linewidth=1.5, label=name)
     
-    # Fill between open/close for candle effect
+    # Fill between low/high
     ax1.fill_between(dates, df['low'], df['high'], alpha=0.1, color='#00d4ff')
     
-    # MA lines
-    ax1.plot(dates, df['ma50'], color='#ffa500', linewidth=1.2, label='MA50', linestyle='--')
-    ax1.plot(dates, df['ma200'], color='#ff4444', linewidth=1.2, label='MA200', linestyle='--')
+    # EMA lines
+    ax1.plot(dates, df['ema50'], color='#ffa500', linewidth=1.2, label='EMA50', linestyle='--')
+    ax1.plot(dates, df['ema200'], color='#ff4444', linewidth=1.2, label='EMA200', linestyle='--')
     
     # Current price annotation
     last_price = df['close'].iloc[-1]
@@ -119,18 +122,18 @@ def generate_chart(days_to_show: int = 365) -> io.BytesIO:
         va='center'
     )
     
-    # MA values
-    ma50_val = df['ma50'].iloc[-1]
-    ma200_val = df['ma200'].iloc[-1]
-    if not np.isnan(ma50_val):
-        ax1.annotate(f'MA50: ${ma50_val:,.0f}', xy=(0.02, 0.95), xycoords='axes fraction',
+    # EMA values
+    ema50_val = df['ema50'].iloc[-1]
+    ema200_val = df['ema200'].iloc[-1]
+    if not np.isnan(ema50_val):
+        ax1.annotate(f'EMA50: ${ema50_val:,.0f}', xy=(0.02, 0.95), xycoords='axes fraction',
                      fontsize=10, color='#ffa500', va='top')
-    if not np.isnan(ma200_val):
-        ax1.annotate(f'MA200: ${ma200_val:,.0f}', xy=(0.02, 0.88), xycoords='axes fraction',
+    if not np.isnan(ema200_val):
+        ax1.annotate(f'EMA200: ${ema200_val:,.0f}', xy=(0.02, 0.88), xycoords='axes fraction',
                      fontsize=10, color='#ff4444', va='top')
     
     ax1.set_ylabel('Price (USD)', fontsize=11, color='white')
-    ax1.set_title('BTC/USD Daily', fontsize=14, fontweight='bold', color='white', pad=10)
+    ax1.set_title(f'{name}/USD Daily', fontsize=14, fontweight='bold', color='white', pad=10)
     ax1.legend(loc='upper right', fontsize=9, framealpha=0.3)
     ax1.grid(True, alpha=0.2, linestyle='--')
     ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'${x/1000:.0f}K'))
@@ -223,13 +226,15 @@ async def send_chart_to_telegram(bot_token: str, chat_id: str, caption: str = ""
 
 
 if __name__ == "__main__":
-    # Test: save chart to file
+    # Test: save charts to file
     logging.basicConfig(level=logging.INFO)
     
-    buf = generate_chart(90)
-    if buf:
-        with open("btc_chart.png", "wb") as f:
-            f.write(buf.read())
-        print("✅ Chart saved to btc_chart.png")
-    else:
-        print("❌ Failed to generate chart")
+    for symbol in ["BTC-USD", "ETH-USD"]:
+        buf = generate_chart(symbol, 365)
+        if buf:
+            filename = f"{symbol.lower().replace('-', '_')}_chart.png"
+            with open(filename, "wb") as f:
+                f.write(buf.read())
+            print(f"✅ Chart saved to {filename}")
+        else:
+            print(f"❌ Failed to generate {symbol} chart")

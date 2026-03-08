@@ -633,7 +633,7 @@ def send_telegram(output: dict, lp_policy=None, allocation=None, short=False) ->
 
 
 def send_telegram_with_chart(output: dict, lp_policy=None, allocation=None, short=False) -> bool:
-    """Send chart + message to Telegram."""
+    """Send charts (BTC + ETH) + message to Telegram."""
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
@@ -641,21 +641,26 @@ def send_telegram_with_chart(output: dict, lp_policy=None, allocation=None, shor
         logger.warning("Telegram credentials not set.")
         return False
 
-    # 1. Generate and send chart
+    # 1. Generate and send charts (BTC + ETH)
     try:
         from chart_generator import generate_chart
-        chart_buf = generate_chart(365)
         
-        if chart_buf:
-            url_photo = f"https://api.telegram.org/bot{token}/sendPhoto"
-            files = {'photo': ('btc_chart.png', chart_buf, 'image/png')}
-            data = {'chat_id': chat_id}
+        for symbol in ["BTC-USD", "ETH-USD"]:
+            chart_buf = generate_chart(symbol, 365)
             
-            resp = requests.post(url_photo, files=files, data=data, timeout=30)
-            if resp.status_code == 200:
-                logger.info("✓ Chart sent")
+            if chart_buf:
+                url_photo = f"https://api.telegram.org/bot{token}/sendPhoto"
+                files = {'photo': (f'{symbol.lower()}_chart.png', chart_buf, 'image/png')}
+                data = {'chat_id': chat_id}
+                
+                resp = requests.post(url_photo, files=files, data=data, timeout=30)
+                if resp.status_code == 200:
+                    logger.info(f"✓ {symbol} chart sent")
+                else:
+                    logger.warning(f"{symbol} chart failed: {resp.status_code}")
             else:
-                logger.warning(f"Chart failed: {resp.status_code}")
+                logger.warning(f"Failed to generate {symbol} chart")
+                
     except Exception as e:
         logger.warning(f"Chart error (continuing): {e}")
 
