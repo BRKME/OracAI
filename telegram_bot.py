@@ -644,7 +644,7 @@ def send_telegram_with_chart(output: dict, lp_policy=None, allocation=None, shor
     # 1. Generate and send chart
     try:
         from chart_generator import generate_chart
-        chart_buf = generate_chart(90)
+        chart_buf = generate_chart(365)
         
         if chart_buf:
             url_photo = f"https://api.telegram.org/bot{token}/sendPhoto"

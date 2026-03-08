@@ -24,14 +24,14 @@ logger = logging.getLogger(__name__)
 plt.style.use('dark_background')
 
 
-def fetch_btc_data(days: int = 120) -> pd.DataFrame:
+def fetch_btc_data(days: int = 400) -> pd.DataFrame:
     """Fetch BTC daily data."""
     if yf is None:
         logger.error("yfinance not installed")
         return None
     
     end = datetime.now()
-    start = end - timedelta(days=days + 210)  # Extra for MA200
+    start = end - timedelta(days=days + 250)  # Extra for MA200
     
     try:
         df = yf.download("BTC-USD", start=start, end=end, progress=False)
@@ -63,7 +63,7 @@ def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def generate_chart(days_to_show: int = 90) -> io.BytesIO:
+def generate_chart(days_to_show: int = 365) -> io.BytesIO:
     """
     Generate chart PNG and return as BytesIO.
     
@@ -84,7 +84,7 @@ def generate_chart(days_to_show: int = 90) -> io.BytesIO:
     # Create figure with 2 subplots (price + RSI)
     fig, (ax1, ax2) = plt.subplots(
         2, 1, 
-        figsize=(12, 8),
+        figsize=(14, 8),
         gridspec_kw={'height_ratios': [3, 1]},
         sharex=True
     )
@@ -169,9 +169,9 @@ def generate_chart(days_to_show: int = 90) -> io.BytesIO:
     ax2.set_ylim(0, 100)
     ax2.grid(True, alpha=0.2, linestyle='--')
     
-    # X-axis formatting
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
-    ax2.xaxis.set_major_locator(mdates.WeekdayLocator(interval=2))
+    # X-axis formatting (monthly for year view)
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
+    ax2.xaxis.set_major_locator(mdates.MonthLocator())
     plt.xticks(rotation=45, ha='right')
     
     # Timestamp
