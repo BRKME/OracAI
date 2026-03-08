@@ -383,7 +383,61 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 3. ТОРГОВЫЙ СИГНАЛ (based on backtest: HODL-first approach)
+    # 3. BOTTOM/TOP PROXIMITY (must be before signals)
+    # ══════════════════════════════════════════════════════
+    
+    # Calculate bottom/top proximity
+    if regime == "BEAR":
+        if days_in_regime > 30 and risk_level < -0.5:
+            bottom_prox = min(0.9, 0.7 + abs(risk_level) * 0.2)
+            top_prox = 0.1
+        elif days_in_regime > 14:
+            bottom_prox = min(0.7, 0.5 + abs(risk_level) * 0.2)
+            top_prox = 0.2
+        else:
+            bottom_prox = 0.3
+            top_prox = 0.4
+    elif regime == "BULL":
+        if days_in_regime > 30 and risk_level > 0.5:
+            bottom_prox = 0.1
+            top_prox = min(0.9, 0.7 + risk_level * 0.2)
+        elif days_in_regime > 14:
+            bottom_prox = 0.2
+            top_prox = 0.5
+        else:
+            bottom_prox = 0.4
+            top_prox = 0.3
+    elif regime == "TRANSITION":
+        if risk_level < -0.3:
+            bottom_prox = 0.3
+            top_prox = 0.5
+        elif risk_level > 0.3:
+            bottom_prox = 0.5
+            top_prox = 0.3
+        else:
+            bottom_prox = 0.4
+            top_prox = 0.4
+    else:
+        bottom_prox = 0.35
+        top_prox = 0.35
+    
+    # RSI adjustment for bottom/top
+    if rsi_1d is not None:
+        if rsi_1d <= 25:
+            bottom_prox = min(0.95, bottom_prox + 0.25)
+            top_prox = max(0.05, top_prox - 0.2)
+        elif rsi_1d <= 35:
+            bottom_prox = min(0.85, bottom_prox + 0.15)
+            top_prox = max(0.1, top_prox - 0.1)
+        elif rsi_1d >= 75:
+            top_prox = min(0.95, top_prox + 0.25)
+            bottom_prox = max(0.05, bottom_prox - 0.2)
+        elif rsi_1d >= 65:
+            top_prox = min(0.85, top_prox + 0.15)
+            bottom_prox = max(0.1, bottom_prox - 0.1)
+    
+    # ══════════════════════════════════════════════════════
+    # 4. ТОРГОВЫЙ СИГНАЛ (based on backtest: HODL-first approach)
     # ══════════════════════════════════════════════════════
     
     # Backtest showed: active trading loses to HODL
@@ -452,58 +506,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 4. СИГНАЛ ДНО-ВЕРШИНА (without BTC/ETH duplicate)
+    # 5. СИГНАЛ ДНО-ВЕРШИНА (display only, calculation done above)
     # ══════════════════════════════════════════════════════
-    
-    # Calculate bottom/top proximity
-    if regime == "BEAR":
-        if days_in_regime > 30 and risk_level < -0.5:
-            bottom_prox = min(0.9, 0.7 + abs(risk_level) * 0.2)
-            top_prox = 0.1
-        elif days_in_regime > 14:
-            bottom_prox = min(0.7, 0.5 + abs(risk_level) * 0.2)
-            top_prox = 0.2
-        else:
-            bottom_prox = 0.3
-            top_prox = 0.4
-    elif regime == "BULL":
-        if days_in_regime > 30 and risk_level > 0.5:
-            bottom_prox = 0.1
-            top_prox = min(0.9, 0.7 + risk_level * 0.2)
-        elif days_in_regime > 14:
-            bottom_prox = 0.2
-            top_prox = 0.5
-        else:
-            bottom_prox = 0.4
-            top_prox = 0.3
-    elif regime == "TRANSITION":
-        if risk_level < -0.3:
-            bottom_prox = 0.3
-            top_prox = 0.5
-        elif risk_level > 0.3:
-            bottom_prox = 0.5
-            top_prox = 0.3
-        else:
-            bottom_prox = 0.4
-            top_prox = 0.4
-    else:
-        bottom_prox = 0.35
-        top_prox = 0.35
-    
-    # RSI adjustment
-    if rsi_1d is not None:
-        if rsi_1d <= 25:
-            bottom_prox = min(0.95, bottom_prox + 0.25)
-            top_prox = max(0.05, top_prox - 0.2)
-        elif rsi_1d <= 35:
-            bottom_prox = min(0.85, bottom_prox + 0.15)
-            top_prox = max(0.1, top_prox - 0.1)
-        elif rsi_1d >= 75:
-            top_prox = min(0.95, top_prox + 0.25)
-            bottom_prox = max(0.05, bottom_prox - 0.2)
-        elif rsi_1d >= 65:
-            top_prox = min(0.85, top_prox + 0.15)
-            bottom_prox = max(0.1, bottom_prox - 0.1)
     
     lines.append("🔘 Сигнал Дно-Вершина:")
     lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100):2d}%")
