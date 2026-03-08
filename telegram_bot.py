@@ -383,7 +383,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 3. BOTTOM/TOP PROXIMITY (must be before signals)
+    # 4. BOTTOM/TOP PROXIMITY (needed for action)
     # ══════════════════════════════════════════════════════
     
     # Calculate bottom/top proximity
@@ -437,28 +437,41 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             bottom_prox = max(0.1, bottom_prox - 0.1)
     
     # ══════════════════════════════════════════════════════
-    # 4. ДЕЙСТВИЕ (based on Bottom/Top - backtest proven: 65%/74%)
+    # 5. ДЕЙСТВИЕ (Bottom/Top + Phase integrated)
     # ══════════════════════════════════════════════════════
     
-    # Logic: buy at bottom, sell at top, in portions
-    if bottom_prox >= 0.7:
-        action = "🟢 ПОКУПАТЬ"
-        action_note = f"Сильный сигнал дна ({int(bottom_prox*100)}%). Рынок перепродан — хорошая точка для покупки. Входить частями: 25-50% от запланированного объёма."
-    elif bottom_prox >= 0.5 and top_prox < 0.4:
-        action = "🟡 ДОКУПИТЬ"
-        action_note = f"Умеренный сигнал дна ({int(bottom_prox*100)}%). Можно добавить 10-20% к позиции. Не спешить — возможно падение ниже."
-    elif top_prox >= 0.7:
-        action = "🔴 ПРОДАВАТЬ"
-        action_note = f"Сильный сигнал вершины ({int(top_prox*100)}%). Рынок перегрет — фиксировать прибыль. Продавать частями: 25-50% позиции."
-    elif top_prox >= 0.5 and bottom_prox < 0.4:
-        action = "🟠 ФИКСИРОВАТЬ"
-        action_note = f"Умеренный сигнал вершины ({int(top_prox*100)}%). Можно продать 10-20% позиции. Не паниковать — рост ещё возможен."
-    elif risk_state == "CRISIS":
+    # Base logic: buy at bottom, sell at top
+    # Modified by: phase/cycle signals
+    
+    if risk_state == "CRISIS":
+        # Risk override - highest priority
         action = "⚫ ЗАЩИТА"
         action_note = "Кризисный режим. Высокая волатильность, возможны резкие движения. Сократить позицию до 20-30% и ждать стабилизации."
+    elif bottom_prox >= 0.7:
+        action = "🟢 ПОКУПАТЬ"
+        action_note = f"Сильный сигнал дна ({int(bottom_prox*100)}%). Рынок перепродан — хорошая точка для покупки. Входить частями: 25-50%."
+    elif top_prox >= 0.7:
+        action = "🔴 ПРОДАВАТЬ"
+        action_note = f"Сильный сигнал вершины ({int(top_prox*100)}%). Рынок перегрет — фиксировать прибыль. Продавать частями: 25-50%."
+    elif bottom_prox >= 0.5 and top_prox < 0.4:
+        action = "🟡 ДОКУПИТЬ"
+        action_note = f"Умеренный сигнал дна ({int(bottom_prox*100)}%). Можно добавить 10-20% к позиции."
+    elif top_prox >= 0.5 and bottom_prox < 0.4:
+        action = "🟠 ФИКСИРОВАТЬ"
+        action_note = f"Умеренный сигнал вершины ({int(top_prox*100)}%). Можно продать 10-20% позиции."
+    # Phase-based signals when bottom/top neutral
+    elif phase in ("EARLY_BULL", "ACCUMULATION") and bottom_prox >= 0.3:
+        action = "🟡 ДОКУПИТЬ"
+        action_note = f"Фаза {phase} — начало роста. Добавить 10-20% к позиции. Дно: {int(bottom_prox*100)}%."
+    elif phase in ("LATE_BULL", "DISTRIBUTION") and top_prox >= 0.3:
+        action = "🟠 ФИКСИРОВАТЬ"
+        action_note = f"Фаза {phase} — возможен разворот. Продать 10-20% позиции. Верх: {int(top_prox*100)}%."
+    elif phase == "CAPITULATION" and bottom_prox >= 0.4:
+        action = "🟢 ПОКУПАТЬ"
+        action_note = f"Капитуляция — паника на рынке. Возможность для смелых покупок. Входить частями: 15-25%."
     else:
         action = "⚪ ДЕРЖАТЬ"
-        action_note = f"Нейтральная зона (дно {int(bottom_prox*100)}%, верх {int(top_prox*100)}%). Нет явного сигнала — сохранять текущую позицию."
+        action_note = f"Нейтральная зона (дно {int(bottom_prox*100)}%, верх {int(top_prox*100)}%). Нет явного сигнала — сохранять позицию."
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
@@ -499,8 +512,22 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         quadrant_str = str(lp_policy.risk_quadrant.value) if hasattr(lp_policy.risk_quadrant, 'value') else str(lp_policy.risk_quadrant)
         lines.append(f"{lp_regime_str} ({quadrant_str})")
         
-        # Exposure - only max
-        max_exp = int(lp_policy.max_exposure * 100)
+        # Exposure with regime modifier
+        base_exp = lp_policy.max_exposure
+        
+        # Apply market regime modifier
+        if risk_state == "CRISIS":
+            adjusted_exp = 0.1
+        elif risk_state == "TAIL":
+            adjusted_exp = min(0.3, base_exp)
+        elif regime == "BULL" and conf_pct > 30:
+            adjusted_exp = min(0.9, base_exp + 0.2)  # +20% in bull
+        elif regime == "BEAR":
+            adjusted_exp = max(0.1, base_exp - 0.2)  # -20% in bear
+        else:
+            adjusted_exp = base_exp
+        
+        max_exp = int(adjusted_exp * 100)
         range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
         lines.append(f"Exposure: {max_exp}% | Range: {range_str}")
         
@@ -510,9 +537,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
             lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
         
-        # Hedge - REQUIRED when TAIL or CRISIS risk
-        hedge_required = lp_policy.hedge_recommended or risk_state in ("TAIL", "CRISIS")
-        hedge_str = "REQUIRED" if hedge_required else "optional"
+        # Hedge - REQUIRED when TAIL/CRISIS risk OR low confidence + elevated risk
+        hedge_required = (
+            lp_policy.hedge_recommended or 
+            risk_state in ("TAIL", "CRISIS") or
+            (risk_state == "ELEVATED" and conf_pct < 30)
+        )
+        hedge_str = "REQUIRED" if hedge_required else "recommended" if risk_state == "ELEVATED" else "optional"
         lines.append(f"Hedge: {hedge_str}")
         
         # Signals as comment (in Russian)
@@ -529,7 +560,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    lines.append("📡 DATA STATUS v5.5 OracAi")
+    lines.append("📡 DATA STATUS v5.6 OracAi")
     lines.append(f"Качество данных: {int(data_quality*100)}%")
     
     if failed_sources:
