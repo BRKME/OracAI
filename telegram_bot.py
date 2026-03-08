@@ -486,22 +486,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100):2d}%")
     lines.append("")
     
-    # Smart conclusion based on bottom/top
-    if top_prox > bottom_prox + 0.15:
-        lines.append("Вывод: Рынок с большей вероятностью перегрет и может упасть, чем недооценён и готов расти.")
-    elif bottom_prox > top_prox + 0.15:
-        lines.append("Вывод: Рынок с большей вероятностью недооценён и может вырасти, чем перегрет и готов падать.")
-    elif bottom_prox >= 0.6:
-        lines.append("Вывод: Высокая вероятность дна — покупка выгоднее продажи.")
-    elif top_prox >= 0.6:
-        lines.append("Вывод: Высокая вероятность вершины — фиксируем прибыль.")
-    else:
-        lines.append("Вывод: Нейтральная зона — следуем сигналу модели.")
-    
-    lines.append("")
-    
     # ══════════════════════════════════════════════════════
-    # 6. LP POLICY
+    # 7. LP POLICY
     # ══════════════════════════════════════════════════════
     
     if lp_policy:
@@ -560,7 +546,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    lines.append("📡 DATA STATUS v5.6 OracAi")
+    lines.append("📡 DATA STATUS v5.7 OracAi")
     lines.append(f"Качество данных: {int(data_quality*100)}%")
     
     if failed_sources:

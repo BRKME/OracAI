@@ -187,13 +187,16 @@ def should_switch(P: dict, current_regime: str, holds_for: int) -> Optional[str]
 def compute_confidence(P: dict, quality: float, sentiment_value: float,
                        corr_spx: float, corr_gold: float,
                        regime_switch_log: list) -> dict:
-    """Quality-adjusted confidence with churn penalty."""
-    # Entropy-based
-    probs = np.array([P[r] for r in cfg.REGIMES])
-    probs = np.clip(probs, 1e-10, 1.0)
-    H = -np.sum(probs * np.log(probs))
-    H_norm = H / np.log(len(cfg.REGIMES))
-    base = 1.0 - H_norm
+    """Quality-adjusted confidence based on regime gap."""
+    # Gap-based confidence (v5.6)
+    # Gap between top-1 and top-2 regime better reflects certainty
+    sorted_probs = sorted(P.values(), reverse=True)
+    gap = sorted_probs[0] - sorted_probs[1]  # e.g., 70% - 14% = 56%
+    
+    # Scale gap to confidence
+    # gap=20% → conf=30%, gap=40% → conf=60%, gap=60% → conf=90%
+    base = min(0.90, gap * 1.5)
+    base = max(0.10, base)  # floor at 10%
 
     # Quality adjustment
     adjusted = base * quality
