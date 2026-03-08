@@ -475,19 +475,19 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Calculate recommended exposure based on risk
     if risk_state == "CRISIS":
         exposure = "20%"
-        exposure_note = "Минимум. Защита капитала."
+        exposure_note = "Уходить в стейблы. Защита капитала."
     elif risk_state == "TAIL":
         exposure = "50%"
-        exposure_note = "Сниженная. Высокий риск."
+        exposure_note = "Продать ~30%. Высокий риск."
     elif regime == "BEAR":
         exposure = "60%"
-        exposure_note = "Осторожность в медвежьем рынке."
+        exposure_note = "Немного снизить позицию."
     elif regime == "BULL" and conf_pct > 40:
         exposure = "100%"
-        exposure_note = "Полная. Бычий тренд."
+        exposure_note = "Держать всё. Бычий тренд."
     else:
         exposure = "80%"
-        exposure_note = "Стандартная."
+        exposure_note = "Ничего не делать. Нормальный рынок."
     
     lines.append(f"🔘 Позиция:")
     lines.append(f"Рекомендуемая экспозиция: {exposure}")
