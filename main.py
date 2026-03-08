@@ -23,7 +23,7 @@ except ImportError:
 
 from data_pipeline import fetch_all_data
 from engine import RegimeEngine, default_state, save_state, STATE_FILE
-from telegram_bot import send_telegram, format_output
+from telegram_bot import send_telegram_with_chart, format_output
 from lp_policy_engine import compute_lp_policy
 from asset_allocation import compute_btc_eth_allocation
 
@@ -136,7 +136,7 @@ def main():
     if dry_run:
         logger.info("Dry run — skipping Telegram")
     else:
-        send_telegram(output, lp_policy, allocation)
+        send_telegram_with_chart(output, lp_policy, allocation)
 
     # ── 7. Summary ────────────────────────────────────────
     regime = output["regime"]

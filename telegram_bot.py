@@ -630,3 +630,59 @@ def send_telegram(output: dict, lp_policy=None, allocation=None, short=False) ->
     except Exception as e:
         logger.error(f"Telegram failed: {e}")
         return False
+
+
+def send_telegram_with_chart(output: dict, lp_policy=None, allocation=None, short=False) -> bool:
+    """Send chart + message to Telegram."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not token or not chat_id:
+        logger.warning("Telegram credentials not set.")
+        return False
+
+    # 1. Generate and send chart
+    try:
+        from chart_generator import generate_chart
+        chart_buf = generate_chart(90)
+        
+        if chart_buf:
+            url_photo = f"https://api.telegram.org/bot{token}/sendPhoto"
+            files = {'photo': ('btc_chart.png', chart_buf, 'image/png')}
+            data = {'chat_id': chat_id}
+            
+            resp = requests.post(url_photo, files=files, data=data, timeout=30)
+            if resp.status_code == 200:
+                logger.info("✓ Chart sent")
+            else:
+                logger.warning(f"Chart failed: {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Chart error (continuing): {e}")
+
+    # 2. Send text message
+    if short:
+        text = format_short(output, lp_policy, allocation)
+    else:
+        text = format_output(output, lp_policy, allocation)
+
+    if len(text) > 4096:
+        text = text[:4090] + "\n..."
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": f"```\n{text}\n```",
+        "parse_mode": "Markdown",
+    }
+
+    try:
+        resp = requests.post(url, json=payload, timeout=15)
+        if resp.status_code == 200:
+            logger.info("✓ Telegram sent")
+            return True
+        else:
+            logger.error(f"Telegram error: {resp.status_code}")
+            return False
+    except Exception as e:
+        logger.error(f"Telegram failed: {e}")
+        return False
