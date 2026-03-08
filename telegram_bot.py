@@ -437,73 +437,32 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             bottom_prox = max(0.1, bottom_prox - 0.1)
     
     # ══════════════════════════════════════════════════════
-    # 4. ТОРГОВЫЙ СИГНАЛ (based on backtest: HODL-first approach)
+    # 4. ДЕЙСТВИЕ (based on Bottom/Top - backtest proven: 65%/74%)
     # ══════════════════════════════════════════════════════
     
-    # Backtest showed: active trading loses to HODL
-    # New approach: HOLD by default, signals only at extremes
-    
-    def get_signal_v2(regime, risk_state, rsi, bottom_prox, top_prox, conf):
-        """
-        Conservative signal logic based on backtest results:
-        - HODL outperforms active trading
-        - Use signals only for risk management
-        - BUY only at extreme bottoms
-        - SELL only in CRISIS
-        """
-        # Default: HOLD (HODL wins long-term)
-        signal = "HOLD"
-        
-        # SELL only in CRISIS (risk management)
-        if risk_state == "CRISIS":
-            signal = "SELL"
-        
-        # BUY only at extreme bottom (RSI < 25 + Bottom > 70%)
-        elif rsi is not None and rsi < 25 and bottom_prox > 0.7:
-            signal = "BUY"
-        
-        # Reduce position at extreme top (not full SELL)
-        elif rsi is not None and rsi > 80 and top_prox > 0.8:
-            signal = "REDUCE"
-        
-        return signal
-    
-    btc_rsi = rsi_1d if rsi_1d else 50
-    btc_signal = get_signal_v2(regime, risk_state, btc_rsi, bottom_prox, top_prox, conf_pct)
-    eth_signal = get_signal_v2(regime, risk_state, btc_rsi, bottom_prox, top_prox, conf_pct)
-    
-    # Calculate recommended exposure based on risk
-    if risk_state == "CRISIS":
-        exposure = "20%"
-        exposure_note = "Уходить в стейблы. Защита капитала."
-    elif risk_state == "TAIL":
-        exposure = "50%"
-        exposure_note = "Продать ~30%. Высокий риск."
-    elif regime == "BEAR":
-        exposure = "60%"
-        exposure_note = "Немного снизить позицию."
-    elif regime == "BULL" and conf_pct > 40:
-        exposure = "100%"
-        exposure_note = "Держать всё. Бычий тренд."
+    # Logic: buy at bottom, sell at top, in portions
+    if bottom_prox >= 0.7:
+        action = "ПОКУПАТЬ"
+        action_note = f"Дно {int(bottom_prox*100)}%. Докупать частями (25-50%)."
+    elif bottom_prox >= 0.5 and top_prox < 0.4:
+        action = "ДОКУПИТЬ"
+        action_note = f"Дно {int(bottom_prox*100)}%. Можно добавить 10-20%."
+    elif top_prox >= 0.7:
+        action = "ПРОДАВАТЬ"
+        action_note = f"Вершина {int(top_prox*100)}%. Фиксировать частями (25-50%)."
+    elif top_prox >= 0.5 and bottom_prox < 0.4:
+        action = "ФИКСИРОВАТЬ"
+        action_note = f"Вершина {int(top_prox*100)}%. Можно продать 10-20%."
+    elif risk_state == "CRISIS":
+        action = "ЗАЩИТА"
+        action_note = "CRISIS. Сократить до 20-30%."
     else:
-        exposure = "80%"
-        exposure_note = "Ничего не делать. Нормальный рынок."
+        action = "ДЕРЖАТЬ"
+        action_note = "Нет сигнала. Ничего не делать."
     
-    lines.append(f"🔘 Позиция:")
-    lines.append(f"Рекомендуемая экспозиция: {exposure}")
-    lines.append(f"→ {exposure_note}")
+    lines.append(f"🔘 Действие: {action}")
+    lines.append(f"→ {action_note}")
     lines.append("")
-    
-    # Show signal only if not HOLD
-    if btc_signal != "HOLD" or eth_signal != "HOLD":
-        lines.append(f"⚡ Сигнал: BTC={btc_signal} ETH={eth_signal}")
-        if btc_signal == "BUY":
-            lines.append("→ Экстремальная перепроданность. Точка входа.")
-        elif btc_signal == "SELL":
-            lines.append("→ CRISIS режим. Защита капитала.")
-        elif btc_signal == "REDUCE":
-            lines.append("→ Экстремальная перекупленность. Частичная фиксация.")
-        lines.append("")
     
     # ══════════════════════════════════════════════════════
     # 5. СИГНАЛ ДНО-ВЕРШИНА (display only, calculation done above)
@@ -570,7 +529,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    lines.append("📡 DATA STATUS v5.4 OracAi")
+    lines.append("📡 DATA STATUS v5.5 OracAi")
     lines.append(f"Качество данных: {int(data_quality*100)}%")
     
     if failed_sources:
