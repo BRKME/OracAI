@@ -32,6 +32,7 @@ except ImportError:
 # Import engine components
 try:
     from engine import RegimeEngine
+    from data_pipeline import fetch_all_data
     from chart_generator import generate_chart
     ENGINE_AVAILABLE = True
 except ImportError as e:
@@ -366,12 +367,19 @@ def run_engine() -> dict:
         return None
     
     try:
+        # Fetch market data
+        logger.info("📡 Fetching market data...")
+        raw_data = fetch_all_data()
+        
+        # Process through engine
         engine = RegimeEngine()
-        result = engine.run()
+        result = engine.process(raw_data)
         logger.info(f"✓ Engine completed: regime={result.get('regime')}")
         return result
     except Exception as e:
         logger.error(f"❌ Engine error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
