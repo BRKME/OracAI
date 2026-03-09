@@ -352,7 +352,7 @@ ETH ${eth_price:,.0f}
         except:
             return False
     
-    def run(self) -> bool:
+    def run(self, force: bool = False) -> bool:
         """Main run method."""
         logger.info("=" * 50)
         logger.info("OracAI Public Channel v2.0")
@@ -373,15 +373,19 @@ ETH ${eth_price:,.0f}
             logger.error(f"❌ Engine error: {e}")
             return False
         
-        # 2. Check triggers
-        logger.info("🎯 Checking triggers...")
-        should_publish, trigger = self.check_triggers(result)
-        
-        if not should_publish:
-            logger.info("ℹ️ No triggers - skipping")
-            self.state["last_regime"] = result.get("regime")
-            self._save_state()
-            return True
+        # 2. Check triggers (skip if force)
+        if force:
+            logger.info("⚡ FORCE mode - skipping trigger check")
+            trigger = "Manual"
+        else:
+            logger.info("🎯 Checking triggers...")
+            should_publish, trigger = self.check_triggers(result)
+            
+            if not should_publish:
+                logger.info("ℹ️ No triggers - skipping")
+                self.state["last_regime"] = result.get("regime")
+                self._save_state()
+                return True
         
         logger.info(f"✓ Trigger: {trigger}")
         
@@ -408,8 +412,13 @@ ETH ${eth_price:,.0f}
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description='OracAI Public Channel Publisher')
+    parser.add_argument('--force', action='store_true', help='Force publish (bypass triggers)')
+    args = parser.parse_args()
+    
     publisher = PublicChannelPublisher()
-    success = publisher.run()
+    success = publisher.run(force=args.force)
     return 0 if success else 1
 
 

@@ -5,6 +5,15 @@ on:
     # Every 30 minutes (global cooldown handles spam prevention)
     - cron: '*/30 * * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Force publish (bypass triggers)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 permissions:
   contents: write
@@ -32,7 +41,12 @@ jobs:
           TELEGRAM_PUBLIC_CHANNEL_ID: ${{ secrets.TELEGRAM_PUBLIC_CHANNEL_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: python public_channel.py
+        run: |
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            python public_channel.py --force
+          else
+            python public_channel.py
+          fi
       
       - name: Commit state
         run: |
