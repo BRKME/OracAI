@@ -1,0 +1,49 @@
+name: Twitter Publisher
+
+on:
+  schedule:
+    # 08:00 MSK (05:00 UTC) - Morning update
+    - cron: '0 5 * * *'
+    # 20:00 MSK (17:00 UTC) - Evening update
+    - cron: '0 17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  twitter-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install tweepy
+      
+      - name: Run Twitter Publisher
+        env:
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_TOKEN_SECRET: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+          TWITTER_ENABLED: 'true'
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python twitter_publisher.py
+      
+      - name: Commit state
+        run: |
+          git config user.name "regime-bot"
+          git config user.email "bot@regime-engine.local"
+          git add state/ || true
+          git diff --cached --quiet || git commit -m "twitter: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push || true

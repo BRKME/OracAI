@@ -1,4 +1,4 @@
-# 📊 Market Regime Engine v5.6
+# 📊 Market Regime Engine v5.7
 
 Probabilistic crypto market regime detection with integrated action logic.
 
@@ -6,12 +6,34 @@ Probabilistic crypto market regime detection with integrated action logic.
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| **Market Regime Engine** | **v5.6** | **Production** |
+| **Market Regime Engine** | **v5.7** | **Production** |
 | Signal Policy | v5.6 Integrated | Production |
 | Charts | EMA50/200 + RSI | Production |
 | LP Intelligence | v2.0.2 | Production |
+| **Twitter Publisher** | **v1.0** | **New** |
 
-## 🆕 What's New in v5.6
+## 🆕 What's New in v5.7
+
+### Twitter Publisher
+
+Automated Twitter posting with BTC chart (2x daily):
+
+```
+🟢 #BTC BULL | $95,234
+📊 Bull 68% · Bear 12%
+📈 Early Bull (Day 5)
+🟡 Consider adding
+
+#Bitcoin #Crypto #Trading
+```
+
+**Schedule:** 08:00 MSK + 20:00 MSK
+
+**Features:**
+- BTC-only chart (EMA50/200 + RSI)
+- English format for global reach
+- Optimized hashtags for visibility
+- No LP info (spot trading focus)
 
 ### Integrated Action Logic
 
@@ -53,10 +75,19 @@ Action now considers **Phase/Cycle**, not just Bottom/Top:
 
 ```bash
 pip install -r requirements.txt
-python main.py              # Full analysis + charts
+python main.py              # Full analysis + charts (Telegram)
+python twitter_publisher.py # Twitter post with BTC chart
 python main.py --dry-run    # No Telegram
 python backtest_v5.py       # Backtest (3 years)
 ```
+
+### Twitter Setup
+
+Add these secrets to GitHub:
+- `TWITTER_API_KEY`
+- `TWITTER_API_SECRET`
+- `TWITTER_ACCESS_TOKEN`
+- `TWITTER_ACCESS_TOKEN_SECRET`
 
 ## Architecture
 
@@ -155,6 +186,7 @@ Hedge: REQUIRED
 
 ## Version History
 
+- **v5.7** — Twitter Publisher for global reach
 - **v5.6** — Integrated logic (phase + hedge + LP exposure)
 - v5.5 — BTC/ETH charts with EMA
 - v5.4 — HODL-first strategy
