@@ -1,14 +1,10 @@
 """
-LP Weekly Digest v1.0
-Еженедельный отчёт по LP позициям.
+LP Weekly Digest v2.0
+Минималистичный еженедельный отчёт по LP позициям.
 
-Запуск: каждое воскресенье
-Содержание:
-- Изменение TVL за неделю
-- Заработанные fees
-- APY портфеля
-- Лучшие/худшие позиции
-- Сравнение с бенчмарком
+Формула реальной эффективности:
+Real PnL = Fee Total - |TVL Loss|
+Real Efficiency = Real PnL / Start TVL * 100%
 """
 
 import json
@@ -16,39 +12,28 @@ import logging
 import os
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict
 
 import requests
 
-# Logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# CONSTANTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# Files
 HISTORY_FILE = "state/lp_history.json"
 POSITIONS_FILE = "state/lp_positions.json"
 DIGEST_FILE = "state/lp_weekly_digest.json"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# DATA LOADING
-# ═══════════════════════════════════════════════════════════════════════════════
-
 def load_history() -> List[dict]:
-    """Load history from file"""
+    """Load history snapshots"""
     if not os.path.exists(HISTORY_FILE):
         return []
-    
     try:
         with open(HISTORY_FILE, 'r') as f:
-            data = json.load(f)
-            return data.get("snapshots", [])
+            return json.load(f).get("snapshots", [])
     except Exception as e:
         logger.warning(f"Error loading history: {e}")
         return []
@@ -58,253 +43,247 @@ def load_positions() -> List[dict]:
     """Load current positions"""
     if not os.path.exists(POSITIONS_FILE):
         return []
-    
     try:
         with open(POSITIONS_FILE, 'r') as f:
-            data = json.load(f)
-            return data.get("positions", [])
+            return json.load(f).get("positions", [])
     except Exception as e:
         logger.warning(f"Error loading positions: {e}")
         return []
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# CALCULATIONS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def get_week_range() -> Tuple[str, str]:
-    """Get date range for the past week"""
-    today = datetime.now(timezone.utc)
-    week_ago = today - timedelta(days=7)
-    return week_ago.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
-
-
-def get_snapshot_for_date(snapshots: List[dict], target_date: str) -> Optional[dict]:
-    """Find snapshot closest to target date"""
-    closest = None
+def get_week_snapshots(snapshots: List[dict], days: int = 7) -> Tuple[Optional[dict], Optional[dict]]:
+    """Get start and end snapshots for the week"""
+    if len(snapshots) < 2:
+        return None, None
+    
+    today = datetime.now(timezone.utc).date()
+    week_ago = today - timedelta(days=days)
+    
+    # Find closest to week_ago
+    start_snapshot = None
     for s in snapshots:
-        if s.get("date", "") <= target_date:
-            closest = s
-    return closest
+        s_date = datetime.strptime(s.get("date", "2000-01-01"), "%Y-%m-%d").date()
+        if s_date <= week_ago:
+            start_snapshot = s
+        elif start_snapshot is None:
+            start_snapshot = s
+            break
+    
+    # Latest as end
+    end_snapshot = snapshots[-1]
+    
+    return start_snapshot, end_snapshot
+
+
+def calculate_real_efficiency(start_tvl: float, end_tvl: float, fees_earned: float) -> dict:
+    """
+    Calculate real efficiency.
+    
+    Formula:
+    - TVL Change = End TVL - Start TVL (negative = loss)
+    - Real PnL = Fees + TVL Change
+    - Real Efficiency = Real PnL / Start TVL * 100%
+    """
+    tvl_change = end_tvl - start_tvl
+    real_pnl = fees_earned + tvl_change
+    
+    if start_tvl > 0:
+        real_efficiency_pct = (real_pnl / start_tvl) * 100
+    else:
+        real_efficiency_pct = 0
+    
+    return {
+        "start_tvl": start_tvl,
+        "end_tvl": end_tvl,
+        "tvl_change": tvl_change,
+        "fees_earned": fees_earned,
+        "real_pnl": real_pnl,
+        "real_efficiency_pct": real_efficiency_pct
+    }
 
 
 def calculate_weekly_stats(snapshots: List[dict]) -> dict:
-    """Calculate weekly statistics"""
+    """Calculate weekly statistics with real efficiency"""
     
-    if len(snapshots) < 2:
-        return {
-            "has_data": False,
-            "reason": "Недостаточно данных (нужно минимум 2 дня)"
-        }
+    start_snapshot, end_snapshot = get_week_snapshots(snapshots)
     
-    week_start, week_end = get_week_range()
+    if not start_snapshot or not end_snapshot:
+        return {"has_data": False, "reason": "Недостаточно данных"}
     
-    # Get snapshots
-    start_snapshot = get_snapshot_for_date(snapshots, week_start)
-    end_snapshot = snapshots[-1]  # Latest
+    # Period
+    start_date = start_snapshot.get("date", "")
+    end_date = end_snapshot.get("date", "")
+    days = (datetime.strptime(end_date, "%Y-%m-%d") - 
+            datetime.strptime(start_date, "%Y-%m-%d")).days
     
-    if not start_snapshot:
-        start_snapshot = snapshots[0]  # Use oldest available
-    
-    # TVL change
+    # Portfolio totals
     start_tvl = start_snapshot.get("tvl", 0)
     end_tvl = end_snapshot.get("tvl", 0)
-    tvl_change = end_tvl - start_tvl
-    tvl_change_pct = (tvl_change / start_tvl * 100) if start_tvl > 0 else 0
     
-    # Fees earned (from cumulative)
-    start_cumulative = start_snapshot.get("fees_cumulative", start_snapshot.get("fees", 0))
-    end_cumulative = end_snapshot.get("fees_cumulative", end_snapshot.get("fees", 0))
+    # Fees earned (cumulative difference)
+    start_cumulative = start_snapshot.get("fees_cumulative", 0)
+    end_cumulative = end_snapshot.get("fees_cumulative", 0)
     fees_earned = end_cumulative - start_cumulative
     
-    # APY calculation
-    if fees_earned > 0 and start_tvl > 0:
-        days = max(1, len([s for s in snapshots if s.get("date", "") >= start_snapshot.get("date", "")]))
-        avg_tvl = (start_tvl + end_tvl) / 2
-        apy = (fees_earned / avg_tvl) * (365 / days) * 100
-    else:
-        apy = None
+    # Real efficiency for portfolio
+    portfolio_efficiency = calculate_real_efficiency(start_tvl, end_tvl, fees_earned)
     
-    # Wallet performance
+    # Wallet-level analysis
     start_wallets = start_snapshot.get("by_wallet", {})
     end_wallets = end_snapshot.get("by_wallet", {})
+    end_fees = end_snapshot.get("by_wallet_fees", {})
     
-    wallet_performance = []
-    for wallet, end_value in end_wallets.items():
-        start_value = start_wallets.get(wallet, end_value)
-        change = end_value - start_value
-        change_pct = (change / start_value * 100) if start_value > 0 else 0
-        wallet_performance.append({
+    # Get all wallets (union of start and end)
+    all_wallets = set(start_wallets.keys()) | set(end_wallets.keys())
+    
+    wallet_stats = []
+    for wallet in all_wallets:
+        w_start_tvl = start_wallets.get(wallet, 0)
+        w_end_tvl = end_wallets.get(wallet, 0)
+        w_tvl_change = w_end_tvl - w_start_tvl
+        
+        # Current uncollected fees for this wallet
+        w_uncollected = end_fees.get(wallet, 0)
+        
+        # For wallet-level, we approximate fees earned as proportion of total
+        if start_tvl > 0:
+            wallet_share = w_start_tvl / start_tvl
+            w_fees_estimated = fees_earned * wallet_share
+        else:
+            w_fees_estimated = 0
+        
+        w_real_pnl = w_fees_estimated + w_tvl_change
+        w_efficiency = (w_real_pnl / w_start_tvl * 100) if w_start_tvl > 0 else 0
+        
+        wallet_stats.append({
             "wallet": wallet,
-            "start_tvl": start_value,
-            "end_tvl": end_value,
-            "change": change,
-            "change_pct": change_pct
+            "start_tvl": w_start_tvl,
+            "end_tvl": w_end_tvl,
+            "tvl_change": w_tvl_change,
+            "fees_estimated": w_fees_estimated,
+            "uncollected": w_uncollected,
+            "real_pnl": w_real_pnl,
+            "efficiency_pct": w_efficiency
         })
     
-    # Sort by performance
-    wallet_performance.sort(key=lambda x: x["change_pct"], reverse=True)
+    # Sort wallets by number (1, 2, 3, 4, 5)
+    def wallet_sort_key(w):
+        name = w.get("wallet", "")
+        try:
+            return int(name.split('_')[1])
+        except:
+            return 999
+    
+    wallet_stats.sort(key=wallet_sort_key)
+    
+    # Positions info
+    positions_count = end_snapshot.get("positions_count", 0)
+    positions_in_range = end_snapshot.get("positions_in_range", 0)
     
     return {
         "has_data": True,
         "period": {
-            "start": start_snapshot.get("date"),
-            "end": end_snapshot.get("date"),
-            "days": (datetime.strptime(end_snapshot.get("date", "2025-01-01"), "%Y-%m-%d") - 
-                    datetime.strptime(start_snapshot.get("date", "2025-01-01"), "%Y-%m-%d")).days
+            "start": start_date,
+            "end": end_date,
+            "days": days
         },
-        "tvl": {
-            "start": start_tvl,
-            "end": end_tvl,
-            "change": tvl_change,
-            "change_pct": tvl_change_pct
-        },
-        "fees": {
-            "earned": fees_earned,
-            "current_uncollected": end_snapshot.get("fees", 0)
-        },
-        "apy": apy,
+        "portfolio": portfolio_efficiency,
+        "wallets": wallet_stats,
         "positions": {
-            "count": end_snapshot.get("positions_count", 0),
-            "in_range": end_snapshot.get("positions_in_range", 0)
+            "count": positions_count,
+            "in_range": positions_in_range
         },
-        "wallet_performance": wallet_performance
+        "fees_uncollected": end_snapshot.get("fees", 0)
     }
 
 
-def analyze_positions(positions: List[dict]) -> dict:
-    """Analyze current positions"""
+def format_weekly_digest(stats: dict) -> str:
+    """Format minimalist weekly digest"""
     
-    if not positions:
-        return {"has_data": False}
+    lines = []
     
-    # Group by pair
-    pairs = {}
-    for pos in positions:
-        t0 = pos.get("token0_symbol", "")
-        t1 = pos.get("token1_symbol", "")
-        pair = f"{t0}-{t1}"
-        
-        if pair not in pairs:
-            pairs[pair] = {
-                "pair": pair,
-                "balance_usd": 0,
-                "fees_usd": 0,
-                "count": 0,
-                "in_range": 0
-            }
-        
-        pairs[pair]["balance_usd"] += pos.get("balance_usd", 0)
-        pairs[pair]["fees_usd"] += pos.get("uncollected_fees_usd", 0)
-        pairs[pair]["count"] += 1
-        if pos.get("in_range", False):
-            pairs[pair]["in_range"] += 1
-    
-    # Calculate fee rate for each pair
-    for pair_data in pairs.values():
-        if pair_data["balance_usd"] > 0:
-            pair_data["fee_rate"] = pair_data["fees_usd"] / pair_data["balance_usd"] * 100
-        else:
-            pair_data["fee_rate"] = 0
-    
-    # Sort by TVL
-    pairs_list = sorted(pairs.values(), key=lambda x: x["balance_usd"], reverse=True)
-    
-    # Best/worst by fee rate
-    pairs_by_fees = sorted(pairs.values(), key=lambda x: x["fee_rate"], reverse=True)
-    
-    return {
-        "has_data": True,
-        "pairs": pairs_list,
-        "best_performers": pairs_by_fees[:3] if len(pairs_by_fees) >= 3 else pairs_by_fees,
-        "worst_performers": pairs_by_fees[-3:][::-1] if len(pairs_by_fees) >= 3 else []
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# REPORT FORMATTING
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def format_weekly_digest(stats: dict, positions_analysis: dict) -> str:
-    """Format weekly digest for Telegram"""
-    
-    now = datetime.now(timezone.utc)
-    msk_time = now + timedelta(hours=3)
-    
-    lines = [
-        "#LP #Weekly",
-        f"📅 Недельный дайджест | {msk_time.strftime('%d.%m.%Y')}",
-        "",
-    ]
+    # Header
+    now = datetime.now(timezone.utc) + timedelta(hours=3)
+    lines.append(f"LP WEEKLY | {now.strftime('%d.%m.%Y')}")
+    lines.append("")
     
     if not stats.get("has_data"):
         lines.append(f"⚠️ {stats.get('reason', 'Нет данных')}")
         return "\n".join(lines)
     
-    # Period
     period = stats.get("period", {})
-    lines.append(f"Период: {period.get('start')} — {period.get('end')} ({period.get('days')}д)")
+    portfolio = stats.get("portfolio", {})
+    
+    # Period
+    lines.append(f"{period.get('start')} → {period.get('end')} ({period.get('days')}d)")
     lines.append("")
     
-    # TVL
-    tvl = stats.get("tvl", {})
-    tvl_emoji = "📈" if tvl.get("change", 0) >= 0 else "📉"
-    lines.append(f"{tvl_emoji} TVL: ${tvl.get('end', 0):,.0f}")
+    # Portfolio summary
+    start_tvl = portfolio.get("start_tvl", 0)
+    end_tvl = portfolio.get("end_tvl", 0)
+    tvl_change = portfolio.get("tvl_change", 0)
+    fees = portfolio.get("fees_earned", 0)
+    real_pnl = portfolio.get("real_pnl", 0)
+    efficiency = portfolio.get("real_efficiency_pct", 0)
     
-    change = tvl.get("change", 0)
-    change_pct = tvl.get("change_pct", 0)
-    sign = "+" if change >= 0 else ""
-    lines.append(f"  Изменение: {sign}${change:,.0f} ({sign}{change_pct:.1f}%)")
+    lines.append("PORTFOLIO")
+    lines.append(f"TVL: ${end_tvl:,.0f}")
+    
+    # TVL change
+    tvl_sign = "+" if tvl_change >= 0 else ""
+    lines.append(f"Δ TVL: {tvl_sign}${tvl_change:,.0f}")
     
     # Fees
-    fees = stats.get("fees", {})
-    lines.append("")
-    lines.append(f"💰 Fees заработано: ${fees.get('earned', 0):,.2f}")
-    lines.append(f"  Не собрано: ${fees.get('current_uncollected', 0):,.2f}")
+    lines.append(f"Fees: +${fees:,.2f}")
     
-    # APY
-    apy = stats.get("apy")
-    if apy:
-        lines.append("")
-        lines.append(f"📊 APY портфеля: {apy:.1f}%")
+    # Real PnL
+    pnl_emoji = "✅" if real_pnl >= 0 else "❌"
+    pnl_sign = "+" if real_pnl >= 0 else ""
+    lines.append(f"{pnl_emoji} Real PnL: {pnl_sign}${real_pnl:,.2f}")
+    
+    # Efficiency
+    eff_sign = "+" if efficiency >= 0 else ""
+    lines.append(f"Efficiency: {eff_sign}{efficiency:.2f}%")
+    
+    lines.append("")
+    
+    # Wallets (sorted 1-5)
+    lines.append("BY WALLET")
+    
+    wallets = stats.get("wallets", [])
+    for w in wallets:
+        name = w.get("wallet", "")
+        w_tvl = w.get("end_tvl", 0)
+        w_pnl = w.get("real_pnl", 0)
+        w_eff = w.get("efficiency_pct", 0)
+        
+        # Format wallet number
+        num = name.split('_')[1] if '_' in name else name
+        
+        pnl_sign = "+" if w_pnl >= 0 else ""
+        eff_sign = "+" if w_eff >= 0 else ""
+        
+        emoji = "🟢" if w_pnl >= 0 else "🔴"
+        
+        lines.append(f"{num}. ${w_tvl:,.0f} | {pnl_sign}${w_pnl:,.0f} ({eff_sign}{w_eff:.1f}%) {emoji}")
+    
+    lines.append("")
     
     # Positions
     pos = stats.get("positions", {})
-    lines.append("")
-    lines.append(f"Позиций: {pos.get('count', 0)}, в диапазоне: {pos.get('in_range', 0)}")
+    count = pos.get("count", 0)
+    in_range = pos.get("in_range", 0)
+    range_pct = (in_range / count * 100) if count > 0 else 0
     
-    # Wallet performance
-    wallet_perf = stats.get("wallet_performance", [])
-    if wallet_perf:
-        lines.append("")
-        lines.append("👛 По кошелькам:")
-        for wp in wallet_perf:
-            sign = "+" if wp["change"] >= 0 else ""
-            emoji = "🟢" if wp["change"] >= 0 else "🔴"
-            lines.append(f"  {emoji} {wp['wallet']}: ${wp['end_tvl']:,.0f} ({sign}{wp['change_pct']:.1f}%)")
+    lines.append(f"Positions: {in_range}/{count} in range ({range_pct:.0f}%)")
     
-    # Best/worst pairs
-    if positions_analysis.get("has_data"):
-        best = positions_analysis.get("best_performers", [])
-        if best:
-            lines.append("")
-            lines.append("⭐ Лучшие пары (по fee rate):")
-            for p in best[:3]:
-                lines.append(f"  {p['pair']}: {p['fee_rate']:.2f}% (${p['balance_usd']:,.0f})")
-        
-        worst = positions_analysis.get("worst_performers", [])
-        if worst and len(positions_analysis.get("pairs", [])) > 3:
-            lines.append("")
-            lines.append("⚠️ Худшие пары:")
-            for p in worst[:2]:
-                lines.append(f"  {p['pair']}: {p['fee_rate']:.2f}% (${p['balance_usd']:,.0f})")
+    # Uncollected fees
+    uncollected = stats.get("fees_uncollected", 0)
+    if uncollected > 0:
+        lines.append(f"Uncollected: ${uncollected:,.2f}")
     
     return "\n".join(lines)
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TELEGRAM
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def send_telegram(message: str) -> bool:
     """Send message to Telegram"""
@@ -317,10 +296,14 @@ def send_telegram(message: str) -> bool:
     
     try:
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        response = requests.post(url, data={"chat_id": chat_id, "text": message}, timeout=10)
+        response = requests.post(url, data={
+            "chat_id": chat_id, 
+            "text": message,
+            "parse_mode": "HTML"
+        }, timeout=10)
         
         if response.status_code == 200:
-            logger.info("Telegram sent")
+            logger.info("✓ Telegram sent")
             return True
         else:
             logger.error(f"Telegram error: {response.status_code}")
@@ -330,57 +313,46 @@ def send_telegram(message: str) -> bool:
         return False
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def save_digest(stats: dict, positions_analysis: dict):
+def save_digest(stats: dict):
     """Save digest to file"""
     os.makedirs(os.path.dirname(DIGEST_FILE), exist_ok=True)
     
     data = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "stats": stats,
-        "positions_analysis": positions_analysis
+        "stats": stats
     }
     
     with open(DIGEST_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, default=str)
     
-    logger.info(f"Digest saved to {DIGEST_FILE}")
+    logger.info(f"✓ Saved to {DIGEST_FILE}")
 
 
 def main():
     """Main entry point"""
-    logger.info("=" * 60)
-    logger.info("LP WEEKLY DIGEST v1.0")
-    logger.info("=" * 60)
+    logger.info("=" * 50)
+    logger.info("LP WEEKLY DIGEST v2.0")
+    logger.info("=" * 50)
     
     # Load data
     snapshots = load_history()
-    logger.info(f"Loaded {len(snapshots)} history snapshots")
+    logger.info(f"Loaded {len(snapshots)} snapshots")
     
-    positions = load_positions()
-    logger.info(f"Loaded {len(positions)} positions")
-    
-    # Calculate stats
+    # Calculate
     stats = calculate_weekly_stats(snapshots)
-    positions_analysis = analyze_positions(positions)
     
     # Save
-    save_digest(stats, positions_analysis)
+    save_digest(stats)
     
-    # Format report
-    report = format_weekly_digest(stats, positions_analysis)
+    # Format
+    report = format_weekly_digest(stats)
     
-    print("\n" + "=" * 60)
-    print(report)
-    print("=" * 60)
+    print("\n" + report + "\n")
     
-    # Send to Telegram
+    # Send
     send_telegram(report)
     
-    logger.info("\nDone!")
+    logger.info("Done!")
     return 0
 
 
