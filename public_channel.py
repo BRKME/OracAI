@@ -288,6 +288,9 @@ No emojis. Under 20 words total."""
         now = datetime.now(timezone.utc)
         timestamp = now.strftime('%d %b %H:%M UTC')
         
+        # ETH line (only if price available)
+        eth_line = f"\nETH ${eth_price:,.0f}" if eth_price and eth_price > 0 else ""
+        
         # Build message
         message = f"""<b>BTC ${btc_price:,.0f}</b>
 
@@ -301,8 +304,7 @@ ${support//1000}k ▽ support
 ${resistance//1000}k △ resistance
 ━━━━━━━━━━━━━━
 
-Bull {prob_bull}% · Bear {prob_bear}%
-ETH ${eth_price:,.0f}
+Bull {prob_bull}% · Bear {prob_bear}%{eth_line}
 
 <i>OracAI · {timestamp}</i>"""
         
