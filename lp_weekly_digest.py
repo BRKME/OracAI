@@ -25,6 +25,113 @@ logger = logging.getLogger(__name__)
 HISTORY_FILE = "state/lp_history.json"
 POSITIONS_FILE = "state/lp_positions.json"
 DIGEST_FILE = "state/lp_weekly_digest.json"
+DIGEST_HISTORY_FILE = "state/lp_digest_history.json"
+
+
+def load_digest_history() -> List[dict]:
+    """Load accumulated weekly digests"""
+    if not os.path.exists(DIGEST_HISTORY_FILE):
+        return []
+    try:
+        with open(DIGEST_HISTORY_FILE, 'r') as f:
+            return json.load(f).get("weeks", [])
+    except Exception as e:
+        logger.warning(f"Error loading digest history: {e}")
+        return []
+
+
+def save_digest_to_history(stats: dict):
+    """Append weekly digest to history"""
+    if not stats.get("has_data"):
+        return
+    
+    history = load_digest_history()
+    
+    # Create week record
+    period = stats.get("period", {})
+    portfolio = stats.get("portfolio", {})
+    
+    week_record = {
+        "week_end": period.get("end"),
+        "week_start": period.get("start"),
+        "days": period.get("days"),
+        "start_tvl": portfolio.get("start_tvl", 0),
+        "end_tvl": portfolio.get("end_tvl", 0),
+        "tvl_change": portfolio.get("tvl_change", 0),
+        "fees_earned": portfolio.get("fees_earned", 0),
+        "real_pnl": portfolio.get("real_pnl", 0),
+        "efficiency_pct": portfolio.get("real_efficiency_pct", 0),
+        "positions_count": stats.get("positions", {}).get("count", 0),
+        "positions_in_range": stats.get("positions", {}).get("in_range", 0),
+        "wallets": stats.get("wallets", []),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Check if this week already exists (by week_end)
+    existing_idx = None
+    for i, w in enumerate(history):
+        if w.get("week_end") == week_record["week_end"]:
+            existing_idx = i
+            break
+    
+    if existing_idx is not None:
+        # Update existing
+        history[existing_idx] = week_record
+        logger.info(f"✓ Updated week {week_record['week_end']} in history")
+    else:
+        # Append new
+        history.append(week_record)
+        logger.info(f"✓ Added week {week_record['week_end']} to history")
+    
+    # Sort by date
+    history.sort(key=lambda x: x.get("week_end", ""))
+    
+    # Save
+    os.makedirs(os.path.dirname(DIGEST_HISTORY_FILE), exist_ok=True)
+    with open(DIGEST_HISTORY_FILE, 'w') as f:
+        json.dump({"weeks": history, "updated": datetime.now(timezone.utc).isoformat()}, f, indent=2)
+
+
+def calculate_period_summary(weeks: List[dict], last_n_weeks: int = None) -> dict:
+    """
+    Calculate summary for a period (last N weeks or all time).
+    
+    Returns aggregated stats: total fees, total PnL, avg efficiency, etc.
+    """
+    if not weeks:
+        return {"has_data": False}
+    
+    if last_n_weeks:
+        weeks = weeks[-last_n_weeks:]
+    
+    total_fees = sum(w.get("fees_earned", 0) for w in weeks)
+    total_pnl = sum(w.get("real_pnl", 0) for w in weeks)
+    total_tvl_change = sum(w.get("tvl_change", 0) for w in weeks)
+    
+    # Average efficiency
+    efficiencies = [w.get("efficiency_pct", 0) for w in weeks]
+    avg_efficiency = sum(efficiencies) / len(efficiencies) if efficiencies else 0
+    
+    # Start TVL (first week) and End TVL (last week)
+    start_tvl = weeks[0].get("start_tvl", 0) if weeks else 0
+    end_tvl = weeks[-1].get("end_tvl", 0) if weeks else 0
+    
+    # Period dates
+    period_start = weeks[0].get("week_start", "") if weeks else ""
+    period_end = weeks[-1].get("week_end", "") if weeks else ""
+    
+    return {
+        "has_data": True,
+        "weeks_count": len(weeks),
+        "period_start": period_start,
+        "period_end": period_end,
+        "start_tvl": start_tvl,
+        "end_tvl": end_tvl,
+        "total_tvl_change": total_tvl_change,
+        "total_fees": total_fees,
+        "total_pnl": total_pnl,
+        "avg_efficiency_pct": avg_efficiency
+    }
 
 
 def load_history() -> List[dict]:
@@ -282,6 +389,25 @@ def format_weekly_digest(stats: dict) -> str:
     if uncollected > 0:
         lines.append(f"Uncollected: ${uncollected:,.2f}")
     
+    # Historical summary (if available)
+    history = stats.get("history_summary")
+    if history and history.get("has_data") and history.get("weeks_count", 0) > 1:
+        lines.append("")
+        lines.append("─" * 20)
+        
+        weeks_count = history.get("weeks_count", 0)
+        total_pnl = history.get("total_pnl", 0)
+        total_fees = history.get("total_fees", 0)
+        avg_eff = history.get("avg_efficiency_pct", 0)
+        
+        pnl_sign = "+" if total_pnl >= 0 else ""
+        eff_sign = "+" if avg_eff >= 0 else ""
+        
+        lines.append(f"ALL TIME ({weeks_count}w)")
+        lines.append(f"Total Fees: +${total_fees:,.2f}")
+        lines.append(f"Total PnL: {pnl_sign}${total_pnl:,.2f}")
+        lines.append(f"Avg Eff: {eff_sign}{avg_eff:.2f}%/week")
+    
     return "\n".join(lines)
 
 
@@ -331,17 +457,28 @@ def save_digest(stats: dict):
 def main():
     """Main entry point"""
     logger.info("=" * 50)
-    logger.info("LP WEEKLY DIGEST v2.0")
+    logger.info("LP WEEKLY DIGEST v2.1")
     logger.info("=" * 50)
     
     # Load data
     snapshots = load_history()
     logger.info(f"Loaded {len(snapshots)} snapshots")
     
-    # Calculate
+    # Calculate weekly stats
     stats = calculate_weekly_stats(snapshots)
     
-    # Save
+    # Save current week to history
+    save_digest_to_history(stats)
+    
+    # Load full history and calculate summary
+    history = load_digest_history()
+    logger.info(f"Digest history: {len(history)} weeks")
+    
+    if history:
+        history_summary = calculate_period_summary(history)
+        stats["history_summary"] = history_summary
+    
+    # Save current digest
     save_digest(stats)
     
     # Format
