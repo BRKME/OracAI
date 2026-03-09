@@ -128,8 +128,8 @@ class PublicChannelPublisher:
         regime = engine_result.get("regime", "TRANSITION")
         meta = engine_result.get("metadata", {})
         
-        btc_price = meta.get("btc_price", 0)
-        vol_z = meta.get("vol_z", 0)
+        btc_price = meta.get("btc_price") or 0
+        vol_z = meta.get("vol_z") or 0
         
         # 1. Regime change
         last_regime = self.state.get("last_regime")
@@ -138,7 +138,7 @@ class PublicChannelPublisher:
             logger.info(f"✓ Trigger: Regime change")
         
         # 2. Round level breakout
-        if btc_price > 0:
+        if btc_price and btc_price > 0:
             current_level = self._get_round_level(btc_price)
             last_level = self.state.get("last_round_level")
             
@@ -151,7 +151,7 @@ class PublicChannelPublisher:
                 logger.info(f"✓ Trigger: Level ${current_level:,}")
         
         # 3. High volatility
-        if vol_z > 2.0:
+        if vol_z and vol_z > 2.0:
             triggers.append("High volatility")
             logger.info(f"✓ Trigger: Volatility")
         
@@ -168,14 +168,14 @@ class PublicChannelPublisher:
         risk = engine_result.get("risk", {})
         conf = engine_result.get("confidence", {})
         
-        prob_bull = probs.get("BULL", 0)
-        prob_bear = probs.get("BEAR", 0)
-        risk_level = risk.get("risk_level", 0)
-        confidence = conf.get("quality_adjusted", 0)
-        vol_z = meta.get("vol_z", 0)
+        prob_bull = probs.get("BULL") or 0
+        prob_bear = probs.get("BEAR") or 0
+        risk_level = risk.get("risk_level") or 0
+        confidence = conf.get("quality_adjusted") or 0
+        vol_z = meta.get("vol_z") or 0
         
-        rsi_data = meta.get("rsi", {})
-        rsi = rsi_data.get("rsi_1d", 50) or 50
+        rsi_data = meta.get("rsi") or {}
+        rsi = rsi_data.get("rsi_1d") or 50
         
         # High volatility = WAIT
         if vol_z > 2.0:
@@ -212,10 +212,11 @@ class PublicChannelPublisher:
             probs = engine_result.get("probabilities", {})
             meta = engine_result.get("metadata", {})
             
-            prob_bull = int(probs.get("BULL", 0) * 100)
-            prob_bear = int(probs.get("BEAR", 0) * 100)
-            btc_price = meta.get("btc_price", 0)
-            rsi = meta.get("rsi", {}).get("rsi_1d", 50) or 50
+            prob_bull = int((probs.get("BULL") or 0) * 100)
+            prob_bear = int((probs.get("BEAR") or 0) * 100)
+            btc_price = meta.get("btc_price") or 0
+            rsi_data = meta.get("rsi") or {}
+            rsi = rsi_data.get("rsi_1d") or 50
             
             prompt = f"""Regime: {regime}, Bull: {prob_bull}%, Bear: {prob_bear}%, RSI: {rsi:.0f}, Signal: {signal}
 
@@ -260,8 +261,8 @@ No emojis. Under 20 words total."""
         meta = engine_result.get("metadata", {})
         probs = engine_result.get("probabilities", {})
         
-        btc_price = meta.get("btc_price", 0)
-        eth_price = meta.get("eth_price", 0)
+        btc_price = meta.get("btc_price") or 0
+        eth_price = meta.get("eth_price") or 0
         
         # Get signal
         signal, signal_emoji, color = self.determine_signal(engine_result)
@@ -270,12 +271,18 @@ No emojis. Under 20 words total."""
         analysis = self.generate_short_analysis(engine_result, signal)
         
         # Probabilities
-        prob_bull = int(probs.get("BULL", 0) * 100)
-        prob_bear = int(probs.get("BEAR", 0) * 100)
+        prob_bull = int((probs.get("BULL") or 0) * 100)
+        prob_bear = int((probs.get("BEAR") or 0) * 100)
         
-        # Levels
-        support = int((btc_price * 0.92) // 1000) * 1000
-        resistance = int((btc_price * 1.08) // 1000) * 1000
+        # Levels (handle zero price)
+        if btc_price > 0:
+            support = int((btc_price * 0.92) // 1000) * 1000
+            resistance = int((btc_price * 1.08) // 1000) * 1000
+            current_k = int(btc_price) // 1000
+        else:
+            support = 0
+            resistance = 0
+            current_k = 0
         
         # Timestamp
         now = datetime.now(timezone.utc)
@@ -290,7 +297,7 @@ No emojis. Under 20 words total."""
 
 ━━━━━━━━━━━━━━
 ${support//1000}k ▽ support
-<b>${int(btc_price)//1000}k</b> ◆ current
+<b>${current_k}k</b> ◆ current
 ${resistance//1000}k △ resistance
 ━━━━━━━━━━━━━━
 
