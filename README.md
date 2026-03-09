@@ -1,4 +1,4 @@
-# 📊 Market Regime Engine v5.7
+# 📊 OracAI v5.8
 
 Probabilistic crypto market regime detection with integrated action logic.
 
@@ -6,13 +6,36 @@ Probabilistic crypto market regime detection with integrated action logic.
 
 | Component | Version | Status |
 |-----------|---------|--------|
-| **Market Regime Engine** | **v5.7** | **Production** |
+| **Market Regime Engine** | **v5.8** | **Production** |
 | Signal Policy | v5.6 Integrated | Production |
 | Charts | EMA50/200 + RSI | Production |
 | LP Intelligence | v2.0.2 | Production |
-| **Twitter Publisher** | **v1.0** | **New** |
+| Twitter Publisher | v2.0 | Production |
+| **Public Channel** | **v1.0** | **New** |
 
-## 🆕 What's New in v5.7
+## 🆕 What's New in v5.8
+
+### Public Channel Publisher
+
+Trigger-based publication to public Telegram channel:
+
+**Triggers:**
+- Regime change (BULL → BEAR, etc.)
+- Significant 24h move (>5%)
+- Round level breakout ($5k steps)
+- Elevated volatility
+
+**Global Cooldown:** 4 hours minimum between posts (prevents spam)
+
+**Features:**
+- Uses engine.py data (consistent with private channel)
+- OpenAI GPT-4o for analysis
+- English format
+- No LP info
+
+**Required Secrets:**
+- `TELEGRAM_PUBLIC_CHANNEL_ID`
+- `OPENAI_API_KEY`
 
 ### Twitter Publisher
 
@@ -76,10 +99,17 @@ Action now considers **Phase/Cycle**, not just Bottom/Top:
 ```bash
 pip install -r requirements.txt
 python main.py              # Full analysis + charts (Telegram)
+python public_channel.py    # Public channel (trigger-based)
 python twitter_publisher.py # Twitter post with BTC chart
 python main.py --dry-run    # No Telegram
 python backtest_v5.py       # Backtest (3 years)
 ```
+
+### Public Channel Setup
+
+Add these secrets to GitHub:
+- `TELEGRAM_PUBLIC_CHANNEL_ID` (e.g., @your_channel or -100xxx)
+- `OPENAI_API_KEY`
 
 ### Twitter Setup
 
@@ -186,6 +216,7 @@ Hedge: REQUIRED
 
 ## Version History
 
+- **v5.8** — Public Channel Publisher (unified from Radar_OracAi)
 - **v5.7** — Twitter Publisher for global reach
 - **v5.6** — Integrated logic (phase + hedge + LP exposure)
 - v5.5 — BTC/ETH charts with EMA

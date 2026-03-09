@@ -1,0 +1,43 @@
+name: Public Channel
+
+on:
+  schedule:
+    # Every 30 minutes (global cooldown handles spam prevention)
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  public-channel:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Run Public Channel Publisher
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_PUBLIC_CHANNEL_ID: ${{ secrets.TELEGRAM_PUBLIC_CHANNEL_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python public_channel.py
+      
+      - name: Commit state
+        run: |
+          git config user.name "oracai-bot"
+          git config user.email "bot@oracai.local"
+          git add state/ || true
+          git diff --cached --quiet || git commit -m "public: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push || true
