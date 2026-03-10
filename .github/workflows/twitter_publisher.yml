@@ -46,4 +46,5 @@ jobs:
           git config user.email "bot@regime-engine.local"
           git add state/ || true
           git diff --cached --quiet || git commit -m "twitter: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase || true
           git push || true

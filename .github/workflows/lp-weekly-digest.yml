@@ -2,8 +2,11 @@ name: LP Weekly Digest
 
 on:
   schedule:
-    - cron: '0 10 * * 0'  # Sunday 10:00 UTC
+    - cron: '0 10 * * 0'  # Sunday 10:00 UTC = 13:00 MSK
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   weekly-digest:
@@ -14,8 +17,15 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install requests
-      - run: git pull origin main || true
       - run: python lp_weekly_digest.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Commit state
+        run: |
+          git config user.name "lp-bot"
+          git config user.email "bot@lp-system.local"
+          git add state/ || true
+          git diff --cached --quiet || git commit -m "weekly: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase || true
+          git push || true

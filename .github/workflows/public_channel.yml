@@ -54,4 +54,5 @@ jobs:
           git config user.email "bot@oracai.local"
           git add state/ || true
           git diff --cached --quiet || git commit -m "public: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase || true
           git push || true
