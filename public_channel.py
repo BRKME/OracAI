@@ -136,6 +136,8 @@ class PublicChannelPublisher:
         if last_regime and regime != last_regime:
             triggers.append(f"{last_regime} → {regime}")
             logger.info(f"✓ Trigger: Regime change")
+        else:
+            logger.info(f"   Regime: {regime} (no change)")
         
         # 2. Round level breakout
         if btc_price and btc_price > 0:
@@ -144,16 +146,21 @@ class PublicChannelPublisher:
             
             if last_level is None:
                 self.state["last_round_level"] = current_level
+                logger.info(f"   Level: ${current_level:,} (init)")
             elif current_level != last_level:
                 direction = "↗" if current_level > last_level else "↘"
                 triggers.append(f"{direction} ${current_level:,}")
                 self.state["last_round_level"] = current_level
                 logger.info(f"✓ Trigger: Level ${current_level:,}")
+            else:
+                logger.info(f"   Level: ${current_level:,} (no change, next at ${current_level + ROUND_LEVEL_STEP:,} or ${current_level - ROUND_LEVEL_STEP:,})")
         
         # 3. High volatility
         if vol_z and vol_z > 2.0:
             triggers.append("High volatility")
-            logger.info(f"✓ Trigger: Volatility")
+            logger.info(f"✓ Trigger: Volatility ({vol_z:.2f})")
+        else:
+            logger.info(f"   Volatility: {vol_z:.2f} (need >2.0)")
         
         return len(triggers) > 0, " | ".join(triggers)
     
