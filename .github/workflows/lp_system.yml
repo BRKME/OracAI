@@ -4,6 +4,8 @@ on:
   schedule:
     # 06:30 MSK (03:30 UTC)
     - cron: '30 3 * * *'
+    # 14:00 MSK (11:00 UTC)
+    - cron: '0 11 * * *'
     # 18:30 MSK (15:30 UTC)
     - cron: '30 15 * * *'
   
