@@ -550,6 +550,8 @@ def default_state() -> dict:
     return {
         "current_regime": "TRANSITION",
         "days_in_regime": 0,
+        "last_regime_date": None,
+        "regime_start_date": None,
         "P_prev": None,
         "bucket_history": {
             "Momentum": [], "Stability": [], "Rotation": [],
@@ -739,12 +741,21 @@ class RegimeEngine:
 
         new_regime = should_switch(P, current, holds)
 
+        # Track days in regime (only increment once per day)
+        today = datetime.utcnow().date().isoformat()
+        last_date = self.state.get("last_regime_date")
+        
         if new_regime and new_regime != current:
             logger.info(f"REGIME SWITCH: {current} → {new_regime}")
             current = new_regime
             self.state["days_in_regime"] = 0
+            self.state["regime_start_date"] = today
         else:
-            self.state["days_in_regime"] += 1
+            # Only increment if it's a new day
+            if last_date != today:
+                self.state["days_in_regime"] += 1
+        
+        self.state["last_regime_date"] = today
 
         self.state["current_regime"] = current
         self.state["holds_for"] = holds
