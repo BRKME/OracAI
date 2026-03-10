@@ -323,6 +323,8 @@ Bull {prob_bull}% · Bear {prob_bear}%{eth_line}
             logger.error("❌ Telegram credentials missing")
             return False
         
+        logger.info(f"📍 Target channel: {self.public_channel_id}")
+        
         # Generate chart
         logger.info("📈 Generating chart...")
         chart_buf = generate_chart("BTC-USD", days_to_show=90)
@@ -345,7 +347,9 @@ Bull {prob_bull}% · Bear {prob_bear}%{eth_line}
             response = requests.post(url, files=files, data=data, timeout=30)
             
             if response.status_code == 200:
-                logger.info("✓ Published with chart")
+                result = response.json()
+                chat_info = result.get('result', {}).get('chat', {})
+                logger.info(f"✓ Published to: {chat_info.get('title', 'unknown')} (ID: {chat_info.get('id')})")
                 return True
             else:
                 logger.error(f"Telegram error: {response.status_code} - {response.text}")
