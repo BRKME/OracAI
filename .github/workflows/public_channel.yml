@@ -2,8 +2,8 @@ name: Public Channel
 
 on:
   schedule:
-    # Every 30 minutes (global cooldown handles spam prevention)
-    - cron: '*/30 * * * *'
+    # Every hour (global cooldown 4h handles spam prevention)
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       force:
