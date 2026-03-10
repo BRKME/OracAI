@@ -4,8 +4,6 @@ on:
   schedule:
     # 07:00 MSK (04:00 UTC)
     - cron: '0 4 * * *'
-    # 13:30 MSK (10:30 UTC) - перед дневным LP
-    - cron: '30 10 * * *'
     # 19:00 MSK (16:00 UTC)
     - cron: '0 16 * * *'
   workflow_dispatch:
