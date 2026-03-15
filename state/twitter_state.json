@@ -2,6 +2,7 @@
   "last_regime": "BEAR",
   "last_hook_index": {
     "bull_early": 5,
-    "regime_change": 7
+    "regime_change": 7,
+    "bear_early": 4
   }
 }
