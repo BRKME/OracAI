@@ -1,7 +1,7 @@
 {
   "last_regime": "BULL",
   "last_hook_index": {
-    "bull_early": 3,
+    "bull_early": 10,
     "regime_change": 2,
     "bear_early": 4,
     "bear_overbought": 4
