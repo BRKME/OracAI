@@ -1,88 +1,88 @@
 {
-  "timestamp": "2026-03-15T10:22:26.196091+00:00",
+  "timestamp": "2026-03-22T10:20:53.413707+00:00",
   "stats": {
     "has_data": true,
     "period": {
-      "start": "2026-03-08",
-      "end": "2026-03-15",
+      "start": "2026-03-15",
+      "end": "2026-03-22",
       "days": 7
     },
     "portfolio": {
-      "start_tvl": 30317.921437284327,
-      "end_tvl": 31969.639859676798,
-      "tvl_change": 1651.7184223924705,
-      "fees_earned": 1287.842733727186,
-      "real_pnl": 2939.5611561196565,
-      "real_efficiency_pct": 9.69578723330501
+      "start_tvl": 32040.85730447453,
+      "end_tvl": 30761.69289507663,
+      "tvl_change": -1279.1644093979012,
+      "fees_earned": 1293.5204392649466,
+      "real_pnl": 14.356029867045436,
+      "real_efficiency_pct": 0.04480538623116244
     },
     "wallets": [
       {
         "wallet": "MMA_1",
-        "start_tvl": 11304.368124385635,
-        "end_tvl": 12029.413431993346,
-        "tvl_change": 725.0453076077101,
-        "fees_estimated": 480.18622841550865,
-        "uncollected": 31.59563170060211,
-        "real_pnl": 1205.2315360232187,
-        "efficiency_pct": 10.661644443649255
+        "start_tvl": 12101.42380393894,
+        "end_tvl": 11673.532367262293,
+        "tvl_change": -427.8914366766476,
+        "fees_estimated": 488.5461985568146,
+        "uncollected": 61.47833385171823,
+        "real_pnl": 60.65476188016703,
+        "efficiency_pct": 0.5012200453670936
       },
       {
         "wallet": "MMA_2",
-        "start_tvl": 5776.977435253663,
-        "end_tvl": 6157.691777282822,
-        "tvl_change": 380.7143420291586,
-        "fees_estimated": 245.3940791517453,
-        "uncollected": 69.43706778724925,
-        "real_pnl": 626.1084211809039,
-        "efficiency_pct": 10.837993192774379
+        "start_tvl": 6147.8552864692665,
+        "end_tvl": 6089.455570627048,
+        "tvl_change": -58.39971584221894,
+        "fees_estimated": 248.19487178891728,
+        "uncollected": 43.39004228070671,
+        "real_pnl": 189.79515594669834,
+        "efficiency_pct": 3.08717669988778
       },
       {
         "wallet": "MMA_3",
-        "start_tvl": 4058.3829387292217,
-        "end_tvl": 4299.163988899438,
-        "tvl_change": 240.78105017021608,
-        "fees_estimated": 172.3917317068215,
-        "uncollected": 51.1106100134793,
-        "real_pnl": 413.17278187703755,
-        "efficiency_pct": 10.180724394785969
+        "start_tvl": 4301.450732001924,
+        "end_tvl": 4086.507006724812,
+        "tvl_change": -214.94372527711175,
+        "fees_estimated": 173.65373177947507,
+        "uncollected": 25.620495814336508,
+        "real_pnl": -41.28999349763669,
+        "efficiency_pct": -0.9599085534200701
       },
       {
         "wallet": "MMA_4",
-        "start_tvl": 5703.460556759961,
-        "end_tvl": 5916.42552836487,
-        "tvl_change": 212.9649716049089,
-        "fees_estimated": 242.2712338745626,
-        "uncollected": 45.686647782458124,
-        "real_pnl": 455.2362054794715,
-        "efficiency_pct": 7.981754251634264
+        "start_tvl": 5923.152197086702,
+        "end_tvl": 5640.140608956501,
+        "tvl_change": -283.01158813020083,
+        "fees_estimated": 239.12339045743192,
+        "uncollected": 80.349043282596,
+        "real_pnl": -43.88819767276891,
+        "efficiency_pct": -0.7409601545331773
       },
       {
         "wallet": "MMA_5",
-        "start_tvl": 3474.7323821558475,
-        "end_tvl": 3566.9451331363252,
-        "tvl_change": 92.21275098047772,
-        "fees_estimated": 147.59946057854802,
-        "uncollected": 11.560868725542253,
-        "real_pnl": 239.81221155902574,
-        "efficiency_pct": 6.901602344703097
+        "start_tvl": 3566.9752849777005,
+        "end_tvl": 3272.0573415059766,
+        "tvl_change": -294.9179434717239,
+        "fees_estimated": 144.00224668230774,
+        "uncollected": 14.843683428388164,
+        "real_pnl": -150.91569678941616,
+        "efficiency_pct": -4.23091512366225
       }
     ],
     "positions": {
-      "count": 11,
-      "in_range": 10
+      "count": 12,
+      "in_range": 7
     },
-    "fees_uncollected": 209.39082600933108,
+    "fees_uncollected": 225.68159865774564,
     "history_summary": {
       "has_data": true,
-      "weeks_count": 1,
+      "weeks_count": 2,
       "period_start": "2026-03-08",
-      "period_end": "2026-03-15",
+      "period_end": "2026-03-22",
       "start_tvl": 30317.921437284327,
-      "end_tvl": 31969.639859676798,
-      "total_tvl_change": 1651.7184223924705,
-      "total_fees": 1287.842733727186,
-      "total_pnl": 2939.5611561196565,
-      "avg_efficiency_pct": 9.69578723330501
+      "end_tvl": 30761.69289507663,
+      "total_tvl_change": 372.55401299456935,
+      "total_fees": 2581.3631729921326,
+      "total_pnl": 2953.917185986702,
+      "avg_efficiency_pct": 4.8702963097680865
     }
   }
 }
