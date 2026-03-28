@@ -204,10 +204,21 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     rsi_2h = rsi_data.get("rsi_2h")
     rsi_source = rsi_data.get("source", "none")
     
-    # Fear & Greed
+    # Fear & Greed — get from engine output (bucket_details), not allocation
     fg_value = None
     fg_class = None
-    if allocation:
+    bucket_details = output.get("bucket_details", {})
+    sent_details = bucket_details.get("sentiment", {})
+    fg_raw = sent_details.get("fg_raw")
+    if fg_raw is not None:
+        fg_value = int(fg_raw)
+        if fg_value < 25: fg_class = "Extreme Fear"
+        elif fg_value < 45: fg_class = "Fear"
+        elif fg_value < 55: fg_class = "Neutral"
+        elif fg_value < 75: fg_class = "Greed"
+        else: fg_class = "Extreme Greed"
+    # Fallback to allocation if available
+    if fg_value is None and allocation:
         fg_value = allocation.get("meta", {}).get("fear_greed")
         fg_class = allocation.get("meta", {}).get("fg_classification")
     
@@ -247,17 +258,17 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     regime_line = f"{regime} ({days}d) | Conf. {conf_pct}%"
     lines.append(regime_line)
     
-    # Fear & Greed
-    if fg_value is not None:
-        fg_label = fg_class or ("Extreme Fear" if fg_value < 25 else "Fear" if fg_value < 45 else "Neutral" if fg_value < 55 else "Greed" if fg_value < 75 else "Extreme Greed")
-        lines.append(f"{fg_label} ({fg_value})")
-    
     # RSI (no emoji)
     if rsi_1d is not None or rsi_2h is not None:
         _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
         rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
         rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
         lines.append(f"RSI: 1D={rsi_1d_str} | 2H={rsi_2h_str}")
+    
+    # Fear & Greed (after RSI)
+    if fg_value is not None:
+        fg_label = fg_class or "?"
+        lines.append(f"FG: {fg_value} ({fg_label})")
     
     # Directional pressure
     if risk_level < 0:
