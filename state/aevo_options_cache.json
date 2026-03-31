@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-03-31T05:14:36.174582+00:00",
+  "timestamp": "2026-03-31T12:01:32.447859+00:00",
   "eth": {
     "underlying": "ETH",
-    "spot_price": 2056.359221,
+    "spot_price": 2042.378118,
     "option": {
       "instrument_name": "ETH-17APR26-1850-P",
       "underlying": "ETH",
@@ -10,45 +10,45 @@
       "strike": 1850.0,
       "expiry": "17APR26",
       "expiry_timestamp": 1776384000,
-      "mark_price": 51.31646,
-      "bid_price": 48.7,
-      "ask_price": 53.3,
+      "mark_price": 51.775402,
+      "bid_price": 49.3,
+      "ask_price": 53.4,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 2.495500760564829,
+      "premium_pct": 2.535054676883294,
       "days_to_expiry": 16
     },
-    "contracts": 3.084014233532257,
-    "notional_usd": 6341.8411068193045,
-    "total_premium_usd": 158.2606930544887,
-    "premium_pct": 2.495500760564829,
+    "contracts": 3.0697529090496833,
+    "notional_usd": 6269.596169109917,
+    "total_premium_usd": 158.9376909067168,
+    "premium_pct": 2.535054676883294,
     "iv": 0.0,
-    "timestamp": "2026-03-31T05:14:18.642994+00:00"
+    "timestamp": "2026-03-31T12:01:16.787619+00:00"
   },
   "btc": {
     "underlying": "BTC",
-    "spot_price": 67435.360426,
+    "spot_price": 66702.144929,
     "option": {
-      "instrument_name": "BTC-10APR26-66000-P",
+      "instrument_name": "BTC-10APR26-65000-P",
       "underlying": "BTC",
       "option_type": "P",
-      "strike": 66000.0,
+      "strike": 65000.0,
       "expiry": "10APR26",
       "expiry_timestamp": 1775779200,
-      "mark_price": 1827.199965,
-      "bid_price": 1742.5,
-      "ask_price": 1902.5,
+      "mark_price": 1665.714952,
+      "bid_price": 1587.5,
+      "ask_price": 1750.0,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 2.709557646696458,
+      "premium_pct": 2.497243460121174,
       "days_to_expiry": 9
     },
-    "contracts": 0.06269550640056766,
-    "notional_usd": 4227.89407121287,
-    "total_premium_usd": 114.55722710077451,
-    "premium_pct": 2.709557646696458,
+    "contracts": 0.06266261428107983,
+    "notional_usd": 4179.730779406612,
+    "total_premium_usd": 104.37805353940341,
+    "premium_pct": 2.4972434601211746,
     "iv": 0.0,
-    "timestamp": "2026-03-31T05:14:36.173941+00:00"
+    "timestamp": "2026-03-31T12:01:32.447274+00:00"
   },
   "error": null
 }
