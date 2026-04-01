@@ -3,7 +3,7 @@
   "last_hook_index": {
     "bull_early": 8,
     "regime_change": 1,
-    "bear_early": 3,
+    "bear_early": 5,
     "bear_overbought": 4
   }
 }
