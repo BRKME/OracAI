@@ -1,29 +1,60 @@
 {
   "decision": {
-    "timestamp": "2026-04-02T04:48:43.111990+00:00",
-    "action": "NO_HEDGE",
-    "reason": "Hedge Score \u043d\u0438\u0437\u043a\u0438\u0439 (0.24 < 0.4)",
-    "dir_value": -0.2379,
-    "tail_risk_active": false,
-    "tail_polarity": null,
-    "confidence": 0.075,
-    "vol_z": -0.7369,
-    "hedge_score": 0.2379,
-    "hedge_ratio": 0,
-    "total_tvl": 35171.39208347924,
+    "timestamp": "2026-04-02T12:01:30.841266+00:00",
+    "action": "HEDGE",
+    "reason": "Dir=-0.37, TailRisk=Active",
+    "dir_value": -0.3719,
+    "tail_risk_active": true,
+    "tail_polarity": "downside",
+    "confidence": 0.1135,
+    "vol_z": -0.6561,
+    "hedge_score": 0.7,
+    "hedge_ratio": 0.7,
+    "total_tvl": 32942.95563373921,
     "hedgeable_exposure": {
-      "ETH": 7782.244957215958,
-      "BTC": 5188.163304810639,
+      "ETH": 7707.011142430486,
+      "BTC": 5138.007428286991,
       "BNB": 0
     },
-    "non_hedgeable_exposure": 22200.983821452643,
-    "recommendations": []
+    "non_hedgeable_exposure": 20097.937063021738,
+    "recommendations": [
+      {
+        "underlying": "ETH",
+        "action": "PUT",
+        "strike_pct": 0.1,
+        "expiry_days": 14,
+        "notional_usd": 5394.90779970134,
+        "max_premium_usd": 124.4938131736037,
+        "platform": "Aevo",
+        "instrument_name": "ETH-17APR26-1850-P",
+        "strike_price": 1850.0,
+        "mark_price": 46.897405,
+        "iv": 0.0,
+        "bid_price": 44.1,
+        "ask_price": 48.5
+      },
+      {
+        "underlying": "BTC",
+        "action": "PUT",
+        "strike_pct": 0.1,
+        "expiry_days": 14,
+        "notional_usd": 3596.6051998008934,
+        "max_premium_usd": 19.283711509218996,
+        "platform": "Aevo",
+        "instrument_name": "BTC-17APR26-56000-P",
+        "strike_price": 56000.0,
+        "mark_price": 355.038074,
+        "iv": 0.0,
+        "bid_price": null,
+        "ask_price": null
+      }
+    ]
   },
   "classifications": [
     {
       "token0": "WBTC",
       "token1": "USD\u20ae0",
-      "balance_usd": 4836.26978596,
+      "balance_usd": 4819.863514566314,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -35,7 +66,7 @@
     {
       "token0": "WBTC",
       "token1": "USD\u20ae0",
-      "balance_usd": 4075.16590164,
+      "balance_usd": 4040.30401228027,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -47,7 +78,7 @@
     {
       "token0": "ZRO",
       "token1": "WETH",
-      "balance_usd": 1810.3479709945464,
+      "balance_usd": 1786.3336770570093,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -59,7 +90,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 2401.707133006072,
+      "balance_usd": 2399.9562161210642,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -71,19 +102,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1883.5902542421593,
-      "hedgeable": false,
-      "hedge_type": "none",
-      "underlying": null,
-      "exposure_eth": 0,
-      "exposure_btc": 0,
-      "exposure_bnb": 0,
-      "note": "\u041d\u0435\u0442 \u043b\u0438\u043a\u0432\u0438\u0434\u043d\u044b\u0445 \u043e\u043f\u0446\u0438\u043e\u043d\u043e\u0432 \u043d\u0430 alt \u0442\u043e\u043a\u0435\u043d\u044b"
-    },
-    {
-      "token0": "ASTER",
-      "token1": "WBNB",
-      "balance_usd": 2021.252203854232,
+      "balance_usd": 1882.2407755528786,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -95,19 +114,19 @@
     {
       "token0": "USDT",
       "token1": "WBNB",
-      "balance_usd": 1956.3441829486483,
+      "balance_usd": 3878.3240614338997,
       "hedgeable": true,
       "hedge_type": "full",
       "underlying": "BNB",
       "exposure_eth": 0,
       "exposure_btc": 0,
-      "exposure_bnb": 978.1720914743241,
+      "exposure_bnb": 1939.1620307169499,
       "note": "PUT BNB (\u0435\u0441\u043b\u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d)"
     },
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1838.3983536258156,
+      "balance_usd": 1837.1358749079632,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -119,19 +138,19 @@
     {
       "token0": "USDT",
       "token1": "WBNB",
-      "balance_usd": 1783.4885196519024,
+      "balance_usd": 1713.7760169793198,
       "hedgeable": true,
       "hedge_type": "full",
       "underlying": "BNB",
       "exposure_eth": 0,
       "exposure_btc": 0,
-      "exposure_bnb": 891.7442598259512,
+      "exposure_bnb": 856.8880084896599,
       "note": "PUT BNB (\u0435\u0441\u043b\u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d)"
     },
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 3334.2522181298154,
+      "balance_usd": 3332.1029925362395,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -141,5 +160,5 @@
       "note": "\u041d\u0435\u0442 \u043b\u0438\u043a\u0432\u0438\u0434\u043d\u044b\u0445 \u043e\u043f\u0446\u0438\u043e\u043d\u043e\u0432 \u043d\u0430 alt \u0442\u043e\u043a\u0435\u043d\u044b"
     }
   ],
-  "updated": "2026-04-02T04:48:43.112279+00:00"
+  "updated": "2026-04-02T12:01:30.841581+00:00"
 }
