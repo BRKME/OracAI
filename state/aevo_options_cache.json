@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-04-02T12:01:30.840631+00:00",
+  "timestamp": "2026-04-02T15:40:15.445397+00:00",
   "eth": {
     "underlying": "ETH",
-    "spot_price": 2032.287144,
+    "spot_price": 2061.350905,
     "option": {
       "instrument_name": "ETH-17APR26-1850-P",
       "underlying": "ETH",
@@ -10,24 +10,24 @@
       "strike": 1850.0,
       "expiry": "17APR26",
       "expiry_timestamp": 1776384000,
-      "mark_price": 46.897405,
-      "bid_price": 44.1,
-      "ask_price": 48.5,
+      "mark_price": 40.011784,
+      "bid_price": 37.3,
+      "ask_price": 42.0,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 2.307617067718852,
+      "premium_pct": 1.9410467137326142,
       "days_to_expiry": 14
     },
-    "contracts": 2.6545991867482583,
-    "notional_usd": 5394.90779970134,
-    "total_premium_usd": 124.4938131736037,
-    "premium_pct": 2.307617067718852,
+    "contracts": 2.6110973577071737,
+    "notional_usd": 5382.38790135279,
+    "total_premium_usd": 104.47466347955016,
+    "premium_pct": 1.9410467137326142,
     "iv": 0.0,
-    "timestamp": "2026-04-02T12:01:16.507136+00:00"
+    "timestamp": "2026-04-02T15:39:54.930183+00:00"
   },
   "btc": {
     "underlying": "BTC",
-    "spot_price": 66218.154242,
+    "spot_price": 66914.028324,
     "option": {
       "instrument_name": "BTC-17APR26-56000-P",
       "underlying": "BTC",
@@ -35,20 +35,20 @@
       "strike": 56000.0,
       "expiry": "17APR26",
       "expiry_timestamp": 1776384000,
-      "mark_price": 355.038074,
+      "mark_price": 311.140318,
       "bid_price": null,
       "ask_price": null,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 0.5361642559568822,
+      "premium_pct": 0.4649851844122252,
       "days_to_expiry": 14
     },
-    "contracts": 0.05431448884329797,
-    "notional_usd": 3596.6051998008934,
-    "total_premium_usd": 19.283711509218996,
-    "premium_pct": 0.5361642559568822,
+    "contracts": 0.05362490782242837,
+    "notional_usd": 3588.258600901861,
+    "total_premium_usd": 16.68487087259105,
+    "premium_pct": 0.46498518441222514,
     "iv": 0.0,
-    "timestamp": "2026-04-02T12:01:30.839968+00:00"
+    "timestamp": "2026-04-02T15:40:15.444720+00:00"
   },
   "error": null
 }
