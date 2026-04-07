@@ -368,58 +368,66 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     
     # ══════════════════════════════════════════════════════
-    # 4. BOTTOM/TOP PROXIMITY (needed for action)
+    # 4. BOTTOM/TOP PROXIMITY (continuous calculation)
     # ══════════════════════════════════════════════════════
     
-    # Calculate bottom/top proximity
-    if regime == "BEAR":
-        if days_in_regime > 30 and risk_level < -0.5:
-            bottom_prox = min(0.9, 0.7 + abs(risk_level) * 0.2)
-            top_prox = 0.1
-        elif days_in_regime > 14:
-            bottom_prox = min(0.7, 0.5 + abs(risk_level) * 0.2)
-            top_prox = 0.2
-        else:
-            bottom_prox = 0.3
-            top_prox = 0.4
-    elif regime == "BULL":
-        if days_in_regime > 30 and risk_level > 0.5:
-            bottom_prox = 0.1
-            top_prox = min(0.9, 0.7 + risk_level * 0.2)
-        elif days_in_regime > 14:
-            bottom_prox = 0.2
-            top_prox = 0.5
-        else:
-            bottom_prox = 0.4
-            top_prox = 0.3
-    elif regime == "TRANSITION":
-        if risk_level < -0.3:
-            bottom_prox = 0.3
-            top_prox = 0.5
-        elif risk_level > 0.3:
-            bottom_prox = 0.5
-            top_prox = 0.3
-        else:
-            bottom_prox = 0.4
-            top_prox = 0.4
-    else:
-        bottom_prox = 0.35
-        top_prox = 0.35
+    # Start from regime probabilities as base
+    # Higher bear probability → closer to bottom, higher bull → closer to top
+    bottom_prox = prob_bear * 0.4 + prob_trans * 0.2 + prob_range * 0.15
+    top_prox = prob_bull * 0.4 + prob_trans * 0.2 + prob_range * 0.15
     
-    # RSI adjustment for bottom/top
+    # Directional pressure shifts bottom/top (continuous, always active)
+    # risk_level: negative = downside, positive = upside
+    if risk_level < 0:
+        bottom_prox += abs(risk_level) * 0.25
+        top_prox -= abs(risk_level) * 0.15
+    else:
+        top_prox += risk_level * 0.25
+        bottom_prox -= risk_level * 0.15
+    
+    # Days in regime: longer trend → stronger signal
+    days_in_regime = meta.get("days_in_regime", 0)
+    day_factor = min(days_in_regime / 30.0, 1.0)  # 0..1 over 30 days
+    if regime == "BEAR":
+        bottom_prox += day_factor * 0.2
+        top_prox -= day_factor * 0.1
+    elif regime == "BULL":
+        top_prox += day_factor * 0.2
+        bottom_prox -= day_factor * 0.1
+    
+    # Confidence: low confidence pulls both toward center
+    if conf_pct < 30:
+        center_pull = (30 - conf_pct) / 100.0  # up to 0.3
+        bottom_prox = bottom_prox * (1 - center_pull) + 0.35 * center_pull
+        top_prox = top_prox * (1 - center_pull) + 0.35 * center_pull
+    
+    # RSI: continuous adjustment (not just extremes)
     if rsi_1d is not None:
-        if rsi_1d <= 25:
-            bottom_prox = min(0.95, bottom_prox + 0.25)
-            top_prox = max(0.05, top_prox - 0.2)
-        elif rsi_1d <= 35:
-            bottom_prox = min(0.85, bottom_prox + 0.15)
-            top_prox = max(0.1, top_prox - 0.1)
-        elif rsi_1d >= 75:
-            top_prox = min(0.95, top_prox + 0.25)
-            bottom_prox = max(0.05, bottom_prox - 0.2)
-        elif rsi_1d >= 65:
-            top_prox = min(0.85, top_prox + 0.15)
-            bottom_prox = max(0.1, bottom_prox - 0.1)
+        if rsi_1d < 50:
+            # Below 50 → bottom signal (stronger as RSI drops)
+            rsi_factor = (50 - rsi_1d) / 50.0  # 0..1
+            bottom_prox += rsi_factor * 0.3
+            top_prox -= rsi_factor * 0.15
+        else:
+            # Above 50 → top signal (stronger as RSI rises)
+            rsi_factor = (rsi_1d - 50) / 50.0  # 0..1
+            top_prox += rsi_factor * 0.3
+            bottom_prox -= rsi_factor * 0.15
+    
+    # Fear & Greed: extreme fear → bottom, extreme greed → top
+    if fg_value is not None:
+        if fg_value < 50:
+            fg_factor = (50 - fg_value) / 50.0  # 0..1
+            bottom_prox += fg_factor * 0.15
+            top_prox -= fg_factor * 0.05
+        else:
+            fg_factor = (fg_value - 50) / 50.0  # 0..1
+            top_prox += fg_factor * 0.15
+            bottom_prox -= fg_factor * 0.05
+    
+    # Clamp to valid range
+    bottom_prox = max(0.05, min(0.95, bottom_prox))
+    top_prox = max(0.05, min(0.95, top_prox))
     
     # ══════════════════════════════════════════════════════
     # 5. ДЕЙСТВИЕ (Bottom/Top + Phase integrated)
