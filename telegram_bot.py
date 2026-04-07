@@ -471,37 +471,16 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     if lp_policy:
         lines.append("🔘 LP:")
         
-        # LP regime and quadrant
-        lp_regime_str = str(lp_policy.lp_regime.value) if hasattr(lp_policy.lp_regime, 'value') else str(lp_policy.lp_regime)
-        quadrant_str = str(lp_policy.risk_quadrant.value) if hasattr(lp_policy.risk_quadrant, 'value') else str(lp_policy.risk_quadrant)
-        lines.append(f"{lp_regime_str} ({quadrant_str})")
-        
-        # Exposure with regime modifier
-        base_exp = lp_policy.max_exposure
-        
-        # Apply market regime modifier
-        if risk_state == "CRISIS":
-            adjusted_exp = 0.1
-        elif risk_state == "TAIL":
-            adjusted_exp = min(0.3, base_exp)
-        elif regime == "BULL" and conf_pct > 30:
-            adjusted_exp = min(0.9, base_exp + 0.2)  # +20% in bull
-        elif regime == "BEAR":
-            adjusted_exp = max(0.1, base_exp - 0.2)  # -20% in bear
-        else:
-            adjusted_exp = base_exp
-        
-        max_exp = int(adjusted_exp * 100)
+        # Range + Fees vs IL
         range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
-        lines.append(f"Exposure: {max_exp}% | Range: {range_str}")
-        
-        # Fees vs IL
+        range_line = f"Range: {range_str}"
         if hasattr(lp_policy, 'fee_variance_ratio'):
             fv = lp_policy.fee_variance_ratio
             fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
-            lines.append(f"Fees vs IL: {fv:.1f}x {fv_status}")
+            range_line += f" | Fees vs IL: {fv:.1f}x {fv_status}"
+        lines.append(range_line)
         
-        # Hedge - REQUIRED when TAIL/CRISIS risk OR low confidence + elevated risk
+        # Hedge
         hedge_required = (
             lp_policy.hedge_recommended or 
             risk_state in ("TAIL", "CRISIS") or
@@ -509,11 +488,6 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         )
         hedge_str = "REQUIRED" if hedge_required else "recommended" if risk_state == "ELEVATED" else "optional"
         lines.append(f"Hedge: {hedge_str}")
-        
-        # Signals as comment (in Russian)
-        if hasattr(lp_policy, 'signals') and lp_policy.signals:
-            signal_ru = _translate_lp_signal(lp_policy.signals[0])
-            lines.append(f"→ {signal_ru}")
         
         lines.append("")
     
