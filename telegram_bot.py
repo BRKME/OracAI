@@ -270,11 +270,12 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         fg_label = fg_class or "?"
         lines.append(f"FG: {fg_value} ({fg_label})")
     
-    # Directional pressure
-    if risk_level < 0:
-        lines.append(f"Downside pressure. Dir: ↓ {abs(risk_level):.2f}")
-    else:
-        lines.append(f"Upside pressure. Dir: ↑ {abs(risk_level):.2f}")
+    # Directional pressure + structure (compact)
+    dir_arrow = "↓" if risk_level < 0 else "↑"
+    dir_line = f"Dir: {dir_arrow} {abs(risk_level):.2f}"
+    if struct_break:
+        dir_line += " | Структура: BREAK"
+    lines.append(dir_line)
     
     lines.append("")
     
@@ -340,33 +341,6 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     cycle_bar = "#" * cycle_filled + "." * (10 - cycle_filled)
     
     lines.append(f"Цикл: {phase} [{cycle_bar}] {cycle_pos}%")
-    
-    # Wyckoff explanation
-    phase_explanation = WYCKOFF_PHASES.get(phase, "")
-    if phase_explanation:
-        lines.append(f"→ {phase_explanation}")
-    
-    lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # ВЫВОД (AI Analysis) - Simplified, no duplication
-    # ══════════════════════════════════════════════════════
-    
-    analysis = generate_market_analysis(
-        regime=regime,
-        prob_bear=prob_bear,
-        prob_trans=prob_trans,
-        prob_bull=prob_bull,
-        prob_range=prob_range,
-        conf_pct=conf_pct,
-        dir_value=risk_level,
-        struct_break=struct_break,
-        vol_z=vol_z
-    )
-    
-    lines.append("Вывод:")
-    for line in analysis.split("\n"):
-        lines.append(line)
     
     lines.append("")
     
