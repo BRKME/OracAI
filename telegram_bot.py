@@ -431,42 +431,35 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     if risk_state == "CRISIS":
         # Risk override - highest priority
         action = "⚫ ЗАЩИТА"
-        action_note = "Кризисный режим. Высокая волатильность, возможны резкие движения. Сократить позицию до 20-30% и ждать стабилизации."
+        action_note = "Кризисный режим. Сократить позицию до 20-30% и ждать стабилизации."
     elif bottom_prox >= 0.7:
         action = "🟢 ПОКУПАТЬ"
-        action_note = f"Сильный сигнал дна ({int(bottom_prox*100)}%). Рынок перепродан — хорошая точка для покупки. Входить частями: 25-50%."
+        action_note = "Рынок перепродан — хорошая точка для покупки. Входить частями: 25-50%."
     elif top_prox >= 0.7:
         action = "🔴 ПРОДАВАТЬ"
-        action_note = f"Сильный сигнал вершины ({int(top_prox*100)}%). Рынок перегрет — фиксировать прибыль. Продавать частями: 25-50%."
+        action_note = "Рынок перегрет — фиксировать прибыль. Продавать частями: 25-50%."
     elif bottom_prox >= 0.5 and top_prox < 0.4:
         action = "🟡 ДОКУПИТЬ"
-        action_note = f"Умеренный сигнал дна ({int(bottom_prox*100)}%). Можно добавить 10-20% к позиции."
+        action_note = "Умеренный сигнал дна. Можно добавить 10-20% к позиции."
     elif top_prox >= 0.5 and bottom_prox < 0.4:
         action = "🟠 ФИКСИРОВАТЬ"
-        action_note = f"Умеренный сигнал вершины ({int(top_prox*100)}%). Можно продать 10-20% позиции."
+        action_note = "Умеренный сигнал вершины. Можно продать 10-20% позиции."
     # Phase-based signals when bottom/top neutral
     elif phase in ("EARLY_BULL", "ACCUMULATION") and bottom_prox >= 0.3:
         action = "🟡 ДОКУПИТЬ"
-        action_note = f"Фаза {phase} — начало роста. Добавить 10-20% к позиции. Дно: {int(bottom_prox*100)}%."
+        action_note = f"Фаза {phase} — начало роста. Добавить 10-20% к позиции."
     elif phase in ("LATE_BULL", "DISTRIBUTION") and top_prox >= 0.3:
         action = "🟠 ФИКСИРОВАТЬ"
-        action_note = f"Фаза {phase} — возможен разворот. Продать 10-20% позиции. Верх: {int(top_prox*100)}%."
+        action_note = f"Фаза {phase} — возможен разворот. Продать 10-20% позиции."
     elif phase == "CAPITULATION" and bottom_prox >= 0.4:
         action = "🟢 ПОКУПАТЬ"
-        action_note = f"Капитуляция — паника на рынке. Возможность для смелых покупок. Входить частями: 15-25%."
+        action_note = "Капитуляция — паника на рынке. Входить частями: 15-25%."
     else:
         action = "⚪ ДЕРЖАТЬ"
-        action_note = f"Нейтральная зона (дно {int(bottom_prox*100)}%, верх {int(top_prox*100)}%). Нет явного сигнала — сохранять позицию."
+        action_note = "Нейтральная зона. Нет явного сигнала — сохранять позицию."
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
-    lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # 5. СИГНАЛ ДНО-ВЕРШИНА (display only, calculation done above)
-    # ══════════════════════════════════════════════════════
-    
-    lines.append("🔘 Сигнал Дно-Вершина:")
     lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100):2d}%")
     lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100):2d}%")
     lines.append("")
