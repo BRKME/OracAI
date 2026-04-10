@@ -860,6 +860,10 @@ class RegimeEngine:
                 "eth_price": float(eth_price) if eth_price else None,
                 # v1.4: 30d returns for counter-cyclical logic
                 "returns_30d": round((close[-1] / close[-30] - 1), 4) if len(close) >= 30 else 0.0,
+                # v5.9: Drawdown from 90-day rolling high (for HODL defender)
+                "drawdown_from_high_90d": round(
+                    (close[-1] / max(close[-90:]) - 1) * 100, 2
+                ) if len(close) >= 90 else 0.0,
                 # v4.3: Multi-timeframe RSI
                 "rsi": {
                     "rsi_1d": rsi_1d,       # Daily RSI-14 (strategic)
