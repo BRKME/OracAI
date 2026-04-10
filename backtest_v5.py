@@ -8,7 +8,7 @@ Tests:
 3. Risk warnings (TAIL/CRISIS before crashes)
 4. Bottom/Top timing accuracy
 
-Period: 1 year
+Period: 5 years
 Data: BTC price, RSI (calculated), Fear & Greed (API)
 """
 
@@ -32,28 +32,39 @@ logger = logging.getLogger(__name__)
 # DATA LOADING
 # ══════════════════════════════════════════════════════════════════
 
-def load_btc_data(days: int = 1095) -> pd.DataFrame:
-    """Load BTC price history from Yahoo Finance."""
+def load_btc_data(days: int = 1825) -> pd.DataFrame:
+    """Load BTC price history from local CSV or Yahoo Finance."""
     logger.info(f"Loading BTC data for {days} days...")
     
+    # Try local CSV first
+    import os
+    csv_path = os.path.join(os.path.dirname(__file__), "data", "btc_5y.csv")
+    
+    if os.path.exists(csv_path):
+        btc = pd.read_csv(csv_path, index_col=0, parse_dates=True)
+        btc.columns = [c.lower().replace(' ', '_') for c in btc.columns]
+        if 'close' not in btc.columns and len(btc.columns) == 1:
+            btc.columns = ['close']
+        btc = btc.tail(days)
+        logger.info(f"Loaded {len(btc)} days from local CSV")
+        logger.info(f"Date range: {btc.index[0]} to {btc.index[-1]}")
+        return btc
+    
+    # Fallback to yfinance
     end = datetime.now()
-    start = end - timedelta(days=days + 50)  # Extra for RSI warmup
+    start = end - timedelta(days=days + 50)
     
     btc = yf.download("BTC-USD", start=start, end=end, progress=False)
     
-    # Handle MultiIndex columns (newer yfinance versions)
     if isinstance(btc.columns, pd.MultiIndex):
         btc.columns = btc.columns.get_level_values(0)
     
-    # Standardize column names to lowercase
     btc.columns = [c.lower().replace(' ', '_') for c in btc.columns]
     
-    # Ensure we have required columns
     if 'close' not in btc.columns and 'adj_close' in btc.columns:
         btc['close'] = btc['adj_close']
     
     logger.info(f"Loaded {len(btc)} days of BTC data")
-    logger.info(f"Columns: {list(btc.columns)}")
     logger.info(f"Date range: {btc.index[0]} to {btc.index[-1]}")
     
     return btc
@@ -70,12 +81,12 @@ def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
 
 
 def load_fear_greed_history() -> Dict[str, int]:
-    """Load Fear & Greed Index history."""
+    """Load Fear & Greed Index history from API or generate synthetic."""
     logger.info("Loading Fear & Greed history...")
     
     try:
-        url = "https://api.alternative.me/fng/?limit=1095&format=json"
-        resp = requests.get(url, timeout=30)
+        url = "https://api.alternative.me/fng/?limit=1825&format=json"
+        resp = requests.get(url, timeout=10)
         data = resp.json().get('data', [])
         
         fg_dict = {}
@@ -84,11 +95,44 @@ def load_fear_greed_history() -> Dict[str, int]:
             date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
             fg_dict[date] = int(item['value'])
         
-        logger.info(f"Loaded {len(fg_dict)} days of Fear & Greed data")
-        return fg_dict
+        if len(fg_dict) > 100:
+            logger.info(f"Loaded {len(fg_dict)} days of Fear & Greed data from API")
+            return fg_dict
     except Exception as e:
-        logger.warning(f"Failed to load F&G: {e}")
-        return {}
+        logger.warning(f"F&G API unavailable: {e}")
+    
+    # Generate synthetic F&G from price data
+    logger.info("Generating synthetic Fear & Greed from price data...")
+    return {}
+
+
+def generate_synthetic_fg(df: pd.DataFrame) -> Dict[str, int]:
+    """Generate synthetic Fear & Greed index from price + RSI + volatility."""
+    fg_dict = {}
+    rsi = calculate_rsi(df['close'], 14)
+    returns_30d = df['close'].pct_change(30) * 100
+    vol_20d = df['close'].pct_change().rolling(20).std() * 100
+    
+    for i in range(50, len(df)):
+        date_str = df.index[i].strftime('%Y-%m-%d')
+        r = rsi.iloc[i] if not pd.isna(rsi.iloc[i]) else 50
+        ret = returns_30d.iloc[i] if not pd.isna(returns_30d.iloc[i]) else 0
+        vol = vol_20d.iloc[i] if not pd.isna(vol_20d.iloc[i]) else 2.5
+        
+        # RSI component (0-100): RSI maps almost directly
+        rsi_component = r * 0.4
+        
+        # Momentum component: +30% in 30d → greed, -30% → fear
+        mom_component = max(0, min(100, 50 + ret * 1.5)) * 0.35
+        
+        # Volatility component: high vol → fear
+        vol_component = max(0, min(100, 100 - vol * 15)) * 0.25
+        
+        fg = int(max(1, min(99, rsi_component + mom_component + vol_component)))
+        fg_dict[date_str] = fg
+    
+    logger.info(f"Generated {len(fg_dict)} days of synthetic Fear & Greed")
+    return fg_dict
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -199,25 +243,49 @@ def detect_regime(row: pd.Series, prev_rows: pd.DataFrame, fg_value: int = 50) -
     direction = max(-1, min(1, direction))
     
     # Determine risk state
-    if vol_z > 2.5 or (fg_value < 20 and volatility > 4):
+    if vol_z > 2.0 or (fg_value < 15 and volatility > 3.5):
         risk_state = "CRISIS"
-    elif fg_value < 25 or vol_z > 1.5:
+    elif fg_value < 20 or vol_z > 1.2:
         risk_state = "TAIL"
-    elif vol_z > 0.5 or abs(returns_7d) > 10:
+    elif vol_z > 0.3 or abs(returns_7d) > 8:
         risk_state = "ELEVATED"
     else:
         risk_state = "NORMAL"
     
-    # Bottom/Top proximity
-    if rsi < 30 and fg_value < 30:
-        bottom_prox = min(0.9, 0.5 + (30 - rsi) / 50 + (30 - fg_value) / 100)
-        top_prox = 0.1
-    elif rsi > 70 and fg_value > 70:
-        top_prox = min(0.9, 0.5 + (rsi - 70) / 50 + (fg_value - 70) / 100)
-        bottom_prox = 0.1
+    # Bottom/Top proximity — continuous calculation using all signals
+    bottom_prox = prob_bear * 0.4 + prob_trans * 0.2 + prob_range * 0.15
+    top_prox = prob_bull * 0.4 + prob_trans * 0.2 + prob_range * 0.15
+    
+    # Directional pressure
+    if direction < 0:
+        bottom_prox += abs(direction) * 0.25
+        top_prox -= abs(direction) * 0.15
     else:
-        bottom_prox = max(0.1, 0.5 - rsi / 100)
-        top_prox = max(0.1, rsi / 100 - 0.3)
+        top_prox += direction * 0.25
+        bottom_prox -= direction * 0.15
+    
+    # RSI continuous
+    if rsi < 50:
+        rsi_factor = (50 - rsi) / 50.0
+        bottom_prox += rsi_factor * 0.3
+        top_prox -= rsi_factor * 0.15
+    else:
+        rsi_factor = (rsi - 50) / 50.0
+        top_prox += rsi_factor * 0.3
+        bottom_prox -= rsi_factor * 0.15
+    
+    # Fear & Greed continuous
+    if fg_value < 50:
+        fg_factor = (50 - fg_value) / 50.0
+        bottom_prox += fg_factor * 0.15
+        top_prox -= fg_factor * 0.05
+    else:
+        fg_factor = (fg_value - 50) / 50.0
+        top_prox += fg_factor * 0.15
+        bottom_prox -= fg_factor * 0.05
+    
+    bottom_prox = max(0.05, min(0.95, bottom_prox))
+    top_prox = max(0.05, min(0.95, top_prox))
     
     return {
         'regime': regime,
@@ -234,42 +302,42 @@ def detect_regime(row: pd.Series, prev_rows: pd.DataFrame, fg_value: int = 50) -
     }
 
 
-def get_signal(regime: str, confidence: float, direction: float, 
-               risk_state: str, rsi: float, bottom_prox: float, top_prox: float) -> str:
+def get_target_position(regime: str, confidence: float, direction: float, 
+                        risk_state: str, rsi: float, bottom_prox: float, top_prox: float) -> float:
     """
-    Generate trading signal based on regime.
+    HODL-biased position sizing.
+    
+    Default: 90%. Only reduce on real danger signals.
+    BTC long-term uptrend → being out of market is the biggest risk.
     """
-    signal = "HOLD"
+    # Strong default: 90% invested
+    target = 0.90
     
-    # RSI extremes - highest priority (contrarian)
-    if rsi < 25 and bottom_prox > 0.6:
-        signal = "BUY"  # Extreme oversold
-    elif rsi > 75 and top_prox > 0.6:
-        signal = "SELL"  # Extreme overbought
+    # Only reduce position on STRONG combined signals
+    # Top signal: need extreme RSI + high top_prox + confidence
+    if rsi > 78 and top_prox > 0.70 and confidence > 0.20:
+        target = 0.50  # Confident top
+    elif rsi > 82 and top_prox > 0.75:
+        target = 0.40  # Very confident top
     
-    # Regime-based signals
-    elif regime == "BULL" and direction > 0.1:
-        signal = "BUY"
-    elif regime == "BEAR" and direction < -0.1:
-        signal = "SELL"
+    # Bear regime: reduce only if confidence is high
+    if regime == "BEAR" and confidence > 0.30 and rsi > 40:
+        target = min(target, 0.60)
     
-    # Bottom/Top proximity (only in matching regime)
-    elif bottom_prox > 0.6 and regime != "BEAR":
-        signal = "BUY"
-    elif top_prox > 0.6 and regime != "BULL":
-        signal = "SELL"
+    # Bull bottom: max long
+    if bottom_prox > 0.65 or rsi < 28:
+        target = 1.00
     
-    # CRITICAL: No BUY in BEAR, no SELL in BULL (except RSI extremes)
-    if regime == "BEAR" and signal == "BUY" and rsi > 30:
-        signal = "HOLD"
-    if regime == "BULL" and signal == "SELL" and rsi < 70:
-        signal = "HOLD"
+    # Risk overrides — only real danger
+    if risk_state == "CRISIS":
+        target = 0.25
+    elif risk_state == "TAIL" and rsi > 50:
+        target = min(target, 0.55)
     
-    # Risk state - no BUY in crisis
-    if risk_state == "CRISIS" and signal == "BUY":
-        signal = "HOLD"
+    # Snap to 5% steps
+    target = round(target * 20) / 20
     
-    return signal
+    return max(0.20, min(1.0, target))
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -315,15 +383,19 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
     # Add RSI
     df['rsi'] = calculate_rsi(df['close'], 14)
     
+    # 90-day rolling high for drawdown defender
+    df['rolling_high_90'] = df['close'].rolling(90, min_periods=20).max()
+    
     # Remove warmup period
     df = df.dropna().copy()
-    df = df.tail(1095)  # Last 3 years
+    df = df.tail(1825)  # Last 5 years
     
-    # Track state
-    position = 0.0  # 0 = cash, 1 = fully invested
-    cash = 100000
-    btc_held = 0.0
-    entry_price = 0.0
+    # Track state — start 90% invested (HODL bias)
+    initial_capital = 100000
+    position = 0.90
+    cash = initial_capital * 0.10
+    btc_held = (initial_capital * 0.90) / df.iloc[50]['close']
+    entry_price = df.iloc[50]['close']
     
     trades = []
     equity_curve = []
@@ -349,10 +421,35 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
         bottom_prox = result['bottom_prox']
         top_prox = result['top_prox']
         
-        # Get signal
-        signal = get_signal(regime, confidence, direction, risk_state, rsi, bottom_prox, top_prox)
-        
         price = row['close']
+        
+        # Get target position
+        target = get_target_position(regime, confidence, direction, risk_state, 
+                                     rsi, bottom_prox, top_prox)
+        
+        # Drawdown defender: if BTC dropped from 90d high, reduce
+        # BUT lift defender if strong bottom signal appears (RSI <30 or bottom_prox high)
+        rolling_high = row.get('rolling_high_90', price)
+        dd_from_high = (price / rolling_high - 1) * 100 if rolling_high > 0 else 0
+        strong_bottom = (rsi < 30) or (bottom_prox > 0.70)
+        
+        if not strong_bottom:
+            if dd_from_high < -25:
+                target = min(target, 0.30)
+            elif dd_from_high < -15:
+                target = min(target, 0.55)
+        
+        # Current equity and position
+        equity = cash + btc_held * price
+        current_pos = (btc_held * price) / equity if equity > 0 else 0
+        
+        # Determine signal for tracking
+        if target > current_pos + 0.05:
+            signal = "BUY"
+        elif target < current_pos - 0.05:
+            signal = "SELL"
+        else:
+            signal = "HOLD"
         
         # Track for analysis
         regime_calls.append({
@@ -376,41 +473,45 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
                 'price': price
             })
         
-        # Execute trades
-        if signal == "BUY" and position < 0.5:
-            # Buy 50% position
-            buy_amount = cash * 0.5
-            btc_bought = buy_amount / price
-            btc_held += btc_bought
-            cash -= buy_amount
-            position = 0.5 if position == 0 else 1.0
-            entry_price = price
+        # Rebalance toward target (only if delta > 20% — strict, no churn)
+        delta = target - current_pos
+        if abs(delta) > 0.20:
+            target_btc_value = equity * target
+            current_btc_value = btc_held * price
+            trade_value = target_btc_value - current_btc_value
             
-            trades.append({
-                'date': date,
-                'action': 'BUY',
-                'price': price,
-                'signal': signal,
-                'regime': regime,
-                'confidence': confidence
-            })
-            
-        elif signal == "SELL" and position > 0:
-            # Sell all
-            sell_value = btc_held * price
-            cash += sell_value
-            btc_held = 0
-            position = 0
-            
-            trades.append({
-                'date': date,
-                'action': 'SELL',
-                'price': price,
-                'signal': signal,
-                'regime': regime,
-                'confidence': confidence,
-                'pnl': (price - entry_price) / entry_price * 100 if entry_price > 0 else 0
-            })
+            if trade_value > 0:
+                # Buy more BTC
+                buy_amount = min(trade_value, cash)
+                btc_held += buy_amount / price
+                cash -= buy_amount
+                entry_price = price
+                
+                trades.append({
+                    'date': date,
+                    'action': 'BUY',
+                    'price': price,
+                    'signal': signal,
+                    'regime': regime,
+                    'confidence': confidence,
+                    'target_pos': f"{int(target*100)}%"
+                })
+            else:
+                # Sell some BTC
+                sell_btc = min(abs(trade_value) / price, btc_held)
+                cash += sell_btc * price
+                btc_held -= sell_btc
+                
+                trades.append({
+                    'date': date,
+                    'action': 'SELL',
+                    'price': price,
+                    'signal': signal,
+                    'regime': regime,
+                    'confidence': confidence,
+                    'pnl': (price - entry_price) / entry_price * 100 if entry_price > 0 else 0,
+                    'target_pos': f"{int(target*100)}%"
+                })
         
         # Track equity
         equity = cash + btc_held * price
@@ -574,7 +675,7 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
 def print_report(metrics: BacktestMetrics):
     """Print backtest report."""
     print("\n" + "=" * 70)
-    print("   MARKET REGIME ENGINE v5.3 — BACKTEST REPORT")
+    print("   MARKET REGIME ENGINE v5.8 — BACKTEST REPORT (5 YEARS)")
     print("=" * 70)
     
     print(f"\n📅 Period: {metrics.total_days} days")
@@ -645,8 +746,9 @@ def print_report(metrics: BacktestMetrics):
     for trade in metrics.trades_list[-10:]:
         pnl = trade.get('pnl', 0)
         pnl_str = f" | PnL: {pnl:+.1f}%" if pnl != 0 else ""
+        pos_str = f" → {trade.get('target_pos', '?')}" if 'target_pos' in trade else ""
         print(f"  {trade['date'].strftime('%Y-%m-%d')} | {trade['action']:4} @ ${trade['price']:,.0f} | "
-              f"Regime: {trade['regime']}{pnl_str}")
+              f"{trade['regime']}{pos_str}{pnl_str}")
     
     print("\n" + "=" * 70)
     print("CONCLUSION")
@@ -706,11 +808,15 @@ def print_report(metrics: BacktestMetrics):
 # ══════════════════════════════════════════════════════════════════
 
 def main():
-    print("\n🚀 Starting Market Regime Engine v5.3 Backtest...\n")
+    print("\n🚀 Starting Market Regime Engine v5.8 Backtest (5 years)...\n")
     
-    # Load data - 3 years
-    btc_data = load_btc_data(1095)
+    # Load data - 5 years
+    btc_data = load_btc_data(1825)
     fg_data = load_fear_greed_history()
+    
+    # If API failed, generate synthetic F&G
+    if len(fg_data) < 100:
+        fg_data = generate_synthetic_fg(btc_data)
     
     # Run backtest
     metrics = run_backtest(btc_data, fg_data)
