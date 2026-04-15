@@ -1,6 +1,6 @@
 {
   "decision": {
-    "timestamp": "2026-04-15T12:03:32.571152+00:00",
+    "timestamp": "2026-04-15T15:03:10.080980+00:00",
     "action": "NO_HEDGE",
     "reason": "Hedge Score \u043d\u0438\u0437\u043a\u0438\u0439 (0.06 < 0.4)",
     "dir_value": -0.0575,
@@ -10,20 +10,20 @@
     "vol_z": -0.4827,
     "hedge_score": 0.0575,
     "hedge_ratio": 0,
-    "total_tvl": 42131.52517021625,
+    "total_tvl": 42223.143279533935,
     "hedgeable_exposure": {
-      "ETH": 9243.406216637442,
-      "BTC": 6162.270811091629,
+      "ETH": 9260.919198887821,
+      "BTC": 6173.946132591881,
       "BNB": 0
     },
-    "non_hedgeable_exposure": 26725.848142487175,
+    "non_hedgeable_exposure": 26788.27794805423,
     "recommendations": []
   },
   "classifications": [
     {
       "token0": "WETH",
       "token1": "USD\u20ae0",
-      "balance_usd": 5908.459510670653,
+      "balance_usd": 5916.079104039835,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -35,7 +35,7 @@
     {
       "token0": "ZRO",
       "token1": "USD\u20ae0",
-      "balance_usd": 2926.8641615658084,
+      "balance_usd": 2951.566334607573,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -47,7 +47,7 @@
     {
       "token0": "WETH",
       "token1": "USD\u20ae0",
-      "balance_usd": 4176.480585675813,
+      "balance_usd": 4182.6703717837745,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -59,7 +59,7 @@
     {
       "token0": "ZRO",
       "token1": "WETH",
-      "balance_usd": 1873.3341046351773,
+      "balance_usd": 1902.7582005194995,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -71,7 +71,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1964.3647033701034,
+      "balance_usd": 1964.7821625433862,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -83,7 +83,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 594.0615486074915,
+      "balance_usd": 592.9071425904119,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -95,7 +95,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 994.4940512461407,
+      "balance_usd": 994.8569621050021,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -107,7 +107,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 1053.6827732108893,
+      "balance_usd": 1052.2751073087686,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -119,19 +119,19 @@
     {
       "token0": "USDT",
       "token1": "WBNB",
-      "balance_usd": 4085.505912970965,
+      "balance_usd": 4081.452714905172,
       "hedgeable": true,
       "hedge_type": "full",
       "underlying": "BNB",
       "exposure_eth": 0,
       "exposure_btc": 0,
-      "exposure_bnb": 2042.7529564854824,
+      "exposure_bnb": 2040.726357452586,
       "note": "PUT BNB (\u0435\u0441\u043b\u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d)"
     },
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 2260.7060616918943,
+      "balance_usd": 2260.986920351395,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -143,7 +143,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 1211.3781052708557,
+      "balance_usd": 1209.2526568989229,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -155,7 +155,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 2400.0080631792753,
+      "balance_usd": 2400.5181035909195,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -167,7 +167,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 1362.0144733630773,
+      "balance_usd": 1359.624881714743,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -177,5 +177,5 @@
       "note": "\u041d\u0435\u0442 \u043b\u0438\u043a\u0432\u0438\u0434\u043d\u044b\u0445 \u043e\u043f\u0446\u0438\u043e\u043d\u043e\u0432 \u043d\u0430 alt \u0442\u043e\u043a\u0435\u043d\u044b"
     }
   ],
-  "updated": "2026-04-15T12:03:32.571386+00:00"
+  "updated": "2026-04-15T15:03:10.081315+00:00"
 }
