@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-04-16T12:09:19.015444+00:00",
+  "timestamp": "2026-04-16T15:32:28.740416+00:00",
   "eth": {
     "underlying": "ETH",
-    "spot_price": 2337.487261,
+    "spot_price": 2322.31167,
     "option": {
       "instrument_name": "ETH-01MAY26-1900-P",
       "underlying": "ETH",
@@ -10,24 +10,24 @@
       "strike": 1900.0,
       "expiry": "01MAY26",
       "expiry_timestamp": 1777593600,
-      "mark_price": 12.11503,
+      "mark_price": 12.57434,
       "bid_price": null,
       "ask_price": null,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 0.5182928780889727,
+      "premium_pct": 0.5414579000070219,
       "days_to_expiry": 14
     },
-    "contracts": 2.7910017799545876,
-    "notional_usd": 6523.931106072175,
-    "total_premium_usd": 33.81307029420323,
-    "premium_pct": 0.5182928780889727,
+    "contracts": 2.7991350209736283,
+    "notional_usd": 6500.463925112752,
+    "total_premium_usd": 35.19727545962953,
+    "premium_pct": 0.5414579000070219,
     "iv": 0.0,
-    "timestamp": "2026-04-16T12:08:59.485662+00:00"
+    "timestamp": "2026-04-16T15:32:12.917749+00:00"
   },
   "btc": {
     "underlying": "BTC",
-    "spot_price": 74670.059169,
+    "spot_price": 74249.133938,
     "option": {
       "instrument_name": "BTC-24APR26-67000-P",
       "underlying": "BTC",
@@ -35,20 +35,20 @@
       "strike": 67000.0,
       "expiry": "24APR26",
       "expiry_timestamp": 1776988800,
-      "mark_price": 175.611711,
+      "mark_price": 182.827517,
       "bid_price": null,
       "ask_price": null,
       "iv": 0.0,
       "delta": 0.0,
-      "premium_pct": 0.2351835701677158,
+      "premium_pct": 0.2462352182486948,
       "days_to_expiry": 7
     },
-    "contracts": 0.0582467384176624,
-    "notional_usd": 4349.2874040481165,
-    "total_premium_usd": 10.228809393695126,
-    "premium_pct": 0.2351835701677158,
+    "contracts": 0.05836623791949603,
+    "notional_usd": 4333.642616741835,
+    "total_premium_usd": 10.670954355452706,
+    "premium_pct": 0.2462352182486948,
     "iv": 0.0,
-    "timestamp": "2026-04-16T12:09:19.014790+00:00"
+    "timestamp": "2026-04-16T15:32:28.739647+00:00"
   },
   "error": null
 }
