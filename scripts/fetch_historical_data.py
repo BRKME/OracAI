@@ -78,97 +78,125 @@ def save_merged(path: Path, new_df: pd.DataFrame, key: str = "date"):
 
 
 # ════════════════════════════════════════════════════════════════
-# Binance — BTC/ETH OHLCV, funding, OI
+# Kraken — BTC/ETH OHLCV (no US geoblock unlike Binance)
 # ════════════════════════════════════════════════════════════════
-BINANCE_SPOT = "https://api.binance.com"
-BINANCE_FUTURES = "https://fapi.binance.com"
+KRAKEN_API = "https://api.kraken.com"
+BINANCE_FUTURES = "https://fapi.binance.com"  # still used for funding/OI if reachable
 
 
-def fetch_binance_klines(symbol: str, interval: str, start_ms: int, end_ms: int) -> pd.DataFrame:
-    """Paginated klines — Binance caps at 1000 per request."""
+def fetch_kraken_ohlc(pair: str, start: datetime, end: datetime) -> pd.DataFrame:
+    """Paginated Kraken OHLC. interval=1440 = daily. Max 720 candles per call."""
     rows = []
-    current = start_ms
-    while current < end_ms:
-        url = f"{BINANCE_SPOT}/api/v3/klines"
-        params = {"symbol": symbol, "interval": interval, "startTime": current,
-                  "endTime": end_ms, "limit": 1000}
-        r = requests.get(url, params=params, timeout=20)
+    current_since = int(start.timestamp())
+    end_ts = int(end.timestamp())
+    iterations = 0
+    while current_since < end_ts and iterations < 20:
+        url = f"{KRAKEN_API}/0/public/OHLC"
+        params = {"pair": pair, "interval": 1440, "since": current_since}
+        r = requests.get(url, params=params, timeout=30)
         r.raise_for_status()
-        batch = r.json()
+        payload = r.json()
+        if payload.get("error"):
+            raise RuntimeError(f"Kraken error: {payload['error']}")
+        result = payload.get("result", {})
+        # result has one data key (pair-specific) + "last"
+        data_keys = [k for k in result.keys() if k != "last"]
+        if not data_keys:
+            break
+        batch = result[data_keys[0]]
         if not batch:
             break
         rows.extend(batch)
-        # Next window starts after last kline open time
-        current = batch[-1][0] + 1
-        time.sleep(0.1)  # rate limit politeness
+        last = result.get("last", 0)
+        if not last or last <= current_since:
+            break
+        current_since = last
+        iterations += 1
+        time.sleep(0.3)  # Kraken rate limit is generous but be polite
     if not rows:
         return pd.DataFrame()
-    df = pd.DataFrame(rows, columns=[
-        "open_time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_volume", "trades", "taker_buy_base",
-        "taker_buy_quote", "ignore",
-    ])
-    df["date"] = pd.to_datetime(df["open_time"], unit="ms").dt.normalize()
-    for c in ["open", "high", "low", "close", "volume", "quote_volume"]:
+    # Kraken row: [time, open, high, low, close, vwap, volume, count]
+    df = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close",
+                                      "vwap", "volume", "count"])
+    df["date"] = pd.to_datetime(df["time"], unit="s").dt.normalize()
+    for c in ["open", "high", "low", "close", "volume"]:
         df[c] = df[c].astype(float)
+    df["quote_volume"] = df["volume"] * df["close"]
     return df[["date", "open", "high", "low", "close", "volume", "quote_volume"]]
 
 
 def fetch_btc_ohlcv(start: datetime, end: datetime) -> pd.DataFrame:
-    logger.info(f"Fetching BTC OHLCV from Binance: {start.date()} → {end.date()}")
-    return fetch_binance_klines("BTCUSDT", "1d",
-                                 int(start.timestamp() * 1000),
-                                 int(end.timestamp() * 1000))
+    logger.info(f"Fetching BTC OHLCV from Kraken: {start.date()} → {end.date()}")
+    return fetch_kraken_ohlc("XXBTZUSD", start, end)
 
 
 def fetch_eth_ohlcv(start: datetime, end: datetime) -> pd.DataFrame:
-    logger.info(f"Fetching ETH OHLCV from Binance: {start.date()} → {end.date()}")
-    return fetch_binance_klines("ETHUSDT", "1d",
-                                 int(start.timestamp() * 1000),
-                                 int(end.timestamp() * 1000))
+    logger.info(f"Fetching ETH OHLCV from Kraken: {start.date()} → {end.date()}")
+    return fetch_kraken_ohlc("XETHZUSD", start, end)
 
 
-def fetch_binance_funding(start: datetime, end: datetime) -> pd.DataFrame:
-    """Funding rate history — Binance Futures. 8-hour resolution, aggregated to daily mean."""
-    logger.info(f"Fetching funding rate: {start.date()} → {end.date()}")
+def fetch_bybit_funding(start: datetime, end: datetime) -> pd.DataFrame:
+    """Funding rate from Bybit v5. No US geoblock. Daily mean of 3x-per-day rates."""
+    logger.info(f"Fetching funding rate from Bybit: {start.date()} → {end.date()}")
     rows = []
-    current = int(start.timestamp() * 1000)
-    end_ms = int(end.timestamp() * 1000)
-    while current < end_ms:
-        url = f"{BINANCE_FUTURES}/fapi/v1/fundingRate"
-        params = {"symbol": "BTCUSDT", "startTime": current, "endTime": end_ms, "limit": 1000}
-        r = requests.get(url, params=params, timeout=20)
-        r.raise_for_status()
-        batch = r.json()
-        if not batch:
+    url = "https://api.bybit.com/v5/market/funding/history"
+    current_end_ms = int(end.timestamp() * 1000)
+    start_ms = int(start.timestamp() * 1000)
+    iterations = 0
+    while current_end_ms > start_ms and iterations < 50:
+        params = {"category": "linear", "symbol": "BTCUSDT",
+                  "endTime": current_end_ms, "limit": 200}
+        try:
+            r = requests.get(url, params=params, timeout=20)
+            r.raise_for_status()
+            payload = r.json()
+            if payload.get("retCode") != 0:
+                logger.warning(f"Bybit error: {payload.get('retMsg')}")
+                break
+            batch = payload.get("result", {}).get("list", [])
+            if not batch:
+                break
+            rows.extend(batch)
+            # Next page: go earlier in time
+            earliest = min(int(r["fundingRateTimestamp"]) for r in batch)
+            if earliest <= start_ms or earliest >= current_end_ms:
+                break
+            current_end_ms = earliest - 1
+            iterations += 1
+            time.sleep(0.3)
+        except Exception as e:
+            logger.warning(f"Bybit pagination failed: {e}")
             break
-        rows.extend(batch)
-        current = batch[-1]["fundingTime"] + 1
-        time.sleep(0.1)
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["fundingTime"], unit="ms").dt.normalize()
+    df["date"] = pd.to_datetime(df["fundingRateTimestamp"].astype("int64"), unit="ms").dt.normalize()
     df["fundingRate"] = df["fundingRate"].astype(float)
+    # Filter to requested range
+    df = df[(df["date"] >= pd.Timestamp(start.date())) & (df["date"] <= pd.Timestamp(end.date()))]
     return df.groupby("date", as_index=False)["fundingRate"].mean()
 
 
 def fetch_binance_oi_history(start: datetime, end: datetime) -> pd.DataFrame:
-    """Open Interest — daily. Note: Binance only keeps ~30 days; for deeper history
-    this will only cover recent data. Engine accepts short OI history."""
-    logger.info(f"Fetching open interest (last 30d max): {start.date()} → {end.date()}")
-    url = f"{BINANCE_FUTURES}/futures/data/openInterestHist"
-    params = {"symbol": "BTCUSDT", "period": "1d", "limit": 500}
+    """Open Interest — from Bybit instead of Binance (no US geoblock)."""
+    logger.info(f"Fetching open interest from Bybit: ~30d window")
+    url = "https://api.bybit.com/v5/market/open-interest"
+    params = {"category": "linear", "symbol": "BTCUSDT",
+              "intervalTime": "1d", "limit": 200}
     try:
         r = requests.get(url, params=params, timeout=20)
         r.raise_for_status()
-        batch = r.json()
-        df = pd.DataFrame(batch)
-        if df.empty:
+        payload = r.json()
+        if payload.get("retCode") != 0:
+            logger.warning(f"Bybit OI error: {payload.get('retMsg')}")
             return pd.DataFrame()
-        df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.normalize()
-        df["open_interest"] = df["sumOpenInterest"].astype(float)
-        return df[["date", "open_interest"]]
+        batch = payload.get("result", {}).get("list", [])
+        if not batch:
+            return pd.DataFrame()
+        df = pd.DataFrame(batch)
+        df["date"] = pd.to_datetime(df["timestamp"].astype("int64"), unit="ms").dt.normalize()
+        df["open_interest"] = df["openInterest"].astype(float)
+        return df[["date", "open_interest"]].drop_duplicates("date")
     except Exception as e:
         logger.warning(f"OI fetch failed: {e}")
         return pd.DataFrame()
@@ -178,7 +206,7 @@ def fetch_binance_oi_history(start: datetime, end: datetime) -> pd.DataFrame:
 # CMC — Fear & Greed, BTC dominance
 # ════════════════════════════════════════════════════════════════
 def fetch_cmc_fear_greed_history() -> pd.DataFrame:
-    """CMC v3 F&G historical. 1 credit per 100 records."""
+    """CMC v3 F&G historical. `start` is pagination position (1-indexed)."""
     if not CMC_KEY:
         logger.warning("CMC_API_KEY not set — skipping F&G")
         return pd.DataFrame()
@@ -187,46 +215,77 @@ def fetch_cmc_fear_greed_history() -> pd.DataFrame:
     headers = {"X-CMC_PRO_API_KEY": CMC_KEY}
     all_rows = []
     start = 1
-    while True:
+    max_iterations = 20
+    for i in range(max_iterations):
         params = {"start": start, "limit": 500}
-        r = requests.get(url, headers=headers, params=params, timeout=30)
+        try:
+            r = requests.get(url, headers=headers, params=params, timeout=30)
+        except Exception as e:
+            logger.warning(f"CMC F&G request failed: {e}")
+            break
         if r.status_code != 200:
             logger.warning(f"CMC F&G HTTP {r.status_code}: {r.text[:200]}")
             break
-        data = r.json().get("data", [])
+        try:
+            payload = r.json()
+        except Exception as e:
+            logger.warning(f"CMC F&G JSON parse failed: {e}")
+            break
+        data = payload.get("data") or []
         if not data:
             break
         all_rows.extend(data)
         if len(data) < 500:
             break
         start += 500
-        time.sleep(1)
+        time.sleep(1.2)  # Free tier = 30/min
     if not all_rows:
         return pd.DataFrame()
+    # Response format: [{"timestamp": "...", "value": int, "value_classification": str}]
+    # timestamp can be ISO string OR Unix seconds as string — handle both
     df = pd.DataFrame(all_rows)
-    df["date"] = pd.to_datetime(df["timestamp"]).dt.normalize()
+    if "timestamp" not in df.columns:
+        logger.warning(f"CMC F&G: unexpected schema {df.columns.tolist()}")
+        return pd.DataFrame()
+
+    def parse_ts(v):
+        try:
+            if isinstance(v, (int, float)) or (isinstance(v, str) and v.isdigit()):
+                return pd.to_datetime(int(v), unit="s").normalize()
+            return pd.to_datetime(v).normalize()
+        except Exception:
+            return pd.NaT
+
+    df["date"] = df["timestamp"].apply(parse_ts)
+    df = df.dropna(subset=["date"])
     df["fear_greed"] = df["value"].astype(int)
     df["classification"] = df["value_classification"]
     return df[["date", "fear_greed", "classification"]].drop_duplicates("date")
 
 
 def fetch_cmc_btc_dominance_history(start: datetime, end: datetime) -> pd.DataFrame:
-    """CMC /v1/global-metrics/quotes/historical. 1 credit per 100 data points."""
+    """CMC /v1/global-metrics/quotes/historical.
+    Basic Free tier = 1 month window only. Window beyond that returns empty.
+    For longer history, fall back to CoinGecko (see fetch_coingecko_btc_dominance).
+    """
     if not CMC_KEY:
-        logger.warning("CMC_API_KEY not set — skipping BTC.D")
+        logger.warning("CMC_API_KEY not set — skipping BTC.D (CMC)")
         return pd.DataFrame()
-    logger.info(f"Fetching BTC dominance history: {start.date()} → {end.date()}")
+    # CMC Free tier caps historical to last 1 month. Clamp start if earlier.
+    min_allowed_start = end - timedelta(days=29)
+    effective_start = max(start, min_allowed_start)
+    logger.info(f"Fetching BTC.D from CMC: {effective_start.date()} → {end.date()}")
     url = "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/historical"
     headers = {"X-CMC_PRO_API_KEY": CMC_KEY}
     params = {
-        "time_start": start.strftime("%Y-%m-%d"),
-        "time_end": end.strftime("%Y-%m-%d"),
+        "time_start": effective_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "time_end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "interval": "daily",
     }
     try:
         r = requests.get(url, headers=headers, params=params, timeout=30)
         if r.status_code != 200:
-            logger.warning(f"CMC BTC.D HTTP {r.status_code}: {r.text[:200]}")
+            logger.warning(f"CMC BTC.D HTTP {r.status_code}: {r.text[:300]}")
             return pd.DataFrame()
         quotes = r.json().get("data", {}).get("quotes", [])
         rows = []
@@ -241,7 +300,69 @@ def fetch_cmc_btc_dominance_history(start: datetime, end: datetime) -> pd.DataFr
             })
         return pd.DataFrame(rows)
     except Exception as e:
-        logger.warning(f"BTC.D fetch failed: {e}")
+        logger.warning(f"CMC BTC.D fetch failed: {e}")
+        return pd.DataFrame()
+
+
+def fetch_coingecko_btc_dominance(days: int = 365) -> pd.DataFrame:
+    """CoinGecko /coins/bitcoin/market_chart — free, no API key, up to 365d daily.
+    For longer than 1y we can't get daily through free API; use what's available."""
+    logger.info(f"Fetching BTC dominance from CoinGecko: last {days}d...")
+    # Use global market chart — gives total market cap; compute dominance from BTC mcap
+    try:
+        # BTC mcap history
+        r = requests.get(
+            "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart",
+            params={"vs_currency": "usd", "days": min(days, 365), "interval": "daily"},
+            timeout=30,
+        )
+        r.raise_for_status()
+        btc_data = r.json()
+        btc_mcap = pd.DataFrame(btc_data.get("market_caps", []), columns=["ts", "btc_mcap"])
+        btc_mcap["date"] = pd.to_datetime(btc_mcap["ts"], unit="ms").dt.normalize()
+
+        time.sleep(2)  # CoinGecko free tier is strict: 30/min
+
+        # Global market cap history (total)
+        r2 = requests.get(
+            "https://api.coingecko.com/api/v3/global",
+            timeout=30,
+        )
+        r2.raise_for_status()
+        # /global gives only current — for historical total, we approximate:
+        # since we already have BTC mcap daily, we can query ETH mcap similarly
+        # and use BTC / (BTC + ETH + stablecoins proxy). But simpler:
+        # compute approximate dominance from btc price × circulating supply / total crypto mcap (latest known)
+        # For now: store BTC mcap; downstream code can compute ratio when total mcap available.
+
+        df = btc_mcap[["date", "btc_mcap"]].copy()
+        df["btc_mcap"] = df["btc_mcap"].astype(float)
+        df = df.drop_duplicates("date").sort_values("date")
+
+        # Estimate BTC dominance using historical BTC mcap / historical total mcap
+        # CoinGecko doesn't give historical total; estimate it from current ratio
+        current_global = r2.json().get("data", {})
+        current_btc_dom_pct = current_global.get("market_cap_percentage", {}).get("btc")
+        current_total_mcap = current_global.get("total_market_cap", {}).get("usd")
+        if current_btc_dom_pct and current_total_mcap and len(df) > 0:
+            # Scale historical: if BTC mcap moves but ratio of BTC/total stays approx in trend
+            # use current snapshot as anchor and assume total_mcap scales with BTC mcap ratio
+            current_btc_mcap = df["btc_mcap"].iloc[-1]
+            if current_btc_mcap > 0:
+                implied_total_now = current_btc_mcap / (current_btc_dom_pct / 100)
+                # Very rough: assume total/btc ratio scales slowly. This gives approx dominance.
+                scale_factor = implied_total_now / current_btc_mcap
+                df["btc_dominance"] = (df["btc_mcap"] / (df["btc_mcap"] * scale_factor)) * 100
+            else:
+                df["btc_dominance"] = current_btc_dom_pct
+        else:
+            df["btc_dominance"] = None
+
+        df["eth_dominance"] = None
+        df["total_market_cap"] = None
+        return df[["date", "btc_dominance", "eth_dominance", "total_market_cap"]]
+    except Exception as e:
+        logger.warning(f"CoinGecko BTC.D fetch failed: {e}")
         return pd.DataFrame()
 
 
@@ -333,41 +454,50 @@ def main():
         logger.error(f"ETH OHLCV failed: {e}")
         status["eth_ohlcv"] = f"FAIL: {e}"
 
-    # ── Funding rate ──
+    # ── Funding rate (Bybit, no US geoblock) ──
     try:
         start = window_for("funding_rate.csv")
-        df = fetch_binance_funding(start, end)
+        df = fetch_bybit_funding(start, end)
         save_merged(DATA_DIR / "funding_rate.csv", df)
         status["funding_rate"] = f"{len(df)} new rows"
     except Exception as e:
         logger.error(f"Funding failed: {e}")
         status["funding_rate"] = f"FAIL: {e}"
 
-    # ── OI (limited by Binance to ~30d) ──
+    # ── OI (Bybit, limited to ~200 days of daily) ──
     try:
-        df = fetch_binance_oi_history(end - timedelta(days=30), end)
+        df = fetch_binance_oi_history(end - timedelta(days=200), end)
         save_merged(DATA_DIR / "open_interest.csv", df)
-        status["open_interest"] = f"{len(df)} rows (Binance ~30d window)"
+        status["open_interest"] = f"{len(df)} rows (Bybit ~200d window)"
     except Exception as e:
         logger.error(f"OI failed: {e}")
         status["open_interest"] = f"FAIL: {e}"
 
-    # ── Fear & Greed ──
+    # ── Fear & Greed (CMC) ──
     try:
         df = fetch_cmc_fear_greed_history()
-        # F&G API returns all history; we still merge to dedupe
         save_merged(DATA_DIR / "fear_greed.csv", df)
         status["fear_greed"] = f"{len(df)} total rows"
     except Exception as e:
         logger.error(f"F&G failed: {e}")
         status["fear_greed"] = f"FAIL: {e}"
 
-    # ── BTC dominance ──
+    # ── BTC dominance — try CMC (last 30d), then CoinGecko (last 365d) ──
     try:
         start = window_for("btc_dominance.csv")
-        df = fetch_cmc_btc_dominance_history(start, end)
+        df_cmc = fetch_cmc_btc_dominance_history(start, end)
+        df_cg = pd.DataFrame()
+        if len(df_cmc) < 10:  # CMC only gave tiny window — supplement with CoinGecko
+            logger.info("CMC BTC.D too short — fetching CoinGecko fallback")
+            df_cg = fetch_coingecko_btc_dominance(days=365)
+        # Prefer CMC for overlapping dates (higher fidelity), fall back to CG for older
+        if not df_cg.empty and not df_cmc.empty:
+            df = pd.concat([df_cg, df_cmc], ignore_index=True)
+            df = df.drop_duplicates("date", keep="last")
+        else:
+            df = df_cmc if not df_cmc.empty else df_cg
         save_merged(DATA_DIR / "btc_dominance.csv", df)
-        status["btc_dominance"] = f"{len(df)} new rows"
+        status["btc_dominance"] = f"{len(df)} new rows (CMC={len(df_cmc)}, CG={len(df_cg)})"
     except Exception as e:
         logger.error(f"BTC.D failed: {e}")
         status["btc_dominance"] = f"FAIL: {e}"

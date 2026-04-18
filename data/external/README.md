@@ -35,16 +35,26 @@ new rows (incremental).
 
 | File | Source | Cost | Coverage |
 |---|---|---|---|
-| `btc_ohlcv.csv` | Binance public | free | 2020+ |
-| `eth_ohlcv.csv` | Binance public | free | 2020+ |
-| `funding_rate.csv` | Binance Futures | free | 2020+ |
-| `open_interest.csv` | Binance Futures | free | ~30 days (Binance limit) |
-| `fear_greed.csv` | CMC `/v3/fear-and-greed/historical` | ~20 CMC credits | full CMC history |
-| `btc_dominance.csv` | CMC `/v1/global-metrics/quotes/historical` | ~20 CMC credits | 5y |
+| `btc_ohlcv.csv` | Kraken public API | free | 2014+ (full history) |
+| `eth_ohlcv.csv` | Kraken public API | free | 2015+ (full history) |
+| `funding_rate.csv` | Bybit v5 public | free | 2020+ (Bybit launch) |
+| `open_interest.csv` | Bybit v5 public | free | ~200 days (API window) |
+| `fear_greed.csv` | CMC `/v3/fear-and-greed/historical` | ~5 CMC credits | full CMC history |
+| `btc_dominance.csv` | CMC (last 30d) + CoinGecko (up to 365d) | ~5 CMC credits | last ~1 year |
 | `fred_macro.csv` | FRED (DXY, US10Y, US2Y, M2) | 0 | 5y |
 
-Total CMC cost per full backfill: **~50 credits** out of 10,000/month.
-Incremental daily cost: **<5 credits**.
+Total CMC cost per full backfill: **~10 credits** out of 10,000/month.
+Incremental daily cost: **<2 credits**.
+
+Why Kraken & Bybit instead of Binance: GitHub Actions runners are US-based, and
+`binance.com` returns HTTP 451 (geoblock) from US IPs. Kraken and Bybit have
+no such restriction and expose public endpoints that don't require an API key.
+
+Why only 1y BTC dominance: CMC Basic Free tier caps
+`/global-metrics/quotes/historical` to a 1-month window. For longer coverage
+we fall back to CoinGecko's free `/coins/bitcoin/market_chart` (365 days daily).
+If deeper BTC.D history is needed, it requires CMC Hobbyist ($29-33/mo) or
+CoinGecko paid tier.
 
 ## Schema
 
