@@ -1,0 +1,13 @@
+{
+  "last_run": "2026-04-18T18:04:06.321284+00:00",
+  "mode": "backfill_5y",
+  "sources": {
+    "btc_ohlcv": "FAIL: 451 Client Error:  for url: https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=1616198400000&endTime=1776470400000&limit=1000",
+    "eth_ohlcv": "FAIL: 451 Client Error:  for url: https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&startTime=1616198400000&endTime=1776470400000&limit=1000",
+    "funding_rate": "FAIL: 451 Client Error:  for url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&startTime=1616198400000&endTime=1776470400000&limit=1000",
+    "open_interest": "0 rows (Binance ~30d window)",
+    "fear_greed": "FAIL: year 1776384000 is out of range: 1776384000",
+    "btc_dominance": "0 new rows",
+    "fred_macro": "1342 new rows"
+  }
+}
