@@ -462,13 +462,38 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     elif risk_state == "TAIL" and rsi_for_check > 50:
         target_pos = min(target_pos, 0.55)
     
-    # Drawdown defender (lifted by strong bottom)
+    # ───────────────────────────────────────────────────────────────────
+    # Drawdown defender (v5.9) — GATED by regime confirmation
+    # Research finding (research_real_prod.py, research_conflict.py):
+    #   - DD alone is a lagging signal. Cutting position because price already
+    #     fell 18% is a classic "sell the bottom" pattern.
+    #   - On 200d prod data, dd=none beats dd=current (backtest_honest.py)
+    #   - Only activate DD when bear-regime signals CONFIRM: BEAR regime OR
+    #     (RSI below 50 AND directional pressure negative).
+    # ───────────────────────────────────────────────────────────────────
     strong_bottom = (rsi_for_check < 30) or (bottom_prox > 0.70)
-    if not strong_bottom:
+    bear_confirmation = (
+        regime == "BEAR"
+        or (rsi_for_check < 50 and risk_level < -0.2)
+        or (fg_value is not None and fg_value > 65 and dd_from_high < -15)  # Greed in drawdown = trap
+    )
+    if not strong_bottom and bear_confirmation:
         if dd_from_high < -25:
             target_pos = min(target_pos, 0.30)
         elif dd_from_high < -15:
-            target_pos = min(target_pos, 0.55)
+            target_pos = min(target_pos, 0.60)
+    
+    # ───────────────────────────────────────────────────────────────────
+    # Conflict detection (informational only — does NOT change target)
+    # Research: BEAR + Greed gives -4.3% fwd7d vs -2.7% for clean BEAR,
+    # so when regime and sentiment disagree, the regime signal is stronger.
+    # We surface this to the user so they understand the signal composition.
+    # ───────────────────────────────────────────────────────────────────
+    conflict_note = None
+    if regime == "BULL" and fg_value is not None and fg_value < 30 and conf_pct > 40:
+        conflict_note = "⚠️ Конфликт: BULL режим при Fear. Исторически это продолжение тренда, но подтверждения нет."
+    elif regime == "BEAR" and fg_value is not None and fg_value > 70 and conf_pct > 40:
+        conflict_note = "⚠️ Конфликт: BEAR режим при Greed. Исторически усиливает медвежий сценарий."
     
     # Snap to 5% steps
     target_pos = round(target_pos * 20) / 20
@@ -486,19 +511,21 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         action_note = f"Базовая HODL-позиция: {target_pct}%. Долгосрочный аптренд BTC."
     elif target_pos >= 0.55:
         action = "🟠 ФИКСИРОВАТЬ"
-        if dd_from_high < -15:
-            action_note = f"Просадка {abs(dd_from_high):.0f}% от 90д хая. Целевая позиция: {target_pct}%."
+        if dd_from_high < -15 and bear_confirmation:
+            action_note = f"Просадка {abs(dd_from_high):.0f}% + медвежье подтверждение. Целевая позиция: {target_pct}%."
         else:
             action_note = f"Сигнал вершины или TAIL риск. Целевая позиция: {target_pct}%."
     else:
         action = "🔴 ПРОДАВАТЬ"
-        if dd_from_high < -25:
-            action_note = f"Глубокая просадка {abs(dd_from_high):.0f}% от 90д хая. Целевая позиция: {target_pct}%."
+        if dd_from_high < -25 and bear_confirmation:
+            action_note = f"Глубокая просадка {abs(dd_from_high):.0f}% + подтверждение BEAR. Целевая позиция: {target_pct}%."
         else:
             action_note = f"Экстремальная вершина. Целевая позиция: {target_pct}%."
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
+    if conflict_note:
+        lines.append(f"→ {conflict_note}")
     lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100):2d}%")
     lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100):2d}%")
     lines.append("")
