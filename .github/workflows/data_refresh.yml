@@ -1,0 +1,58 @@
+name: Data Refresh
+
+on:
+  schedule:
+    # 02:00 UTC daily — before Regime Check at 03:00 UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      full_backfill:
+        description: 'Run full 5y backfill (instead of incremental)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+permissions:
+  contents: write
+
+jobs:
+  data-refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install fredapi
+
+      - name: Fetch historical data
+        env:
+          CMC_API_KEY: ${{ secrets.CMC_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.full_backfill }}" = "true" ]; then
+            python scripts/fetch_historical_data.py --years 5
+          else
+            python scripts/fetch_historical_data.py --incremental
+          fi
+
+      - name: Commit data updates
+        run: |
+          git config user.name "data-refresh-bot"
+          git config user.email "bot@oracai.local"
+          git add data/external/ || true
+          git diff --cached --quiet || git commit -m "data: refresh $(date -u +%Y-%m-%d)"
+          git pull --rebase || true
+          git push || true
