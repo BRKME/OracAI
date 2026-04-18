@@ -156,6 +156,11 @@ Add these secrets to GitHub:
 
 ## Backtest Results
 
+> ⚠️ See `HONEST_BACKTEST_REPORT.md` for a rigorous 5-year backtest with
+> methodology fixes (transaction costs, walk-forward split, bootstrap CIs,
+> look-ahead removed). The numbers below are from `backtest_v5.py` which tests
+> a simplified heuristic version of the model, not the production `engine.py`.
+
 ```
 Period: 3 years (1095 days)
 

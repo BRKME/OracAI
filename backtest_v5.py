@@ -564,8 +564,7 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
         elif call['regime'] == 'RANGE':
             if abs(price_change) < 5:
                 correct_calls += 1
-        else:  # TRANSITION
-            correct_calls += 0.5  # Partial credit
+        # TRANSITION is excluded from accuracy scoring (no partial credit bug fix)
     
     regime_accuracy = correct_calls / len(regime_calls[:-7]) * 100 if len(regime_calls) > 7 else 0
     bull_accuracy = bull_correct / bull_total * 100 if bull_total > 0 else 0
@@ -615,9 +614,19 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
     
     tail_before_crash_pct = tail_before_crash / len(crashes) * 100 if crashes else 0
     
-    # False positives
-    crisis_count = sum(1 for w in risk_warnings if w['risk_state'] == 'CRISIS')
-    crisis_false_pos = (crisis_count - len(crashes)) / crisis_count * 100 if crisis_count > 0 else 0
+    # False positives (FIXED): % of CRISIS signals NOT followed by a crash within 14d
+    crisis_events = [w for w in risk_warnings if w['risk_state'] == 'CRISIS']
+    crisis_count = len(crisis_events)
+    crisis_tp = 0
+    for ev in crisis_events:
+        ev_date = ev['date']
+        future = [rc for rc in regime_calls
+                  if 0 <= (rc['date'] - ev_date).days <= 14]
+        if len(future) >= 2:
+            pct = (future[-1]['price'] / future[0]['price'] - 1) * 100
+            if pct < -10:
+                crisis_tp += 1
+    crisis_false_pos = (1 - crisis_tp / crisis_count) * 100 if crisis_count > 0 else 0
     
     # Bottom/Top Accuracy
     # Find actual local lows (within 10% of min in 30-day window)
@@ -629,10 +638,13 @@ def run_backtest(df: pd.DataFrame, fg_data: Dict[str, int]) -> BacktestMetrics:
     top_signals = 0
     
     for i, call in enumerate(regime_calls):
-        window_start = max(0, i - 15)
-        window_end = min(len(prices), i + 15)
-        window_min = min(prices[window_start:window_end])
-        window_max = max(prices[window_start:window_end])
+        # FIXED: forward-only window (was [i-15, i+15] which peeked 15d into future)
+        window_end = min(len(prices), i + 30)
+        if window_end - i < 5:
+            continue
+        future_prices = prices[i:window_end]
+        window_min = min(future_prices)
+        window_max = max(future_prices)
         
         if call['bottom_prox'] > 0.6:
             bottom_signals += 1
