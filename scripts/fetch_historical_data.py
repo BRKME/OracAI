@@ -58,6 +58,10 @@ FRED_KEY = os.getenv("FRED_API_KEY")
 def load_existing(path: Path) -> pd.DataFrame:
     if path.exists():
         df = pd.read_csv(path, parse_dates=["date"])
+        # Strip any timezone info — merges fail on tz-aware vs tz-naive mismatch
+        if pd.api.types.is_datetime64_any_dtype(df["date"]):
+            if df["date"].dt.tz is not None:
+                df["date"] = df["date"].dt.tz_convert(None)
         return df
     return pd.DataFrame()
 
@@ -67,6 +71,11 @@ def save_merged(path: Path, new_df: pd.DataFrame, key: str = "date"):
     if new_df.empty:
         logger.info(f"  (nothing new for {path.name})")
         return
+    # Ensure new_df dates are tz-naive too
+    if key in new_df.columns and pd.api.types.is_datetime64_any_dtype(new_df[key]):
+        if new_df[key].dt.tz is not None:
+            new_df = new_df.copy()
+            new_df[key] = new_df[key].dt.tz_convert(None)
     existing = load_existing(path)
     if not existing.empty:
         combined = pd.concat([existing, new_df], ignore_index=True)
@@ -283,7 +292,7 @@ def fetch_okx_oi_latest() -> pd.DataFrame:
             "date": pd.Timestamp.now(tz="UTC").tz_localize(None).normalize(),
             "open_interest": float(row.get("oi", 0)),
             "open_interest_usd": float(row.get("oiCcy", 0)) * float(row.get("markPx", 0)) if row.get("markPx") else None,
-        }])
+        }]).astype({"date": "datetime64[ns]"})
     except Exception as e:
         logger.warning(f"OKX OI failed: {e}")
         return pd.DataFrame()
