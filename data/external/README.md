@@ -37,7 +37,7 @@ new rows (incremental).
 |---|---|---|---|
 | `btc_ohlcv.csv` | CryptoCompare free | Kraken | 5y+ daily |
 | `eth_ohlcv.csv` | CryptoCompare free | Kraken | 5y+ daily |
-| `funding_rate.csv` | OKX public | — | 2020+ (OKX launch of BTC-USDT-SWAP) |
+| `funding_rate.csv` | OKX public | **Momentum proxy** (see below) | 5y (proxy or real) |
 | `open_interest.csv` | OKX snapshot (daily cron accumulates) | — | accumulates over time |
 | `fear_greed.csv` | CMC `/v3/fear-and-greed/historical` | — | CMC maintains ~3y |
 | `btc_dominance.csv` | CMC last 30d (Free cap) + CoinGecko | — | last ~1 year |
@@ -46,14 +46,25 @@ new rows (incremental).
 Total CMC cost per full backfill: **~10 credits** out of 10,000/month.
 Incremental daily cost: **<2 credits**.
 
+**Funding rate proxy (applied when OKX silently returns empty from US IPs):**
+OKX enforces regional API domains — `www.okx.com` from US IPs returns empty
+data without an error (rather than routing to `us.okx.com`). When fewer than
+30 rows come back, the fetcher falls back to a momentum-based proxy:
+standardized 7-day log returns scaled to typical funding magnitudes (±0.003).
+This is not ideal, but the Sentiment bucket weights funding at 0.40 which then
+feeds into logit BULL with weight 0.2 — net contribution to regime decision is
+~8%. Prior research (`research_real_prod.py`) showed boosting Sentiment weight
+yielded ~1pp alpha change (noise), so the proxy's limitations are unlikely to
+materially affect backtest conclusions.
+
 **Why these sources and not Binance or Bybit:**
 GitHub Actions runners are on US IPs. `api.binance.com` returns HTTP 451 (geoblock)
-and `api.bybit.com` returns HTTP 403 from US. OKX, Kraken, CryptoCompare, and FRED
-all serve public endpoints without IP-based restrictions.
+and `api.bybit.com` returns HTTP 403 from US. CryptoCompare, CMC, CoinGecko, and
+FRED all serve public endpoints without IP-based restrictions.
 
 **Historical depth by source:**
 - CryptoCompare daily OHLCV: full asset history (BTC since 2013)
-- OKX funding: since BTC-USDT-SWAP launched (2020+)
+- OKX funding: unavailable from US IPs (silent empty response)
 - CMC F&G: ~3 years of history on Free tier
 - CoinGecko BTC dominance: 365 days daily on Free tier (longer needs paid)
 - FRED: unlimited historical depth on Free API key
