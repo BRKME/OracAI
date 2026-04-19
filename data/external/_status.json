@@ -1,13 +1,13 @@
 {
-  "last_run": "2026-04-19T04:46:30.294322+00:00",
-  "mode": "incremental",
+  "last_run": "2026-04-19T06:33:30.417584+00:00",
+  "mode": "backfill_5y",
   "sources": {
-    "btc_ohlcv": "7 new rows",
-    "eth_ohlcv": "7 new rows",
+    "btc_ohlcv": "1856 new rows",
+    "eth_ohlcv": "1856 new rows",
     "funding_rate": "0 new rows",
-    "open_interest": "0 rows (Bybit ~200d window)",
+    "open_interest": "1 new rows (snapshot, accumulates daily)",
     "fear_greed": "1025 total rows",
     "btc_dominance": "365 new rows (CMC=0, CG=365)",
-    "fred_macro": "4 new rows"
+    "fred_macro": "1342 new rows"
   }
 }
