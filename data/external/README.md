@@ -33,28 +33,30 @@ new rows (incremental).
 
 ## What gets fetched
 
-| File | Source | Cost | Coverage |
+| File | Primary source | Fallback | Coverage |
 |---|---|---|---|
-| `btc_ohlcv.csv` | Kraken public API | free | 2014+ (full history) |
-| `eth_ohlcv.csv` | Kraken public API | free | 2015+ (full history) |
-| `funding_rate.csv` | Bybit v5 public | free | 2020+ (Bybit launch) |
-| `open_interest.csv` | Bybit v5 public | free | ~200 days (API window) |
-| `fear_greed.csv` | CMC `/v3/fear-and-greed/historical` | ~5 CMC credits | full CMC history |
-| `btc_dominance.csv` | CMC (last 30d) + CoinGecko (up to 365d) | ~5 CMC credits | last ~1 year |
-| `fred_macro.csv` | FRED (DXY, US10Y, US2Y, M2) | 0 | 5y |
+| `btc_ohlcv.csv` | CryptoCompare free | Kraken | 5y+ daily |
+| `eth_ohlcv.csv` | CryptoCompare free | Kraken | 5y+ daily |
+| `funding_rate.csv` | OKX public | — | 2020+ (OKX launch of BTC-USDT-SWAP) |
+| `open_interest.csv` | OKX snapshot (daily cron accumulates) | — | accumulates over time |
+| `fear_greed.csv` | CMC `/v3/fear-and-greed/historical` | — | CMC maintains ~3y |
+| `btc_dominance.csv` | CMC last 30d (Free cap) + CoinGecko | — | last ~1 year |
+| `fred_macro.csv` | FRED (DXY, US10Y, US2Y, M2) | — | 5y+ |
 
 Total CMC cost per full backfill: **~10 credits** out of 10,000/month.
 Incremental daily cost: **<2 credits**.
 
-Why Kraken & Bybit instead of Binance: GitHub Actions runners are US-based, and
-`binance.com` returns HTTP 451 (geoblock) from US IPs. Kraken and Bybit have
-no such restriction and expose public endpoints that don't require an API key.
+**Why these sources and not Binance or Bybit:**
+GitHub Actions runners are on US IPs. `api.binance.com` returns HTTP 451 (geoblock)
+and `api.bybit.com` returns HTTP 403 from US. OKX, Kraken, CryptoCompare, and FRED
+all serve public endpoints without IP-based restrictions.
 
-Why only 1y BTC dominance: CMC Basic Free tier caps
-`/global-metrics/quotes/historical` to a 1-month window. For longer coverage
-we fall back to CoinGecko's free `/coins/bitcoin/market_chart` (365 days daily).
-If deeper BTC.D history is needed, it requires CMC Hobbyist ($29-33/mo) or
-CoinGecko paid tier.
+**Historical depth by source:**
+- CryptoCompare daily OHLCV: full asset history (BTC since 2013)
+- OKX funding: since BTC-USDT-SWAP launched (2020+)
+- CMC F&G: ~3 years of history on Free tier
+- CoinGecko BTC dominance: 365 days daily on Free tier (longer needs paid)
+- FRED: unlimited historical depth on Free API key
 
 ## Schema
 

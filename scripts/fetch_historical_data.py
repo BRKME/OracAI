@@ -78,10 +78,56 @@ def save_merged(path: Path, new_df: pd.DataFrame, key: str = "date"):
 
 
 # ════════════════════════════════════════════════════════════════
-# Kraken — BTC/ETH OHLCV (no US geoblock unlike Binance)
+# CryptoCompare — primary OHLCV source (5y+ free, no US geoblock)
+# ════════════════════════════════════════════════════════════════
+CRYPTOCOMPARE_API = "https://min-api.cryptocompare.com/data/v2"
+
+
+def fetch_cryptocompare_daily(fsym: str, tsym: str, days: int) -> pd.DataFrame:
+    """Paginated daily candles. CryptoCompare caps at 2000 per call.
+    Walk backwards with toTs to cover arbitrary history."""
+    url = f"{CRYPTOCOMPARE_API}/histoday"
+    rows = []
+    to_ts = int(datetime.now(timezone.utc).timestamp())
+    remaining = days
+    iterations = 0
+    while remaining > 0 and iterations < 10:
+        chunk = min(remaining, 2000)
+        params = {"fsym": fsym, "tsym": tsym, "limit": chunk, "toTs": to_ts}
+        try:
+            r = requests.get(url, params=params, timeout=30)
+            r.raise_for_status()
+            payload = r.json()
+            if payload.get("Response") != "Success":
+                logger.warning(f"CryptoCompare error: {payload.get('Message')}")
+                break
+            data = payload.get("Data", {}).get("Data", [])
+            if not data:
+                break
+            rows = data + rows  # prepend older
+            earliest = min(x["time"] for x in data)
+            to_ts = earliest - 1
+            remaining -= chunk
+            iterations += 1
+            time.sleep(0.2)
+        except Exception as e:
+            logger.warning(f"CryptoCompare request failed: {e}")
+            break
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["time"], unit="s").dt.normalize()
+    df = df.rename(columns={"volumeto": "quote_volume", "volumefrom": "volume"})
+    for c in ["open", "high", "low", "close", "volume", "quote_volume"]:
+        df[c] = df[c].astype(float)
+    df = df[df["close"] > 0]  # drop pre-listing placeholder rows
+    return df[["date", "open", "high", "low", "close", "volume", "quote_volume"]]
+
+
+# ════════════════════════════════════════════════════════════════
+# Kraken — OHLCV fallback
 # ════════════════════════════════════════════════════════════════
 KRAKEN_API = "https://api.kraken.com"
-BINANCE_FUTURES = "https://fapi.binance.com"  # still used for funding/OI if reachable
 
 
 def fetch_kraken_ohlc(pair: str, start: datetime, end: datetime) -> pd.DataFrame:
@@ -99,7 +145,6 @@ def fetch_kraken_ohlc(pair: str, start: datetime, end: datetime) -> pd.DataFrame
         if payload.get("error"):
             raise RuntimeError(f"Kraken error: {payload['error']}")
         result = payload.get("result", {})
-        # result has one data key (pair-specific) + "last"
         data_keys = [k for k in result.keys() if k != "last"]
         if not data_keys:
             break
@@ -112,10 +157,9 @@ def fetch_kraken_ohlc(pair: str, start: datetime, end: datetime) -> pd.DataFrame
             break
         current_since = last
         iterations += 1
-        time.sleep(0.3)  # Kraken rate limit is generous but be polite
+        time.sleep(0.3)
     if not rows:
         return pd.DataFrame()
-    # Kraken row: [time, open, high, low, close, vwap, volume, count]
     df = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close",
                                       "vwap", "volume", "count"])
     df["date"] = pd.to_datetime(df["time"], unit="s").dt.normalize()
@@ -126,79 +170,95 @@ def fetch_kraken_ohlc(pair: str, start: datetime, end: datetime) -> pd.DataFrame
 
 
 def fetch_btc_ohlcv(start: datetime, end: datetime) -> pd.DataFrame:
-    logger.info(f"Fetching BTC OHLCV from Kraken: {start.date()} → {end.date()}")
+    """Try CryptoCompare (5y+ reliable); fallback to Kraken."""
+    days = (end - start).days + 10
+    logger.info(f"Fetching BTC OHLCV from CryptoCompare ({days}d)...")
+    df = fetch_cryptocompare_daily("BTC", "USD", days)
+    if not df.empty:
+        # Filter to requested window
+        df = df[(df["date"] >= pd.Timestamp(start.date())) & (df["date"] <= pd.Timestamp(end.date()))]
+        if len(df) > 100:
+            return df
+    logger.info("CryptoCompare insufficient — trying Kraken fallback")
     return fetch_kraken_ohlc("XXBTZUSD", start, end)
 
 
 def fetch_eth_ohlcv(start: datetime, end: datetime) -> pd.DataFrame:
-    logger.info(f"Fetching ETH OHLCV from Kraken: {start.date()} → {end.date()}")
+    days = (end - start).days + 10
+    logger.info(f"Fetching ETH OHLCV from CryptoCompare ({days}d)...")
+    df = fetch_cryptocompare_daily("ETH", "USD", days)
+    if not df.empty:
+        df = df[(df["date"] >= pd.Timestamp(start.date())) & (df["date"] <= pd.Timestamp(end.date()))]
+        if len(df) > 100:
+            return df
+    logger.info("CryptoCompare insufficient — trying Kraken fallback")
     return fetch_kraken_ohlc("XETHZUSD", start, end)
 
 
-def fetch_bybit_funding(start: datetime, end: datetime) -> pd.DataFrame:
-    """Funding rate from Bybit v5. No US geoblock. Daily mean of 3x-per-day rates."""
-    logger.info(f"Fetching funding rate from Bybit: {start.date()} → {end.date()}")
+def fetch_okx_funding(start: datetime, end: datetime) -> pd.DataFrame:
+    """Funding rate from OKX. No US geoblock on public endpoints.
+    Returns daily mean of 3x-per-day funding rates for BTC-USDT-SWAP."""
+    logger.info(f"Fetching funding rate from OKX: {start.date()} → {end.date()}")
+    url = "https://www.okx.com/api/v5/public/funding-rate-history"
     rows = []
-    url = "https://api.bybit.com/v5/market/funding/history"
-    current_end_ms = int(end.timestamp() * 1000)
+    end_ms = int(end.timestamp() * 1000)
     start_ms = int(start.timestamp() * 1000)
+    current_before = end_ms
     iterations = 0
-    while current_end_ms > start_ms and iterations < 50:
-        params = {"category": "linear", "symbol": "BTCUSDT",
-                  "endTime": current_end_ms, "limit": 200}
+    while current_before > start_ms and iterations < 60:
+        params = {"instId": "BTC-USDT-SWAP", "before": current_before, "limit": 100}
         try:
             r = requests.get(url, params=params, timeout=20)
             r.raise_for_status()
             payload = r.json()
-            if payload.get("retCode") != 0:
-                logger.warning(f"Bybit error: {payload.get('retMsg')}")
+            if payload.get("code") != "0":
+                logger.warning(f"OKX funding error: {payload.get('msg')}")
                 break
-            batch = payload.get("result", {}).get("list", [])
+            batch = payload.get("data", [])
             if not batch:
                 break
             rows.extend(batch)
-            # Next page: go earlier in time
-            earliest = min(int(r["fundingRateTimestamp"]) for r in batch)
-            if earliest <= start_ms or earliest >= current_end_ms:
+            earliest = min(int(x["fundingTime"]) for x in batch)
+            if earliest <= start_ms or earliest >= current_before:
                 break
-            current_end_ms = earliest - 1
+            current_before = earliest - 1
             iterations += 1
-            time.sleep(0.3)
+            time.sleep(0.2)
         except Exception as e:
-            logger.warning(f"Bybit pagination failed: {e}")
+            logger.warning(f"OKX funding pagination failed: {e}")
             break
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["fundingRateTimestamp"].astype("int64"), unit="ms").dt.normalize()
+    df["date"] = pd.to_datetime(df["fundingTime"].astype("int64"), unit="ms").dt.normalize()
     df["fundingRate"] = df["fundingRate"].astype(float)
-    # Filter to requested range
     df = df[(df["date"] >= pd.Timestamp(start.date())) & (df["date"] <= pd.Timestamp(end.date()))]
     return df.groupby("date", as_index=False)["fundingRate"].mean()
 
 
-def fetch_binance_oi_history(start: datetime, end: datetime) -> pd.DataFrame:
-    """Open Interest — from Bybit instead of Binance (no US geoblock)."""
-    logger.info(f"Fetching open interest from Bybit: ~30d window")
-    url = "https://api.bybit.com/v5/market/open-interest"
-    params = {"category": "linear", "symbol": "BTCUSDT",
-              "intervalTime": "1d", "limit": 200}
+def fetch_okx_oi_latest() -> pd.DataFrame:
+    """OKX current OI. OKX's public OI is a point-in-time snapshot (no daily history
+    on free tier). We append today's value each run so state/ accumulates it over time."""
+    logger.info("Fetching current OI from OKX...")
+    url = "https://www.okx.com/api/v5/public/open-interest"
+    params = {"instType": "SWAP", "instId": "BTC-USDT-SWAP"}
     try:
         r = requests.get(url, params=params, timeout=20)
         r.raise_for_status()
         payload = r.json()
-        if payload.get("retCode") != 0:
-            logger.warning(f"Bybit OI error: {payload.get('retMsg')}")
+        if payload.get("code") != "0":
             return pd.DataFrame()
-        batch = payload.get("result", {}).get("list", [])
+        batch = payload.get("data", [])
         if not batch:
             return pd.DataFrame()
-        df = pd.DataFrame(batch)
-        df["date"] = pd.to_datetime(df["timestamp"].astype("int64"), unit="ms").dt.normalize()
-        df["open_interest"] = df["openInterest"].astype(float)
-        return df[["date", "open_interest"]].drop_duplicates("date")
+        row = batch[0]
+        return pd.DataFrame([{
+            "date": pd.Timestamp.utcnow().normalize(),
+            "open_interest": float(row.get("oi", 0)),
+            "open_interest_usd": float(row.get("oiCcy", 0)) * float(row.get("markPx", 0)) if row.get("markPx") else None,
+        }])
     except Exception as e:
-        logger.warning(f"OI fetch failed: {e}")
+        logger.warning(f"OKX OI failed: {e}")
         return pd.DataFrame()
 
 
@@ -454,21 +514,21 @@ def main():
         logger.error(f"ETH OHLCV failed: {e}")
         status["eth_ohlcv"] = f"FAIL: {e}"
 
-    # ── Funding rate (Bybit, no US geoblock) ──
+    # ── Funding rate (OKX, no US geoblock) ──
     try:
         start = window_for("funding_rate.csv")
-        df = fetch_bybit_funding(start, end)
+        df = fetch_okx_funding(start, end)
         save_merged(DATA_DIR / "funding_rate.csv", df)
         status["funding_rate"] = f"{len(df)} new rows"
     except Exception as e:
         logger.error(f"Funding failed: {e}")
         status["funding_rate"] = f"FAIL: {e}"
 
-    # ── OI (Bybit, limited to ~200 days of daily) ──
+    # ── OI (current snapshot; accumulates over time via daily cron) ──
     try:
-        df = fetch_binance_oi_history(end - timedelta(days=200), end)
+        df = fetch_okx_oi_latest()
         save_merged(DATA_DIR / "open_interest.csv", df)
-        status["open_interest"] = f"{len(df)} rows (Bybit ~200d window)"
+        status["open_interest"] = f"{len(df)} new rows (snapshot, accumulates daily)"
     except Exception as e:
         logger.error(f"OI failed: {e}")
         status["open_interest"] = f"FAIL: {e}"
