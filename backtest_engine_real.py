@@ -221,7 +221,9 @@ def run_backtest(dfs: dict, start_date: Optional[str] = None,
             "macro": out.get("buckets", {}).get("Macro", 0),
             "risk_level": out.get("risk", {}).get("risk_level", 0),
             "risk_state": out.get("risk", {}).get("risk_state", "UNKNOWN"),
-            "exposure_cap": out.get("risk", {}).get("risk_exposure_cap", 1.0),
+            "risk_exposure_cap": out.get("risk", {}).get("risk_exposure_cap", 1.0),
+            # FINAL exposure cap = min(regime_cap, risk_cap), what engine actually returns
+            "exposure_cap": out.get("exposure_cap", 1.0),
         })
 
         if (i - start_idx + 1) % 250 == 0:
@@ -236,9 +238,16 @@ def run_backtest(dfs: dict, start_date: Optional[str] = None,
 # ────────────────────────────────────────────────────────────────────
 # Action policy (matches telegram_bot format_output, v5.9 gated DD)
 # ────────────────────────────────────────────────────────────────────
-def action_policy(row, fg_value: Optional[int], dd_from_high: float) -> float:
+def action_policy(row, fg_value: Optional[int], dd_from_high: float,
+                  sma200_ratio: Optional[float] = None,
+                  days_above_sma200: int = 0) -> float:
     """Translate engine output → target position in 0..1.
     Mirrors telegram_bot.py post-PR `071538f` (Phase 2 gated DD defender).
+    
+    Phase 4 addition: recovery override. The 5y equity curve revealed
+    asymmetric re-engagement failure — engine defended 2022 bear but
+    missed 2023-2025 recovery. If BTC is sustainably above SMA200,
+    force BULL-style exposure regardless of engine regime uncertainty.
     """
     regime = row["regime"]
     conf = row["conf"]
@@ -272,6 +281,20 @@ def action_policy(row, fg_value: Optional[int], dd_from_high: float) -> float:
     # Enforce exposure cap
     target = min(target, row["exposure_cap"])
 
+    # ───────────────────────────────────────────────────────────────
+    # Recovery override (Phase 4 Option A-3)
+    # If BTC is sustainably above SMA200 (≥10 days) and we're not in an
+    # actively-confirmed BEAR, force minimum 85% exposure. This directly
+    # addresses the asymmetric re-entry failure identified in Phase 3
+    # equity curve: engine stayed 20-50% invested through the entire
+    # 2023-2025 recovery despite clear uptrend.
+    # ───────────────────────────────────────────────────────────────
+    if (sma200_ratio is not None
+            and sma200_ratio > 1.0
+            and days_above_sma200 >= 10
+            and not bear_confirmation):
+        target = max(target, 0.95)
+
     # Snap to 5%
     return round(target * 20) / 20
 
@@ -296,6 +319,14 @@ def simulate_strategy(df_signals: pd.DataFrame, dfs: dict,
     df["btc_hi90"] = df["btc_high"].rolling(90, min_periods=1).max()
     df["dd_from_high"] = (df["price"] / df["btc_hi90"] - 1) * 100
 
+    # SMA200 + days above (for Phase 4 recovery override)
+    df["sma200"] = df["price"].rolling(200, min_periods=30).mean()
+    df["sma200_ratio"] = df["price"] / df["sma200"]
+    df["above_sma200"] = (df["sma200_ratio"] > 1.0).astype(int)
+    # days continuously above SMA200 (resets to 0 on any break)
+    grp = (df["above_sma200"] != df["above_sma200"].shift()).cumsum()
+    df["days_above_sma200"] = df.groupby(grp)["above_sma200"].cumsum()
+
     fg = dfs["fear_greed"][["date", "fear_greed"]]
     df = df.merge(fg, on="date", how="left")
     df["fear_greed"] = df["fear_greed"].ffill()
@@ -309,7 +340,10 @@ def simulate_strategy(df_signals: pd.DataFrame, dfs: dict,
     for i, row in df.iterrows():
         fg_v = int(row["fear_greed"]) if not pd.isna(row["fear_greed"]) else None
         dd = float(row["dd_from_high"]) if not pd.isna(row["dd_from_high"]) else 0.0
-        target = policy_fn(row, fg_v, dd)
+        sma_ratio = float(row["sma200_ratio"]) if not pd.isna(row["sma200_ratio"]) else None
+        days_above = int(row["days_above_sma200"]) if not pd.isna(row["days_above_sma200"]) else 0
+        target = policy_fn(row, fg_v, dd, sma200_ratio=sma_ratio,
+                          days_above_sma200=days_above)
         price = float(row["price"])
 
         equity = cash + btc_held * price

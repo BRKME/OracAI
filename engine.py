@@ -29,6 +29,32 @@ STATE_FILE = STATE_DIR / "engine_state.json"
 
 
 # ============================================================
+# HELPERS (v3.4 Phase 4)
+# ============================================================
+
+def _count_days_above_sma200(close: np.ndarray, max_lookback: int = 60) -> int:
+    """Count consecutive trailing days where close > SMA-200.
+    Returns 0 if most recent day is NOT above SMA200. Otherwise counts
+    backwards until the streak breaks or we hit max_lookback.
+    """
+    if len(close) < 200:
+        return 0
+    n = len(close)
+    count = 0
+    for j in range(1, min(max_lookback, n - 199) + 1):
+        idx = n - j
+        sma_window = close[max(0, idx - 199):idx + 1]
+        if len(sma_window) < 200:
+            break
+        sma = np.mean(sma_window)
+        if close[idx] > sma:
+            count += 1
+        else:
+            break
+    return count
+
+
+# ============================================================
 # LOGIT COMPUTATION
 # ============================================================
 
@@ -864,6 +890,13 @@ class RegimeEngine:
                 "drawdown_from_high_90d": round(
                     (close[-1] / max(close[-90:]) - 1) * 100, 2
                 ) if len(close) >= 90 else 0.0,
+                # v3.4 (Phase 4): SMA200 status for recovery override
+                # Action logic uses these to force higher exposure during
+                # sustained uptrends, fixing the asymmetric re-engagement
+                # failure identified in Phase 3 backtest.
+                "sma200_ratio": round(float(close[-1] / np.mean(close[-200:])), 4)
+                                if len(close) >= 200 else None,
+                "days_above_sma200": _count_days_above_sma200(close) if len(close) >= 200 else 0,
                 # v4.3: Multi-timeframe RSI
                 "rsi": {
                     "rsi_1d": rsi_1d,       # Daily RSI-14 (strategic)

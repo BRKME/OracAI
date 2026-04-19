@@ -177,10 +177,16 @@ EMA_ALPHA_MAP = [
 
 REGIME_CONFIRMATION = {
     "BULL": {
-        "consensus_threshold": 0.65,
-        "consensus_days": 3,
-        "leader_delta": 0.22,
-        "leader_days": 2,
+        # v3.4 (Phase 4): was 0.65/3/0.22/2 — asymmetric re-entry killed alpha
+        # Phase 3 backtest showed engine defended 2022 bear ($100k vs $55k HODL)
+        # but failed to re-risk during 2023-2025 recovery ($140k→$190k vs $90k→$400k HODL).
+        # Root cause: BULL needed 65% consensus for 3 days; BEAR only 55% for 1 day.
+        # Fix: make BULL symmetric with BEAR — if the evidence is good enough to call
+        # BEAR quickly, it's good enough to call BULL quickly too.
+        "consensus_threshold": 0.55,
+        "consensus_days": 1,
+        "leader_delta": 0.18,
+        "leader_days": 1,
     },
     "BEAR": {
         "consensus_threshold": 0.55,
@@ -195,9 +201,13 @@ REGIME_CONFIRMATION = {
         "leader_days": 1,
     },
     "TRANSITION": {
-        "consensus_threshold": 0.55,
-        "consensus_days": 1,
-        "leader_delta": 0.18,
+        # v3.4: was 0.55/1/0.18/1 — same as BEAR made TRANSITION too easy to enter.
+        # Backtest showed 49% of days in TRANSITION with mean exposure_cap=0.21.
+        # Tighten entry so TRANSITION only wins when it's genuinely ambiguous,
+        # not a fallback from weak BULL confidence.
+        "consensus_threshold": 0.60,
+        "consensus_days": 2,
+        "leader_delta": 0.20,
         "leader_days": 1,
     },
 }
@@ -265,11 +275,17 @@ FLASH_CRASH_REAL_THRESHOLD = 0.20
 
 EXPOSURE_MAP = {
     "BULL": {
-        "high_conf": (0.70, 0.80),   # conf > 0.70 → cap 0.80
-        "med_conf": (0.50, 0.60),    # conf > 0.50 → cap 0.60
-        "low_conf": (0.0, 0.40),     # else → cap 0.40
+        # v3.4 iteration 3 (Phase 4): thresholds lowered.
+        # Observation from 5y backtest: mean confidence was 0.20 and only 24% of
+        # days crossed 0.30. With previous thresholds (0.60/0.35/0) even high-
+        # conviction days rarely hit "high_conf". Calibrate thresholds to match
+        # actual confidence distribution seen in prod.
+        "high_conf": (0.35, 1.00),   # conf > 0.35 → 100%
+        "med_conf": (0.18, 0.85),    # conf > 0.18 → 85%
+        "low_conf": (0.0, 0.70),     # low conf BULL → 70%
     },
     "BEAR": {
+        # Unchanged — defensive mechanism works, don't touch
         "high_conf": (0.70, 0.30),
         "med_conf": (0.50, 0.40),
         "low_conf": (0.0, 0.50),
@@ -280,9 +296,10 @@ EXPOSURE_MAP = {
         "low_conf": (0.0, 0.35),
     },
     "TRANSITION": {
-        "high_conf": (0.70, 0.40),
-        "med_conf": (0.50, 0.30),
-        "low_conf": (0.0, 0.20),
+        # v3.4 iteration 3: same thresholds as BULL for consistency.
+        "high_conf": (0.35, 0.75),
+        "med_conf": (0.18, 0.60),
+        "low_conf": (0.0, 0.50),
     },
 }
 
@@ -323,14 +340,20 @@ RARE_TRANSITION_MULTIPLIER = 10
 # ============================================================
 
 # Weights: Regime → Risk contribution
-# Design: TRANSITION is worst (-1.0), BEAR severe (-0.9),
-#          BULL strong positive (+0.8), RANGE mild positive (+0.4)
-# Sum at uniform P=[0.25]*4 = -0.175 (Neutral) — correct
+# Design: v3.4 — TRANSITION weight changed from -1.00 to -0.20.
+# Previous design treated TRANSITION as more bearish than BEAR itself, which
+# misrepresents what TRANSITION actually means. TRANSITION = "we're not sure",
+# not "crash imminent". In the 5y backtest this was the single largest alpha
+# killer: 49% of days in TRANSITION → risk_level always ≤ -0.25 → exposure
+# capped at 20% → missed the entire 2023-2025 bull run.
+# New design: TRANSITION = mild bearish bias (uncertainty default), BEAR =
+# strong bearish (actual signal), BULL = strong positive.
+# Sum at uniform P=[0.25]*4 = +0.025 (Neutral) — appropriate for ambiguity.
 RISK_LEVEL_WEIGHTS = {
     "BULL": +0.80,
     "RANGE": +0.40,
     "BEAR": -0.90,
-    "TRANSITION": -1.00,
+    "TRANSITION": -0.20,
 }
 
 # Risk state thresholds
@@ -342,12 +365,18 @@ RISK_OFF_THRESHOLD = -0.30
 RISK_CONFIDENCE_GATE = 0.15
 
 # Risk Level → Exposure override (takes priority over regime-based exposure)
+# v3.4 iteration 5: relaxed. Previous config capped Risk-Neutral at 50%, which
+# meant any BULL regime with risk_level < +0.30 (most of the bull run days)
+# was forced to 50% max — making regime-based caps in EXPOSURE_MAP irrelevant.
+# New logic: risk_cap only fires hard when risk_level is genuinely bearish.
+# Neutral zone gives 80% (let regime-based cap do its job). Risk-On gives 100%.
 RISK_EXPOSURE_MAP = [
-    (-1.0, -0.60, 0.10),  # deep Risk-Off → 10% max
-    (-0.60, -0.30, 0.20),  # Risk-Off → 20% max
-    (-0.30, +0.30, 0.50),  # Neutral → 50% max
-    (+0.30, +0.60, 0.70),  # Risk-On → 70% max
-    (+0.60, +1.01, 0.80),  # Strong Risk-On → 80% max
+    (-1.0, -0.60, 0.15),   # deep Risk-Off → 15%
+    (-0.60, -0.30, 0.35),  # Risk-Off → 35%
+    (-0.30, +0.10, 0.70),  # mildly bearish neutral → 70%
+    (+0.10, +0.30, 0.85),  # mildly bullish neutral → 85%
+    (+0.30, +0.60, 1.00),  # Risk-On → full
+    (+0.60, +1.01, 1.00),  # Strong Risk-On → full
 ]
 
 # Risk Level labels

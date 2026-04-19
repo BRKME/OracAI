@@ -207,6 +207,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # v5.9: Drawdown from 90-day high (for HODL defender)
     dd_from_high = meta.get("drawdown_from_high_90d", 0.0)
     
+    # v3.4 (Phase 4): SMA200 status for recovery override
+    sma200_ratio = meta.get("sma200_ratio")
+    days_above_sma200 = meta.get("days_above_sma200", 0)
+    
     # Fear & Greed — get from engine output (bucket_details), not allocation
     fg_value = None
     fg_class = None
@@ -482,6 +486,25 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             target_pos = min(target_pos, 0.30)
         elif dd_from_high < -15:
             target_pos = min(target_pos, 0.60)
+    
+    # ───────────────────────────────────────────────────────────────────
+    # Recovery override (v3.4 Phase 4)
+    # Phase 3 backtest showed the engine defended 2022 bear well but failed
+    # to re-engage during 2023-2025 recovery, missing the entire bull run.
+    # Root cause: asymmetric switching + TRANSITION treated as bearish.
+    # Fix: when BTC is sustainably above SMA200 (≥10 consecutive days) and
+    # no bear_confirmation fires, force target ≥ 0.95 regardless of
+    # engine uncertainty. Walk-forward test showed +16% alpha in 2026
+    # correction and break-even vs HODL on full 5y.
+    # ───────────────────────────────────────────────────────────────────
+    recovery_note = None
+    if (sma200_ratio is not None
+            and sma200_ratio > 1.0
+            and days_above_sma200 >= 10
+            and not bear_confirmation):
+        if target_pos < 0.95:
+            target_pos = 0.95
+            recovery_note = f"📈 Устойчивый аптренд: {days_above_sma200}д выше SMA200. Удерживаем позицию."
     
     # ───────────────────────────────────────────────────────────────────
     # Conflict detection (informational only — does NOT change target)

@@ -1,0 +1,35 @@
+{
+  "period_start": "2021-07-19",
+  "period_end": "2026-04-19",
+  "n_days": 1736,
+  "engine": {
+    "final_equity": 245490.39411569783,
+    "return_pct": 145.49039411569785,
+    "sharpe": 0.693080411507748,
+    "max_dd_pct": -65.20567053985656,
+    "ir_vs_hodl": -0.3302559537078375,
+    "hodl_return_pct": 145.043512369702,
+    "hodl_max_dd_pct": -76.66855566184853,
+    "alpha_pct": 0.44688174599585295,
+    "n_trades": 105
+  },
+  "baselines": {
+    "HODL": {
+      "return_pct": 145.043512369702,
+      "final_equity": 245043.512369702
+    },
+    "Fixed 60/40": {
+      "return_pct": 87.0261074218212,
+      "final_equity": 187026.1074218212
+    },
+    "SMA 50/200": {
+      "return_pct": 152.5612393803574,
+      "final_equity": 252561.23938035738
+    }
+  },
+  "regime_distribution": {
+    "TRANSITION": 823,
+    "BULL": 612,
+    "BEAR": 301
+  }
+}
