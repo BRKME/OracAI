@@ -26,6 +26,7 @@ from engine import RegimeEngine, default_state, save_state, STATE_FILE
 from telegram_bot import send_telegram_with_chart, format_output
 from lp_policy_engine import compute_lp_policy
 from asset_allocation import compute_btc_eth_allocation
+from prod_logger import log_engine_output
 
 # ── Logging ───────────────────────────────────────────────
 logging.basicConfig(
@@ -62,6 +63,12 @@ def main():
     # ── 2. Run regime engine ──────────────────────────────
     engine = RegimeEngine()
     output = engine.process(raw_data)
+
+    # ── 2.5 Log to prod CSV for out-of-sample validation ───
+    # Accumulates one row per cron-run. Used for future validation
+    # that backtest predictions match live behavior. See prod_logger.py
+    # for what is/isn't logged, and BACKLOG.md for rationale.
+    log_engine_output(output)
 
     # ── 3. Compute LP Policy ──────────────────────────────
     lp_policy = None

@@ -1,25 +1,94 @@
 # OracAI — BACKLOG
 
 Open work items, honest status, and context for picking things up later.
-Current head: `1e0da62` (Phase 4 Option A).
+Current head: Phase 4 Option A + prod logging.
+
+---
+
+## 0. Prod data collection (ACTIVE — DO NOT DISABLE)
+
+**Status:** enabled 2026-04-20. Appends one row per cron-run to
+`state/prod_log.csv`. Never breaks main flow (wrapped in try/except in
+`prod_logger.py`).
+
+### Why we're collecting this
+
+Our 5y backtest (Phase 1-4) ran on the same data we used to tune settings.
+That's the best we could do historically, but it means the +0.4% alpha
+figure is **in-sample**. Genuine edge can only be confirmed by measuring
+against data the model hasn't seen.
+
+Every cron-run now writes one row with:
+- engine's output (regime, probs, confidence, buckets, risk)
+- BTC price at decision time
+- Phase 4 fields (sma200 ratio, days above, would bear_confirmation fire,
+  would recovery_override fire)
+- data quality flags
+
+After ~3 months (~2600 rows if hourly, ~90 if daily) we can compute:
+- Forward-7d/30d returns given each regime label — does BULL actually
+  predict positive? BEAR negative?
+- Live hit rate on recovery_override (did target 0.95 actually work?)
+- Whether live signals match the patterns seen in backtest
+
+### What we deliberately do NOT collect
+
+This is not telemetry — it's model evaluation data. NOT collected:
+- User/chat IDs, Telegram identifiers, personal info of any kind
+- Actual positions held, portfolio values, account balances
+- Any auth credentials or API keys (obvious, mentioned for completeness)
+
+All fields are either market state (BTC price, volume indicators) or model
+outputs. See header in `prod_logger.py` for the exhaustive schema.
+
+### How to analyze (when ready)
+
+There's no analysis script yet — one should be written around
+month 3. Rough template:
+
+```python
+import pandas as pd
+df = pd.read_csv("state/prod_log.csv", parse_dates=["timestamp_utc"])
+# Attach forward returns from BTC OHLCV
+# Compute: df.groupby("regime")["fwd7d"].agg(["mean", "count", lambda s: (s>0).mean()])
+```
+
+### When to revisit this section
+
+After 3 months of accumulated logs, write an analysis script and compare
+live hit rates against the backtest numbers in
+`ENGINE_BACKTEST_REPORT_PHASE4.md`. If they match → backtest was
+directionally honest. If they diverge significantly → investigate the
+delta (data drift? settings mis-tuned? market regime shift?).
+
+### Storage notes
+
+CSV in `state/` directory. Current git workflow already commits state/
+on state refresh, so logs get versioned. If the file grows past ~5MB,
+rotate (`mv prod_log.csv prod_log_YYYY-QN.csv` and start fresh).
 
 ---
 
 ## 1. Monitor Phase 4 in production (1-2 weeks)
 
-**Status:** freshly deployed (commit `1e0da62`), needs observation.
+**Status:** freshly deployed, needs observation. Automatic data collection
+via §0 above covers most of this checklist now — but eyeballing Telegram
+output is still useful for UX regressions.
 
 Phase 4 changed 3 things in `settings.py` and added recovery override in
 `telegram_bot.py`. Worth confirming on real prod flow:
 
-- [ ] Telegram output format unchanged (no regression)
+- [ ] Telegram output format unchanged (no UX regression)
 - [ ] `📈 Устойчивый аптренд: Nд выше SMA200. Удерживаем позицию.` line
       appears when BTC > SMA200 ≥10 days AND not bear_confirmation
+      (check via `prod_log.csv`: `recovery_override_would_fire == True`)
 - [ ] Regime switches didn't become noticeably more frequent
+      (check via `prod_log.csv`: count distinct `regime` values per week)
 - [ ] Target position in BULL days lands ~85-95% (was ~40-60% pre-Phase-4)
+      (check via `prod_log.csv`: `regime == BULL → exposure_cap > 0.8`)
 - [ ] Risk state (CRISIS / TAIL) still fires appropriately on real drops
 
-If any regression: full revert is `git revert 1e0da62`.
+If any regression: full revert is `git revert` on the two recent commits.
 
 ---
 
