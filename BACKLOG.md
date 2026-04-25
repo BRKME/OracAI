@@ -175,6 +175,22 @@ more work, these are natural next steps in decreasing value order:
 5. **Add regime=RANGE calibration.** 5y backtest showed RANGE was never
    triggered (0 days). Either RANGE logit thresholds are wrong, or RANGE
    should be removed as a concept. Investigate on same 5y data.
+6. **Short-term BTC Sharpe Ratio as cycle-bottom signal.**
+   *Discussed 2026-04-25, not implemented.* CryptoQuant/Alphractal claim
+   that when 30-day BTC Sharpe drops below ~-30/-40 it has marked cycle
+   bottoms in 2015, 2019, 2022. Currently at similar levels (Feb-Mar 2026
+   reports of -38). NOT in our model in any form — Sharpe appears only
+   as output metric of backtests, never as input signal. Honest concerns:
+   only n=3 historical events (anecdote, not statistic), our 5y backtest
+   would only see one such event (2022 — overfitting risk), and Sentiment
+   bucket already partially catches capitulation via FG <25. Before
+   implementing: run offline analysis on existing
+   `data/external/btc_ohlcv.csv` to see (a) when Sharpe < -30 fired in 5y
+   sample, (b) what regime engine outputs at those points, (c) fwd30d
+   returns. If the analysis shows non-trivial alpha that doesn't
+   duplicate Sentiment — consider adding as a 6th bucket. If marginal
+   or correlated — keep deferred. Decision deferred until observation
+   period ends.
 
 None of these are urgent. Phase 4 delivered the single largest piece of
 alpha recovery already (from -66.2pp to +0.4pp).
