@@ -2,10 +2,8 @@ name: Regime Check
 
 on:
   schedule:
-    # 07:00 MSK (04:00 UTC)
+    # 06:00 MSK (03:00 UTC) — one daily check
     - cron: '0 3 * * *'
-    # 19:00 MSK (16:00 UTC)
-    - cron: '0 15 * * *'
   workflow_dispatch:
 
 permissions:
