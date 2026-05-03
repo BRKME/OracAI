@@ -502,12 +502,130 @@ def run_advisor(monitor_data: dict, opportunities_data: Optional[dict], history:
 # TELEGRAM REPORT
 # ═══════════════════════════════════════════════════════════════════════════════
 
+STABLECOINS = {"USDT", "USDC", "USD₮0", "BUSD", "DAI", "FRAX", "TUSD", "USDP"}
+MAJORS = {"WETH", "ETH", "WBNB", "BNB", "WBTC", "BTC"}
+
+
+def calculate_asset_allocation(positions: List[dict]) -> List[dict]:
+    """
+    Calculate % allocation per asset across all LP positions.
+    
+    Hierarchy: stablecoins > majors (ETH/BNB/BTC) > alts
+    Risk exposure is assigned to the riskiest token in the pair:
+    - USDT-ETH → 100% ETH
+    - BNB-ASTER → 100% ASTER
+    - ETH-ASTER → 100% ASTER
+    - USDT-USDC → skip
+    - ETH-BNB → 50/50
+    - ASTER-ZEC → 50/50
+    """
+    exposure = {}  # token -> total USD
+    
+    def token_tier(t: str) -> int:
+        """0=stable, 1=major, 2=alt"""
+        if t in STABLECOINS:
+            return 0
+        if t in MAJORS:
+            return 1
+        return 2
+    
+    for p in positions:
+        balance = p.get("balance_usd", 0)
+        t0 = p.get("token0_symbol", "")
+        t1 = p.get("token1_symbol", "")
+        
+        tier0 = token_tier(t0)
+        tier1 = token_tier(t1)
+        
+        if tier0 == tier1:
+            if tier0 == 0:
+                continue  # Both stablecoins — no risk exposure
+            # Same tier — split 50/50
+            exposure[t0] = exposure.get(t0, 0) + balance / 2
+            exposure[t1] = exposure.get(t1, 0) + balance / 2
+        elif tier0 > tier1:
+            # t0 is riskier → 100% t0
+            exposure[t0] = exposure.get(t0, 0) + balance
+        else:
+            # t1 is riskier → 100% t1
+            exposure[t1] = exposure.get(t1, 0) + balance
+    
+    total = sum(exposure.values())
+    if total == 0:
+        return []
+    
+    result = [
+        {"token": token, "usd": usd, "pct": usd / total * 100}
+        for token, usd in sorted(exposure.items(), key=lambda x: -x[1])
+    ]
+    return result
+
+
+def check_defi_hacks_ai(chains: List[str], tokens: List[str]) -> str:
+    """Use OpenAI with web search to check for recent DeFi hacks/exploits."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return ""
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    chains_str = ", ".join(chains)
+    tokens_str = ", ".join(tokens)
+    
+    prompt = f"""Search for DeFi hacks, exploits, or security incidents in the last 48 hours (today is {today}).
+
+I have LP positions on these chains: {chains_str}
+My tokens: {tokens_str}
+Protocols: PancakeSwap, Uniswap V3
+
+Check:
+1. Any DeFi hacks/exploits in the last 48 hours on ANY chain
+2. Are any of my chains or tokens affected?
+
+Reply ONLY in this compact format (for Telegram):
+
+If hacks found:
+🚨 DeFi Hacks (48h):
+[protocol] on [chain] — $Xm lost — [brief description]
+→ Затронуты мои позиции: ДА/НЕТ
+
+If no hacks:
+✅ DeFi: no hacks in 48h
+
+Maximum 3-4 lines total. No extra text."""
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": "gpt-4o-mini-search-preview",
+                "messages": [
+                    {"role": "system", "content": "DeFi security monitor. Search web for recent hacks. Be factual, concise."},
+                    {"role": "user", "content": prompt}
+                ],
+                "web_search_options": {"search_context_size": "medium"}
+            },
+            timeout=60
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"Hack check API error: {response.status_code}")
+            return ""
+        
+        result = response.json()["choices"][0]["message"]["content"]
+        logger.info(f"Hack check done ({len(result)} chars)")
+        return result.strip()
+    except Exception as e:
+        logger.error(f"Hack check exception: {e}")
+        return ""
+
 def format_unified_report(
     monitor_data: dict,
     opportunities_data: Optional[dict],
     ai_summary: Optional[str],
     history: List[dict],
-    hedge_report: Optional[str] = None
+    hedge_report: Optional[str] = None,
+    hack_report: Optional[str] = None
 ) -> str:
     """Format unified Telegram report - clean UX"""
     
@@ -619,6 +737,13 @@ def format_unified_report(
             
             lines.append("")
     
+    # Asset allocation (non-stable tokens only)
+    allocation = calculate_asset_allocation(positions)
+    if allocation:
+        alloc_parts = [f"{a['token']} {a['pct']:.0f}%" for a in allocation]
+        lines.append(f"📌 Активы: {' | '.join(alloc_parts)}")
+        lines.append("")
+    
     # Top opportunities - compact
     if opportunities_data and opportunities_data.get("top_pools"):
         arb_pools = [p for p in opportunities_data["top_pools"] if p.get("chain", "").lower() == "arbitrum"]
@@ -657,6 +782,11 @@ def format_unified_report(
         if summary:
             lines.append(f"💡 {summary}")
             lines.append("")
+    
+    # DeFi hack check
+    if hack_report:
+        lines.append(hack_report)
+        lines.append("")
     
     # Hedge Report
     if hedge_report:
@@ -774,9 +904,27 @@ def main():
     except Exception as e:
         logger.warning(f"Hedge analysis failed: {e}")
     
+    # DeFi hack check
+    logger.info("\n--- STAGE 5: DEFI HACK CHECK ---")
+    hack_report = None
+    try:
+        # Get tokens and chains from positions
+        all_positions = monitor_data.get("positions", [])
+        chains = list(set(p.get("chain", "") for p in all_positions if p.get("chain")))
+        tokens = list(set(
+            t for p in all_positions 
+            for t in (p.get("token0_symbol", ""), p.get("token1_symbol", ""))
+            if t and t not in STABLECOINS
+        ))
+        
+        if chains and tokens:
+            hack_report = check_defi_hacks_ai(chains, tokens)
+    except Exception as e:
+        logger.warning(f"Hack check failed: {e}")
+    
     # Generate unified report
     logger.info("\n--- GENERATING REPORT ---")
-    report = format_unified_report(monitor_data, opportunities_data, ai_summary, history, hedge_report)
+    report = format_unified_report(monitor_data, opportunities_data, ai_summary, history, hedge_report, hack_report)
     
     print("\n" + "=" * 60)
     print(report)
