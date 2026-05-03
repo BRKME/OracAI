@@ -8,8 +8,8 @@
       "end_tvl": 31969.639859676798,
       "tvl_change": 1651.7184223924705,
       "fees_earned": 581.3129629013633,
-      "real_pnl": 2233.031385293834,
-      "efficiency_pct": 7.365384166962382,
+      "real_pnl": 2533.031385293834,
+      "efficiency_pct": 8.354897912555332,
       "positions_count": 11,
       "positions_in_range": 10,
       "wallets": [
@@ -64,7 +64,8 @@
           "efficiency_pct": 6.901602344703097
         }
       ],
-      "timestamp": "2026-03-15T10:22:26.195585+00:00"
+      "timestamp": "2026-03-15T10:22:26.195585+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-03-22",
@@ -74,8 +75,8 @@
       "end_tvl": 30761.69289507663,
       "tvl_change": -1279.1644093979012,
       "fees_earned": 802.1381231583046,
-      "real_pnl": -477.02628623959663,
-      "efficiency_pct": -1.4888062504275736,
+      "real_pnl": -177.02628623959663,
+      "efficiency_pct": -0.5525017154109505,
       "positions_count": 12,
       "positions_in_range": 7,
       "wallets": [
@@ -130,7 +131,8 @@
           "efficiency_pct": -4.23091512366225
         }
       ],
-      "timestamp": "2026-03-22T10:20:53.412981+00:00"
+      "timestamp": "2026-03-22T10:20:53.412981+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-03-29",
@@ -140,8 +142,8 @@
       "end_tvl": 29991.14672665472,
       "tvl_change": -477.21785962774084,
       "fees_earned": 762.4229467794053,
-      "real_pnl": 285.20508715166443,
-      "efficiency_pct": 0.9360695627230027,
+      "real_pnl": 585.2050871516644,
+      "efficiency_pct": 1.9206974023644736,
       "positions_count": 11,
       "positions_in_range": 11,
       "wallets": [
@@ -196,7 +198,8 @@
           "efficiency_pct": 4.086552877251863
         }
       ],
-      "timestamp": "2026-03-29T10:25:56.501620+00:00"
+      "timestamp": "2026-03-29T10:25:56.501620+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-04-05",
@@ -206,8 +209,8 @@
       "end_tvl": 23675.33605888257,
       "tvl_change": -6152.163087866931,
       "fees_earned": 622.1452190519472,
-      "real_pnl": -5530.0178688149845,
-      "efficiency_pct": -18.539998414240593,
+      "real_pnl": -5230.0178688149845,
+      "efficiency_pct": -17.53421513176016,
       "positions_count": 8,
       "positions_in_range": 8,
       "wallets": [
@@ -262,7 +265,8 @@
           "efficiency_pct": 3.704060082722207
         }
       ],
-      "timestamp": "2026-04-05T10:26:34.658063+00:00"
+      "timestamp": "2026-04-05T10:26:34.658063+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-04-12",
@@ -272,8 +276,8 @@
       "end_tvl": 30446.195895321955,
       "tvl_change": 469.3430860228764,
       "fees_earned": 334.04314583196447,
-      "real_pnl": 803.3862318548408,
-      "efficiency_pct": 2.6800219388128146,
+      "real_pnl": 1103.3862318548408,
+      "efficiency_pct": 3.6807941076208004,
       "positions_count": 12,
       "positions_in_range": 11,
       "wallets": [
@@ -328,7 +332,8 @@
           "efficiency_pct": -97.41476869452647
         }
       ],
-      "timestamp": "2026-04-12T10:32:38.698924+00:00"
+      "timestamp": "2026-04-12T10:32:38.698924+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-04-19",
@@ -338,8 +343,8 @@
       "end_tvl": 29905.8440875034,
       "tvl_change": -419.88341352784846,
       "fees_earned": 488.6930001004239,
-      "real_pnl": 68.80958657257543,
-      "efficiency_pct": 0.22690168461823546,
+      "real_pnl": 368.8095865725754,
+      "efficiency_pct": 1.2161607221460187,
       "positions_count": 13,
       "positions_in_range": 11,
       "wallets": [
@@ -384,7 +389,8 @@
           "efficiency_pct": 131.98098492051554
         }
       ],
-      "timestamp": "2026-04-19T10:33:00.343954+00:00"
+      "timestamp": "2026-04-19T10:33:00.343954+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-04-26",
@@ -394,8 +400,8 @@
       "end_tvl": 29952.53804767866,
       "tvl_change": -289.6416774440986,
       "fees_earned": 427.5737760910133,
-      "real_pnl": 137.9320986469147,
-      "efficiency_pct": 0.4560917893505271,
+      "real_pnl": 437.9320986469147,
+      "efficiency_pct": 1.4480837777811237,
       "positions_count": 12,
       "positions_in_range": 12,
       "wallets": [
@@ -440,7 +446,8 @@
           "efficiency_pct": 0.9940747072183441
         }
       ],
-      "timestamp": "2026-04-26T10:39:04.228654+00:00"
+      "timestamp": "2026-04-26T10:39:04.228654+00:00",
+      "withdrawals": 300.0
     },
     {
       "week_end": "2026-05-03",
@@ -450,8 +457,8 @@
       "end_tvl": 29735.046476991218,
       "tvl_change": -265.46153542553293,
       "fees_earned": 272.27609274279894,
-      "real_pnl": 6.814557317266008,
-      "efficiency_pct": 0.022714806410763334,
+      "real_pnl": 306.814557317266,
+      "efficiency_pct": 1.0226978729502851,
       "positions_count": 12,
       "positions_in_range": 12,
       "wallets": [
@@ -496,8 +503,9 @@
           "efficiency_pct": 1.9900846508800634
         }
       ],
-      "timestamp": "2026-05-03T10:48:17.859865+00:00"
+      "timestamp": "2026-05-03T10:48:17.859865+00:00",
+      "withdrawals": 300.0
     }
   ],
-  "updated": "2026-05-03T15:00:21.735052"
+  "updated": "2026-05-03T15:10:47.768890"
 }

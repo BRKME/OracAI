@@ -1,10 +1,13 @@
 """
-LP Weekly Digest v2.0
+LP Weekly Digest v2.1
 Минималистичный еженедельный отчёт по LP позициям.
 
 Формула реальной эффективности:
-Real PnL = Fee Total - |TVL Loss|
+Adjusted TVL Change = End TVL - Start TVL + Withdrawals
+Real PnL = Fees + Adjusted TVL Change
 Real Efficiency = Real PnL / Start TVL * 100%
+
+Weekly withdrawals: $300 ($200 child savings + $100 personal)
 """
 
 import json
@@ -26,6 +29,9 @@ HISTORY_FILE = "state/lp_history.json"
 POSITIONS_FILE = "state/lp_positions.json"
 DIGEST_FILE = "state/lp_weekly_digest.json"
 DIGEST_HISTORY_FILE = "state/lp_digest_history.json"
+
+# Weekly withdrawals (not reinvested)
+WEEKLY_WITHDRAWAL = 300  # $200 child savings + $100 personal
 
 
 def load_digest_history() -> List[dict]:
@@ -58,6 +64,7 @@ def save_digest_to_history(stats: dict):
         "start_tvl": portfolio.get("start_tvl", 0),
         "end_tvl": portfolio.get("end_tvl", 0),
         "tvl_change": portfolio.get("tvl_change", 0),
+        "withdrawals": portfolio.get("withdrawals", 0),
         "fees_earned": portfolio.get("fees_earned", 0),
         "real_pnl": portfolio.get("real_pnl", 0),
         "efficiency_pct": portfolio.get("real_efficiency_pct", 0),
@@ -107,6 +114,12 @@ def calculate_period_summary(weeks: List[dict], last_n_weeks: int = None) -> dic
     total_fees = sum(w.get("fees_earned", 0) for w in weeks)
     total_pnl = sum(w.get("real_pnl", 0) for w in weeks)
     total_tvl_change = sum(w.get("tvl_change", 0) for w in weeks)
+    total_withdrawals = sum(w.get("withdrawals", 0) for w in weeks)
+    
+    # Recalculate PnL with withdrawals for older weeks that didn't have them
+    if total_withdrawals == 0 and len(weeks) > 0:
+        total_withdrawals = WEEKLY_WITHDRAWAL * len(weeks)
+        total_pnl = total_fees + total_tvl_change + total_withdrawals
     
     # Average efficiency
     efficiencies = [w.get("efficiency_pct", 0) for w in weeks]
@@ -128,6 +141,7 @@ def calculate_period_summary(weeks: List[dict], last_n_weeks: int = None) -> dic
         "start_tvl": start_tvl,
         "end_tvl": end_tvl,
         "total_tvl_change": total_tvl_change,
+        "total_withdrawals": total_withdrawals,
         "total_fees": total_fees,
         "total_pnl": total_pnl,
         "avg_efficiency_pct": avg_efficiency
@@ -182,17 +196,20 @@ def get_week_snapshots(snapshots: List[dict], days: int = 7) -> Tuple[Optional[d
     return start_snapshot, end_snapshot
 
 
-def calculate_real_efficiency(start_tvl: float, end_tvl: float, fees_earned: float) -> dict:
+def calculate_real_efficiency(start_tvl: float, end_tvl: float, fees_earned: float, 
+                              withdrawals: float = 0) -> dict:
     """
-    Calculate real efficiency.
+    Calculate real efficiency adjusted for withdrawals.
     
     Formula:
-    - TVL Change = End TVL - Start TVL (negative = loss)
-    - Real PnL = Fees + TVL Change
+    - Raw TVL Change = End TVL - Start TVL
+    - Adjusted TVL Change = Raw TVL Change + Withdrawals (add back what was taken out)
+    - Real PnL = Fees + Adjusted TVL Change
     - Real Efficiency = Real PnL / Start TVL * 100%
     """
-    tvl_change = end_tvl - start_tvl
-    real_pnl = fees_earned + tvl_change
+    raw_tvl_change = end_tvl - start_tvl
+    adjusted_tvl_change = raw_tvl_change + withdrawals
+    real_pnl = fees_earned + adjusted_tvl_change
     
     if start_tvl > 0:
         real_efficiency_pct = (real_pnl / start_tvl) * 100
@@ -202,7 +219,9 @@ def calculate_real_efficiency(start_tvl: float, end_tvl: float, fees_earned: flo
     return {
         "start_tvl": start_tvl,
         "end_tvl": end_tvl,
-        "tvl_change": tvl_change,
+        "tvl_change": raw_tvl_change,
+        "withdrawals": withdrawals,
+        "adjusted_tvl_change": adjusted_tvl_change,
         "fees_earned": fees_earned,
         "real_pnl": real_pnl,
         "real_efficiency_pct": real_efficiency_pct
@@ -232,8 +251,11 @@ def calculate_weekly_stats(snapshots: List[dict]) -> dict:
     end_cumulative = end_snapshot.get("fees_cumulative", 0)
     fees_earned = end_cumulative - start_cumulative
     
-    # Real efficiency for portfolio
-    portfolio_efficiency = calculate_real_efficiency(start_tvl, end_tvl, fees_earned)
+    # Withdrawals pro-rated by period length
+    withdrawals = WEEKLY_WITHDRAWAL * (days / 7.0)
+    
+    # Real efficiency for portfolio (adjusted for withdrawals)
+    portfolio_efficiency = calculate_real_efficiency(start_tvl, end_tvl, fees_earned, withdrawals)
     
     # Wallet-level analysis
     start_wallets = start_snapshot.get("by_wallet", {})
@@ -340,13 +362,18 @@ def format_weekly_digest(stats: dict) -> str:
     tvl_sign = "+" if tvl_change >= 0 else ""
     lines.append(f"Δ TVL: {tvl_sign}${tvl_change:,.0f}")
     
+    # Withdrawals
+    withdrawals = portfolio.get("withdrawals", 0)
+    if withdrawals > 0:
+        lines.append(f"Выведено: -${withdrawals:,.0f} (ребёнок $200 + личные $100)")
+    
     # Fees
     lines.append(f"Fees: +${fees:,.2f}")
     
-    # Real PnL
+    # Real PnL (adjusted for withdrawals)
     pnl_emoji = "✅" if real_pnl >= 0 else "❌"
     pnl_sign = "+" if real_pnl >= 0 else ""
-    lines.append(f"{pnl_emoji} Real PnL: {pnl_sign}${real_pnl:,.2f}")
+    lines.append(f"{pnl_emoji} Real PnL: {pnl_sign}${real_pnl:,.2f} (с учётом выводов)")
     
     # Efficiency
     eff_sign = "+" if efficiency >= 0 else ""
@@ -405,6 +432,11 @@ def format_weekly_digest(stats: dict) -> str:
         
         lines.append(f"ALL TIME ({weeks_count}w)")
         lines.append(f"Total Fees: +${total_fees:,.2f}")
+        
+        total_withdrawals = history.get("total_withdrawals", 0)
+        if total_withdrawals > 0:
+            lines.append(f"Total Выведено: ${total_withdrawals:,.0f}")
+        
         lines.append(f"Total PnL: {pnl_sign}${total_pnl:,.2f}")
         lines.append(f"Avg Eff: {eff_sign}{avg_eff:.2f}%/week")
     
