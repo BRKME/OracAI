@@ -7,9 +7,9 @@
       "start_tvl": 30317.921437284327,
       "end_tvl": 31969.639859676798,
       "tvl_change": 1651.7184223924705,
-      "fees_earned": 1287.842733727186,
-      "real_pnl": 2939.5611561196565,
-      "efficiency_pct": 9.69578723330501,
+      "fees_earned": 581.3129629013633,
+      "real_pnl": 2233.031385293834,
+      "efficiency_pct": 7.365384166962382,
       "positions_count": 11,
       "positions_in_range": 10,
       "wallets": [
@@ -73,9 +73,9 @@
       "start_tvl": 32040.85730447453,
       "end_tvl": 30761.69289507663,
       "tvl_change": -1279.1644093979012,
-      "fees_earned": 1293.5204392649466,
-      "real_pnl": 14.356029867045436,
-      "efficiency_pct": 0.04480538623116244,
+      "fees_earned": 802.1381231583046,
+      "real_pnl": -477.02628623959663,
+      "efficiency_pct": -1.4888062504275736,
       "positions_count": 12,
       "positions_in_range": 7,
       "wallets": [
@@ -139,9 +139,9 @@
       "start_tvl": 30468.36458628246,
       "end_tvl": 29991.14672665472,
       "tvl_change": -477.21785962774084,
-      "fees_earned": 1231.324641009851,
-      "real_pnl": 754.1067813821101,
-      "efficiency_pct": 2.475048436704167,
+      "fees_earned": 762.4229467794053,
+      "real_pnl": 285.20508715166443,
+      "efficiency_pct": 0.9360695627230027,
       "positions_count": 11,
       "positions_in_range": 11,
       "wallets": [
@@ -205,9 +205,9 @@
       "start_tvl": 29827.499146749502,
       "end_tvl": 23675.33605888257,
       "tvl_change": -6152.163087866931,
-      "fees_earned": 642.8977338171098,
-      "real_pnl": -5509.265354049821,
-      "efficiency_pct": -18.470423306173164,
+      "fees_earned": 622.1452190519472,
+      "real_pnl": -5530.0178688149845,
+      "efficiency_pct": -18.539998414240593,
       "positions_count": 8,
       "positions_in_range": 8,
       "wallets": [
@@ -271,9 +271,9 @@
       "start_tvl": 29976.85280929908,
       "end_tvl": 30446.195895321955,
       "tvl_change": 469.3430860228764,
-      "fees_earned": 774.9709832217195,
-      "real_pnl": 1244.3140692445959,
-      "efficiency_pct": 4.150916299187348,
+      "fees_earned": 334.04314583196447,
+      "real_pnl": 803.3862318548408,
+      "efficiency_pct": 2.6800219388128146,
       "positions_count": 12,
       "positions_in_range": 11,
       "wallets": [
@@ -337,9 +337,9 @@
       "start_tvl": 30325.727501031248,
       "end_tvl": 29905.8440875034,
       "tvl_change": -419.88341352784846,
-      "fees_earned": 41250.81037802581,
-      "real_pnl": 40830.926964497965,
-      "efficiency_pct": 134.64121170088822,
+      "fees_earned": 488.6930001004239,
+      "real_pnl": 68.80958657257543,
+      "efficiency_pct": 0.22690168461823546,
       "positions_count": 13,
       "positions_in_range": 11,
       "wallets": [
@@ -393,9 +393,9 @@
       "start_tvl": 30242.179725122758,
       "end_tvl": 29952.53804767866,
       "tvl_change": -289.6416774440986,
-      "fees_earned": 654.2961956892977,
-      "real_pnl": 364.65451824519914,
-      "efficiency_pct": 1.2057812021475214,
+      "fees_earned": 427.5737760910133,
+      "real_pnl": 137.9320986469147,
+      "efficiency_pct": 0.4560917893505271,
       "positions_count": 12,
       "positions_in_range": 12,
       "wallets": [
@@ -449,9 +449,9 @@
       "start_tvl": 30000.50801241675,
       "end_tvl": 29735.046476991218,
       "tvl_change": -265.46153542553293,
-      "fees_earned": 734.8424706843216,
-      "real_pnl": 469.38093525878867,
-      "efficiency_pct": 1.5645766233842409,
+      "fees_earned": 272.27609274279894,
+      "real_pnl": 6.814557317266008,
+      "efficiency_pct": 0.022714806410763334,
       "positions_count": 12,
       "positions_in_range": 12,
       "wallets": [
@@ -499,5 +499,5 @@
       "timestamp": "2026-05-03T10:48:17.859865+00:00"
     }
   ],
-  "updated": "2026-05-03T10:48:17.860096+00:00"
+  "updated": "2026-05-03T15:00:21.735052"
 }

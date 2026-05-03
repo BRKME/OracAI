@@ -51,7 +51,7 @@
       "timestamp": "2026-02-25T16:59:09.905774+00:00",
       "tvl": 31130.439369280288,
       "fees": 150.00147870133895,
-      "fees_cumulative": 694.7335172828259,
+      "fees_cumulative": 440.97865133874717,
       "positions_count": 11,
       "positions_in_range": 10,
       "by_wallet": {
@@ -74,7 +74,7 @@
       "timestamp": "2026-02-26T15:34:56.544633+00:00",
       "tvl": 14925.238411733426,
       "fees": 73.30018398925985,
-      "fees_cumulative": 399269.25103355275,
+      "fees_cumulative": 514.2788353280071,
       "positions_count": 5,
       "positions_in_range": 5,
       "by_wallet": {
@@ -93,7 +93,7 @@
       "timestamp": "2026-02-27T15:18:22.046312+00:00",
       "tvl": 30419.70826244209,
       "fees": 187.5152508190922,
-      "fees_cumulative": 399456.76628437184,
+      "fees_cumulative": 628.4939021578394,
       "positions_count": 12,
       "positions_in_range": 9,
       "by_wallet": {
@@ -116,7 +116,7 @@
       "timestamp": "2026-02-28T14:59:49.086987+00:00",
       "tvl": 30097.494303969313,
       "fees": 155.51387238070345,
-      "fees_cumulative": 399786.12417956645,
+      "fees_cumulative": 784.0077745385429,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -139,7 +139,7 @@
       "timestamp": "2026-03-01T15:01:33.663113+00:00",
       "tvl": 30973.49590191094,
       "fees": 187.12063117144766,
-      "fees_cumulative": 399817.7309383572,
+      "fees_cumulative": 815.614533329287,
       "positions_count": 10,
       "positions_in_range": 9,
       "by_wallet": {
@@ -162,7 +162,7 @@
       "timestamp": "2026-03-02T15:18:42.174650+00:00",
       "tvl": 31298.939890069527,
       "fees": 280.81509187306875,
-      "fees_cumulative": 400098.54603023024,
+      "fees_cumulative": 909.3089940309081,
       "positions_count": 11,
       "positions_in_range": 8,
       "by_wallet": {
@@ -185,7 +185,7 @@
       "timestamp": "2026-03-03T05:09:52.207193+00:00",
       "tvl": 31159.37451652118,
       "fees": 167.33050268510215,
-      "fees_cumulative": 400265.87653291534,
+      "fees_cumulative": 1076.6394967160104,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -208,7 +208,7 @@
       "timestamp": "2026-03-04T15:21:07.681151+00:00",
       "tvl": 32025.180122110134,
       "fees": 194.49686386939013,
-      "fees_cumulative": 400460.37339678477,
+      "fees_cumulative": 1103.8058579002984,
       "positions_count": 11,
       "positions_in_range": 6,
       "by_wallet": {
@@ -231,7 +231,7 @@
       "timestamp": "2026-03-05T15:36:44.246724+00:00",
       "tvl": 31798.295178197284,
       "fees": 158.615906638797,
-      "fees_cumulative": 400618.98930342356,
+      "fees_cumulative": 1262.4217645390954,
       "positions_count": 10,
       "positions_in_range": 9,
       "by_wallet": {
@@ -254,7 +254,7 @@
       "timestamp": "2026-03-06T15:22:42.330348+00:00",
       "tvl": 30649.652887933513,
       "fees": 195.0855179325648,
-      "fees_cumulative": 400655.4589147173,
+      "fees_cumulative": 1298.8913758328633,
       "positions_count": 10,
       "positions_in_range": 5,
       "by_wallet": {
@@ -277,7 +277,7 @@
       "timestamp": "2026-03-07T15:07:21.468088+00:00",
       "tvl": 30806.618566964826,
       "fees": 69.26347696872634,
-      "fees_cumulative": 400851.04050981184,
+      "fees_cumulative": 1368.1548528015896,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -300,7 +300,7 @@
       "timestamp": "2026-03-08T15:08:42.415772+00:00",
       "tvl": 30317.921437284327,
       "fees": 129.39584477767923,
-      "fees_cumulative": 400911.1728776208,
+      "fees_cumulative": 1428.2872206105426,
       "positions_count": 10,
       "positions_in_range": 8,
       "by_wallet": {
@@ -323,7 +323,7 @@
       "timestamp": "2026-03-09T15:40:06.700975+00:00",
       "tvl": 31231.00056391455,
       "fees": 145.632064152406,
-      "fees_cumulative": 401142.7352066223,
+      "fees_cumulative": 1444.5234399852693,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -346,7 +346,7 @@
       "timestamp": "2026-03-10T16:42:37.038160+00:00",
       "tvl": 31789.654881373008,
       "fees": 225.30866971987066,
-      "fees_cumulative": 401222.41181218973,
+      "fees_cumulative": 1524.200045552734,
       "positions_count": 11,
       "positions_in_range": 9,
       "by_wallet": {
@@ -369,7 +369,7 @@
       "timestamp": "2026-03-11T15:18:31.844406+00:00",
       "tvl": 31534.45632551509,
       "fees": 158.61579568247777,
-      "fees_cumulative": 401381.0276078722,
+      "fees_cumulative": 1682.8158412352118,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -392,7 +392,7 @@
       "timestamp": "2026-03-12T15:30:36.094047+00:00",
       "tvl": 31428.217598856343,
       "fees": 218.71061722278262,
-      "fees_cumulative": 401644.5687671795,
+      "fees_cumulative": 1742.9106627755166,
       "positions_count": 11,
       "positions_in_range": 10,
       "by_wallet": {
@@ -415,7 +415,7 @@
       "timestamp": "2026-03-13T15:22:36.317374+00:00",
       "tvl": 32167.81914173309,
       "fees": 251.6337072896264,
-      "fees_cumulative": 401964.06602446834,
+      "fees_cumulative": 1775.8337528423604,
       "positions_count": 11,
       "positions_in_range": 10,
       "by_wallet": {
@@ -438,7 +438,7 @@
       "timestamp": "2026-03-14T15:07:52.277317+00:00",
       "tvl": 31717.24055030051,
       "fees": 167.71243165667732,
-      "fees_cumulative": 402157.3372169953,
+      "fees_cumulative": 1943.5461844990377,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -461,7 +461,7 @@
       "timestamp": "2026-03-15T15:00:51.806237+00:00",
       "tvl": 32040.85730447453,
       "fees": 233.76643066954557,
-      "fees_cumulative": 402223.3912160082,
+      "fees_cumulative": 2009.600183511906,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -484,7 +484,7 @@
       "timestamp": "2026-03-16T15:53:30.848250+00:00",
       "tvl": 32682.596898743417,
       "fees": 125.28816752050548,
-      "fees_cumulative": 402577.56251414533,
+      "fees_cumulative": 2134.8883510324113,
       "positions_count": 10,
       "positions_in_range": 9,
       "by_wallet": {
@@ -507,7 +507,7 @@
       "timestamp": "2026-03-17T15:43:42.937265+00:00",
       "tvl": 33041.87447749172,
       "fees": 186.86071387994124,
-      "fees_cumulative": 402764.42322802526,
+      "fees_cumulative": 2196.460897391847,
       "positions_count": 11,
       "positions_in_range": 6,
       "by_wallet": {
@@ -530,7 +530,7 @@
       "timestamp": "2026-03-18T15:52:02.130947+00:00",
       "tvl": 31424.53071318322,
       "fees": 297.50160154359634,
-      "fees_cumulative": 402875.06411568896,
+      "fees_cumulative": 2307.101785055502,
       "positions_count": 11,
       "positions_in_range": 5,
       "by_wallet": {
@@ -553,7 +553,7 @@
       "timestamp": "2026-03-19T15:20:06.714959+00:00",
       "tvl": 30962.744190012552,
       "fees": 233.93154452064877,
-      "fees_cumulative": 403108.9956602096,
+      "fees_cumulative": 2541.033329576151,
       "positions_count": 11,
       "positions_in_range": 3,
       "by_wallet": {
@@ -576,7 +576,7 @@
       "timestamp": "2026-03-20T15:22:26.385475+00:00",
       "tvl": 30945.545626263545,
       "fees": 162.5494268536051,
-      "fees_cumulative": 403271.5450870632,
+      "fees_cumulative": 2703.582756429756,
       "positions_count": 12,
       "positions_in_range": 8,
       "by_wallet": {
@@ -599,7 +599,7 @@
       "timestamp": "2026-03-21T14:58:29.982633+00:00",
       "tvl": 31259.243255242134,
       "fees": 176.13186567201774,
-      "fees_cumulative": 403467.36192228744,
+      "fees_cumulative": 2717.165195248169,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -622,7 +622,7 @@
       "timestamp": "2026-03-22T14:58:19.494741+00:00",
       "tvl": 30468.36458628246,
       "fees": 94.57311142204149,
-      "fees_cumulative": 403611.48476669524,
+      "fees_cumulative": 2811.7383066702105,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -645,7 +645,7 @@
       "timestamp": "2026-03-23T15:39:30.020209+00:00",
       "tvl": 30774.890177835514,
       "fees": 314.0375811206366,
-      "fees_cumulative": 403830.9492363938,
+      "fees_cumulative": 3031.2027763688056,
       "positions_count": 11,
       "positions_in_range": 9,
       "by_wallet": {
@@ -668,7 +668,7 @@
       "timestamp": "2026-03-24T16:18:23.045933+00:00",
       "tvl": 30851.126352714724,
       "fees": 371.00784771099546,
-      "fees_cumulative": 404240.0849988145,
+      "fees_cumulative": 3088.1730429591644,
       "positions_count": 11,
       "positions_in_range": 9,
       "by_wallet": {
@@ -691,7 +691,7 @@
       "timestamp": "2026-03-25T16:08:22.858338+00:00",
       "tvl": 31349.240221316755,
       "fees": 137.88334828262802,
-      "fees_cumulative": 404377.96834709716,
+      "fees_cumulative": 3226.0563912417924,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -714,7 +714,7 @@
       "timestamp": "2026-03-26T15:55:08.282390+00:00",
       "tvl": 30492.73955722516,
       "fees": 178.30635214895258,
-      "fees_cumulative": 404556.2746992461,
+      "fees_cumulative": 3266.479395108117,
       "positions_count": 10,
       "positions_in_range": 6,
       "by_wallet": {
@@ -737,7 +737,7 @@
       "timestamp": "2026-03-27T15:29:31.299263+00:00",
       "tvl": 29756.739758577743,
       "fees": 282.5454815962062,
-      "fees_cumulative": 404660.5138286933,
+      "fees_cumulative": 3370.7185245553705,
       "positions_count": 11,
       "positions_in_range": 4,
       "by_wallet": {
@@ -760,7 +760,7 @@
       "timestamp": "2026-03-28T15:04:28.020027+00:00",
       "tvl": 30127.400955515463,
       "fees": 165.26760824414174,
-      "fees_cumulative": 404825.78143693745,
+      "fees_cumulative": 3535.9861327995122,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -783,7 +783,7 @@
       "timestamp": "2026-03-29T15:13:49.233359+00:00",
       "tvl": 29827.499146749502,
       "fees": 203.44272889424505,
-      "fees_cumulative": 404863.95655758755,
+      "fees_cumulative": 3574.1612534496157,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -806,7 +806,7 @@
       "timestamp": "2026-03-30T15:55:48.853662+00:00",
       "tvl": 30570.153869856615,
       "fees": 170.06347872281722,
-      "fees_cumulative": 405034.02003631036,
+      "fees_cumulative": 3744.224732172433,
       "positions_count": 11,
       "positions_in_range": 7,
       "by_wallet": {
@@ -829,7 +829,7 @@
       "timestamp": "2026-03-31T12:00:56.068100+00:00",
       "tvl": 29855.21985290437,
       "fees": 110.19901485380899,
-      "fees_cumulative": 405144.21905116417,
+      "fees_cumulative": 3854.423747026242,
       "positions_count": 11,
       "positions_in_range": 7,
       "by_wallet": {
@@ -852,7 +852,7 @@
       "timestamp": "2026-04-01T16:07:07.538439+00:00",
       "tvl": 26579.722464648465,
       "fees": 99.65650800137739,
-      "fees_cumulative": 405243.87555916555,
+      "fees_cumulative": 3954.0802550276194,
       "positions_count": 10,
       "positions_in_range": 8,
       "by_wallet": {
@@ -875,7 +875,7 @@
       "timestamp": "2026-04-02T15:39:30.534150+00:00",
       "tvl": 25630.418577870434,
       "fees": 170.14109253917442,
-      "fees_cumulative": 405314.36014370335,
+      "fees_cumulative": 4024.5648395654166,
       "positions_count": 9,
       "positions_in_range": 7,
       "by_wallet": {
@@ -898,7 +898,7 @@
       "timestamp": "2026-04-03T14:30:43.698647+00:00",
       "tvl": 25934.752021341537,
       "fees": 87.19562002614678,
-      "fees_cumulative": 405401.5557637295,
+      "fees_cumulative": 4111.760459591564,
       "positions_count": 9,
       "positions_in_range": 9,
       "by_wallet": {
@@ -921,7 +921,7 @@
       "timestamp": "2026-04-04T14:22:21.041116+00:00",
       "tvl": 26131.853693255016,
       "fees": 58.706068340564286,
-      "fees_cumulative": 405490.33832682454,
+      "fees_cumulative": 4170.466527932128,
       "positions_count": 9,
       "positions_in_range": 9,
       "by_wallet": {
@@ -944,7 +944,7 @@
       "timestamp": "2026-04-05T14:14:37.240186+00:00",
       "tvl": 29976.85280929908,
       "fees": 84.54601290999958,
-      "fees_cumulative": 405591.4003043147,
+      "fees_cumulative": 4196.306472501563,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -967,7 +967,7 @@
       "timestamp": "2026-04-06T14:38:28.832289+00:00",
       "tvl": 27321.90268770532,
       "fees": 50.86675522149513,
-      "fees_cumulative": 405695.79456568084,
+      "fees_cumulative": 4247.173227723058,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -988,7 +988,7 @@
       "timestamp": "2026-04-07T15:02:29.260859+00:00",
       "tvl": 28025.86735297444,
       "fees": 122.72941117156701,
-      "fees_cumulative": 405767.6572216309,
+      "fees_cumulative": 4319.035883673129,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1009,7 +1009,7 @@
       "timestamp": "2026-04-08T15:12:41.928275+00:00",
       "tvl": 30590.82856137261,
       "fees": 92.29182646847647,
-      "fees_cumulative": 405935.85330202576,
+      "fees_cumulative": 4411.327710141606,
       "positions_count": 11,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1030,7 +1030,7 @@
       "timestamp": "2026-04-09T15:25:49.405000+00:00",
       "tvl": 30341.229276623584,
       "fees": 122.44986690064772,
-      "fees_cumulative": 406100.3295508226,
+      "fees_cumulative": 4441.485750573777,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -1051,7 +1051,7 @@
       "timestamp": "2026-04-10T14:43:37.868338+00:00",
       "tvl": 30820.359647390622,
       "fees": 125.4992676418504,
-      "fees_cumulative": 406225.8288184645,
+      "fees_cumulative": 4444.53515131498,
       "positions_count": 10,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1072,7 +1072,7 @@
       "timestamp": "2026-04-11T14:15:00.837671+00:00",
       "tvl": 30834.01923908732,
       "fees": 57.01193105349999,
-      "fees_cumulative": 406316.68275956344,
+      "fees_cumulative": 4501.54708236848,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1093,7 +1093,7 @@
       "timestamp": "2026-04-12T14:20:24.616133+00:00",
       "tvl": 30325.727501031248,
       "fees": 85.81446701854767,
-      "fees_cumulative": 406452.1857545549,
+      "fees_cumulative": 4530.349618333527,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1114,7 +1114,7 @@
       "timestamp": "2026-04-13T15:21:27.591332+00:00",
       "tvl": 30554.612859590674,
       "fees": 151.53110302437037,
-      "fees_cumulative": 446940.1229726955,
+      "fees_cumulative": 4596.06625433935,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1135,7 +1135,7 @@
       "timestamp": "2026-04-14T15:19:16.898109+00:00",
       "tvl": 31166.56672834338,
       "fees": 124.36126394951708,
-      "fees_cumulative": 447064.48423664505,
+      "fees_cumulative": 4720.427518288867,
       "positions_count": 13,
       "positions_in_range": 11,
       "by_wallet": {
@@ -1156,7 +1156,7 @@
       "timestamp": "2026-04-15T15:03:06.257245+00:00",
       "tvl": 30869.730662959402,
       "fees": 209.53238403166372,
-      "fees_cumulative": 447149.65535672725,
+      "fees_cumulative": 4805.598638371013,
       "positions_count": 13,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1177,7 +1177,7 @@
       "timestamp": "2026-04-16T15:31:53.168734+00:00",
       "tvl": 30954.590119584536,
       "fees": 85.99358830068931,
-      "fees_cumulative": 447249.8869588239,
+      "fees_cumulative": 4891.5922266717025,
       "positions_count": 13,
       "positions_in_range": 13,
       "by_wallet": {
@@ -1198,7 +1198,7 @@
       "timestamp": "2026-04-17T14:50:13.065492+00:00",
       "tvl": 27002.14293779085,
       "fees": 106.71095549182215,
-      "fees_cumulative": 447445.7956917914,
+      "fees_cumulative": 4912.309593862836,
       "positions_count": 12,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1219,7 +1219,7 @@
       "timestamp": "2026-04-18T14:28:24.930893+00:00",
       "tvl": 30719.82850221823,
       "fees": 49.354609217708315,
-      "fees_cumulative": 447642.47685990453,
+      "fees_cumulative": 4961.664203080544,
       "positions_count": 13,
       "positions_in_range": 13,
       "by_wallet": {
@@ -1240,7 +1240,7 @@
       "timestamp": "2026-04-19T14:24:56.130584+00:00",
       "tvl": 30242.179725122758,
       "fees": 106.73302457111521,
-      "fees_cumulative": 447809.7291571518,
+      "fees_cumulative": 5019.042618433951,
       "positions_count": 13,
       "positions_in_range": 13,
       "by_wallet": {
@@ -1261,7 +1261,7 @@
       "timestamp": "2026-04-20T15:21:42.941568+00:00",
       "tvl": 25319.366201472556,
       "fees": 86.01856012191736,
-      "fees_cumulative": 447895.74771727377,
+      "fees_cumulative": 5105.0611785558685,
       "positions_count": 11,
       "positions_in_range": 11,
       "by_wallet": {
@@ -1282,7 +1282,7 @@
       "timestamp": "2026-04-21T15:07:00.340357+00:00",
       "tvl": 30115.690540888845,
       "fees": 155.11068186641737,
-      "fees_cumulative": 448089.0586619822,
+      "fees_cumulative": 5174.153300300369,
       "positions_count": 13,
       "positions_in_range": 13,
       "by_wallet": {
@@ -1303,7 +1303,7 @@
       "timestamp": "2026-04-22T15:06:34.424359+00:00",
       "tvl": 30403.795879414436,
       "fees": 99.67450970714935,
-      "fees_cumulative": 448188.7331716893,
+      "fees_cumulative": 5273.827810007519,
       "positions_count": 13,
       "positions_in_range": 9,
       "by_wallet": {
@@ -1324,7 +1324,7 @@
       "timestamp": "2026-04-23T15:34:20.201707+00:00",
       "tvl": 30229.222510571275,
       "fees": 116.15291543923647,
-      "fees_cumulative": 448304.88608712854,
+      "fees_cumulative": 5290.306215739605,
       "positions_count": 13,
       "positions_in_range": 13,
       "by_wallet": {
@@ -1345,7 +1345,7 @@
       "timestamp": "2026-04-24T14:32:51.093987+00:00",
       "tvl": 30150.44482106174,
       "fees": 100.91615193042978,
-      "fees_cumulative": 448405.80223905895,
+      "fees_cumulative": 5391.222367670035,
       "positions_count": 12,
       "positions_in_range": 11,
       "by_wallet": {
@@ -1366,7 +1366,7 @@
       "timestamp": "2026-04-25T14:02:58.216743+00:00",
       "tvl": 30169.913195331264,
       "fees": 27.32892650868094,
-      "fees_cumulative": 448454.54143273615,
+      "fees_cumulative": 5418.551294178716,
       "positions_count": 12,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1387,7 +1387,7 @@
       "timestamp": "2026-04-26T13:56:38.528373+00:00",
       "tvl": 30000.50801241675,
       "fees": 55.394026854929905,
-      "fees_cumulative": 448482.6065330824,
+      "fees_cumulative": 5446.616394524965,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1408,7 +1408,7 @@
       "timestamp": "2026-04-27T14:44:00.016055+00:00",
       "tvl": 29906.895659429043,
       "fees": 133.73404813624742,
-      "fees_cumulative": 448560.9465543637,
+      "fees_cumulative": 5524.956415806282,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1429,7 +1429,7 @@
       "timestamp": "2026-04-28T15:17:37.912365+00:00",
       "tvl": 29472.050546887716,
       "fees": 67.46665265590335,
-      "fees_cumulative": 448628.4132070197,
+      "fees_cumulative": 5592.423068462185,
       "positions_count": 12,
       "positions_in_range": 7,
       "by_wallet": {
@@ -1450,7 +1450,7 @@
       "timestamp": "2026-04-29T14:58:06.545679+00:00",
       "tvl": 29478.02635906577,
       "fees": 85.45122071762587,
-      "fees_cumulative": 448743.628065455,
+      "fees_cumulative": 5610.407636523908,
       "positions_count": 12,
       "positions_in_range": 11,
       "by_wallet": {
@@ -1471,7 +1471,7 @@
       "timestamp": "2026-04-30T14:44:19.429941+00:00",
       "tvl": 14140.778417636524,
       "fees": 48.60548458634429,
-      "fees_cumulative": 448895.96614777413,
+      "fees_cumulative": 5659.0131211102525,
       "positions_count": 4,
       "positions_in_range": 4,
       "by_wallet": {
@@ -1490,7 +1490,7 @@
       "timestamp": "2026-05-01T14:09:46.497061+00:00",
       "tvl": 29762.108579998036,
       "fees": 19.38475095917305,
-      "fees_cumulative": 449061.96827513736,
+      "fees_cumulative": 5678.397872069426,
       "positions_count": 12,
       "positions_in_range": 10,
       "by_wallet": {
@@ -1511,7 +1511,7 @@
       "timestamp": "2026-05-02T14:12:41.687652+00:00",
       "tvl": 29696.15013848326,
       "fees": 45.36900283118685,
-      "fees_cumulative": 449156.94933984784,
+      "fees_cumulative": 5704.382123941439,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {
@@ -1532,7 +1532,7 @@
       "timestamp": "2026-05-03T14:13:57.125794+00:00",
       "tvl": 29749.04226519551,
       "fees": 59.87936615751089,
-      "fees_cumulative": 449303.7548428138,
+      "fees_cumulative": 5718.8924872677635,
       "positions_count": 12,
       "positions_in_range": 12,
       "by_wallet": {

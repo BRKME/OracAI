@@ -99,17 +99,25 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
         prev_snapshot = snapshots[-1]
         prev_fees = prev_snapshot.get("fees", 0)
         prev_cumulative = prev_snapshot.get("fees_cumulative", prev_fees)
+        prev_tvl = prev_snapshot.get("tvl", tvl)
         
         if fees >= prev_fees:
             # Fees grew normally - add the delta
-            fees_cumulative = prev_cumulative + (fees - prev_fees)
+            delta = fees - prev_fees
         else:
             # Fees dropped = harvest happened
-            # The user collected prev_fees, now accumulating new fees
-            # cumulative = prev_cumulative + (what was harvested is already in cumulative via prev deltas)
-            # We just add current fees as new accumulation since harvest
-            fees_cumulative = prev_cumulative + fees
+            # Add current fees as new accumulation since harvest
+            delta = fees
             logger.info(f"Detected harvest: fees dropped from ${prev_fees:.2f} to ${fees:.2f}")
+        
+        # SANITY CHECK: daily fee delta cannot exceed 10% of TVL
+        # Catches data glitches, double-counting, and position resets
+        max_daily_delta = max(prev_tvl, tvl) * 0.10
+        if delta > max_daily_delta:
+            logger.warning(f"⚠️ Fee delta ${delta:.2f} exceeds 10% of TVL (${max_daily_delta:.0f}). Capping.")
+            delta = max_daily_delta
+        
+        fees_cumulative = prev_cumulative + delta
     
     # Check if today's snapshot exists
     existing_idx = None
