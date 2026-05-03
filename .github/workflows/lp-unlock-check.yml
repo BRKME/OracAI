@@ -1,0 +1,22 @@
+name: LP Unlock Monitor
+
+on:
+  schedule:
+    # Saturday 07:00 MSK (04:00 UTC) — before weekly digest on Sunday
+    - cron: '0 4 * * 6'
+  workflow_dispatch:
+
+jobs:
+  unlock-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - run: python lp_unlock_monitor.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
