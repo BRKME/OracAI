@@ -557,7 +557,7 @@ def format_unified_report(
                 change_line += f" | 7d: {format_change(abs_7d, pct_7d)}"
             lines.append(change_line)
     
-    # Positions by wallet - compact
+    # Positions by wallet - show details only when problems exist
     lines.append("")
     
     positions = monitor_data.get("positions", [])
@@ -568,29 +568,48 @@ def format_unified_report(
     for p in positions:
         wallet_positions[p.get("wallet_name", "")].append(p)
     
-    for wallet_name in sorted(wallet_positions.keys()):
-        w_positions = sorted(wallet_positions[wallet_name], key=lambda x: x.get("balance_usd", 0), reverse=True)
-        w_total = sum(p.get("balance_usd", 0) for p in w_positions)
-        w_fees = sum(p.get("uncollected_fees_usd", 0) for p in w_positions)
-        
-        lines.append(f"{wallet_name}: ${w_total:,.0f} (fees: ${w_fees:.2f})")
-        
-        for p in w_positions:
-            status = "🟢" if p.get("in_range", False) else "🔴"
-            symbol = f"{p.get('token0_symbol', '')}-{p.get('token1_symbol', '')}"
-            balance = p.get("balance_usd", 0)
-            lines.append(f"  {status} {symbol} ${balance:,.0f}")
-            
-            # Show out-of-range details
-            if not p.get("in_range", False):
-                if p.get("current_tick", 0) < p.get("tick_lower", 0):
-                    pct = abs(p.get('distance_to_lower_pct', 0))
-                    lines.append(f"     ↓ {pct:.1f}% below range")
-                else:
-                    pct = abs(p.get('distance_to_upper_pct', 0))
-                    lines.append(f"     ↑ {pct:.1f}% above range")
-        
+    # Check if all positions are in range
+    all_in_range = all(p.get("in_range", False) for p in positions)
+    
+    if all_in_range:
+        # Compact: one line with wallet totals
+        wallet_parts = []
+        for wallet_name in sorted(wallet_positions.keys()):
+            w_total = sum(p.get("balance_usd", 0) for p in wallet_positions[wallet_name])
+            wallet_parts.append(f"{wallet_name}: ${w_total:,.0f}")
+        lines.append(" | ".join(wallet_parts))
         lines.append("")
+    else:
+        # Show only wallets that have out-of-range positions
+        for wallet_name in sorted(wallet_positions.keys()):
+            w_positions = sorted(wallet_positions[wallet_name], key=lambda x: x.get("balance_usd", 0), reverse=True)
+            has_problems = any(not p.get("in_range", False) for p in w_positions)
+            
+            if not has_problems:
+                # Healthy wallet — one line
+                w_total = sum(p.get("balance_usd", 0) for p in w_positions)
+                lines.append(f"{wallet_name}: ${w_total:,.0f} ✓")
+            else:
+                # Problem wallet — show all positions
+                w_total = sum(p.get("balance_usd", 0) for p in w_positions)
+                w_fees = sum(p.get("uncollected_fees_usd", 0) for p in w_positions)
+                lines.append(f"{wallet_name}: ${w_total:,.0f} (fees: ${w_fees:.2f})")
+                
+                for p in w_positions:
+                    status = "🟢" if p.get("in_range", False) else "🔴"
+                    symbol = f"{p.get('token0_symbol', '')}-{p.get('token1_symbol', '')}"
+                    balance = p.get("balance_usd", 0)
+                    lines.append(f"  {status} {symbol} ${balance:,.0f}")
+                    
+                    if not p.get("in_range", False):
+                        if p.get("current_tick", 0) < p.get("tick_lower", 0):
+                            pct = abs(p.get('distance_to_lower_pct', 0))
+                            lines.append(f"     ↓ {pct:.1f}% below range")
+                        else:
+                            pct = abs(p.get('distance_to_upper_pct', 0))
+                            lines.append(f"     ↑ {pct:.1f}% above range")
+            
+            lines.append("")
     
     # Top opportunities - compact
     if opportunities_data and opportunities_data.get("top_pools"):

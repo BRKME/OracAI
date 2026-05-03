@@ -493,21 +493,34 @@ class LPAdvisor:
         lines.append(f"  Healthy: {report.positions_healthy} | Warning: {report.positions_warning} | Critical: {report.positions_critical}")
         lines.append("")
         
-        # Position details grouped by wallet
+        # Position details - only show wallets with issues
         if self.analyses:
             from collections import defaultdict
             by_wallet = defaultdict(list)
             for a in self.analyses:
                 by_wallet[a.wallet_name].append(a)
             
-            for wallet_name in sorted(by_wallet.keys()):
-                wallet_analyses = sorted(by_wallet[wallet_name], key=lambda x: x.balance_usd, reverse=True)
-                
-                lines.append(f"{wallet_name}:")
-                
-                for a in wallet_analyses:
-                    status = "🟢" if a.in_range else "🔴"
-                    lines.append(f"  {status} {a.symbol} ${a.balance_usd:,.0f} -> {a.recommendation}")
+            all_healthy = all(a.in_range for a in self.analyses)
+            
+            if all_healthy:
+                wallet_parts = []
+                for wallet_name in sorted(by_wallet.keys()):
+                    w_total = sum(a.balance_usd for a in by_wallet[wallet_name])
+                    wallet_parts.append(f"{wallet_name}: ${w_total:,.0f}")
+                lines.append(" | ".join(wallet_parts))
+            else:
+                for wallet_name in sorted(by_wallet.keys()):
+                    wallet_analyses = sorted(by_wallet[wallet_name], key=lambda x: x.balance_usd, reverse=True)
+                    has_problems = any(not a.in_range for a in wallet_analyses)
+                    
+                    if not has_problems:
+                        w_total = sum(a.balance_usd for a in wallet_analyses)
+                        lines.append(f"{wallet_name}: ${w_total:,.0f} ✓")
+                    else:
+                        lines.append(f"{wallet_name}:")
+                        for a in wallet_analyses:
+                            status = "🟢" if a.in_range else "🔴"
+                            lines.append(f"  {status} {a.symbol} ${a.balance_usd:,.0f} -> {a.recommendation}")
             lines.append("")
         
         # Action items

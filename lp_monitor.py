@@ -681,29 +681,45 @@ class LPMonitor:
         lines.append(f"In Range: {summary.positions_in_range}/{summary.total_positions} ({in_range_pct:.0f}%)")
         lines.append("")
         
-        # Positions grouped by wallet
+        # Positions grouped by wallet - details only on problems
         from collections import defaultdict
         by_wallet = defaultdict(list)
         for p in self.positions:
             by_wallet[p.wallet_name].append(p)
         
-        # Sort wallets by name, positions within wallet by balance
-        for wallet_name in sorted(by_wallet.keys()):
-            wallet_positions = sorted(by_wallet[wallet_name], key=lambda x: x.balance_usd, reverse=True)
-            wallet_total = sum(p.balance_usd for p in wallet_positions)
-            wallet_fees = sum(p.uncollected_fees_usd for p in wallet_positions)
-            
-            lines.append(f"{wallet_name}: ${wallet_total:,.0f} (fees: ${wallet_fees:.2f})")
-            
-            for p in wallet_positions:
-                status = "🟢" if p.in_range else "🔴"
-                lines.append(f"  {status} {p.token0_symbol}-{p.token1_symbol} ${p.balance_usd:,.0f}")
-                if not p.in_range:
-                    if p.current_tick < p.tick_lower:
-                        lines.append(f"    Below range {abs(p.distance_to_lower_pct):.1f}%")
-                    else:
-                        lines.append(f"    Above range {abs(p.distance_to_upper_pct):.1f}%")
+        all_in_range = all(p.in_range for p in self.positions)
+        
+        if all_in_range:
+            # Compact: one line with wallet totals
+            wallet_parts = []
+            for wallet_name in sorted(by_wallet.keys()):
+                w_total = sum(p.balance_usd for p in by_wallet[wallet_name])
+                wallet_parts.append(f"{wallet_name}: ${w_total:,.0f}")
+            lines.append(" | ".join(wallet_parts))
             lines.append("")
+        else:
+            for wallet_name in sorted(by_wallet.keys()):
+                wallet_positions = sorted(by_wallet[wallet_name], key=lambda x: x.balance_usd, reverse=True)
+                has_problems = any(not p.in_range for p in wallet_positions)
+                
+                if not has_problems:
+                    wallet_total = sum(p.balance_usd for p in wallet_positions)
+                    lines.append(f"{wallet_name}: ${wallet_total:,.0f} ✓")
+                else:
+                    wallet_total = sum(p.balance_usd for p in wallet_positions)
+                    wallet_fees = sum(p.uncollected_fees_usd for p in wallet_positions)
+                    lines.append(f"{wallet_name}: ${wallet_total:,.0f} (fees: ${wallet_fees:.2f})")
+                    
+                    for p in wallet_positions:
+                        status = "🟢" if p.in_range else "🔴"
+                        lines.append(f"  {status} {p.token0_symbol}-{p.token1_symbol} ${p.balance_usd:,.0f}")
+                        if not p.in_range:
+                            if p.current_tick < p.tick_lower:
+                                lines.append(f"    Below range {abs(p.distance_to_lower_pct):.1f}%")
+                            else:
+                                lines.append(f"    Above range {abs(p.distance_to_upper_pct):.1f}%")
+                
+                lines.append("")
         
         return "\n".join(lines)
 
