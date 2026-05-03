@@ -33,6 +33,92 @@ DIGEST_HISTORY_FILE = "state/lp_digest_history.json"
 # Weekly withdrawals (not reinvested)
 WEEKLY_WITHDRAWAL = 300  # $200 child savings + $100 personal
 
+# Tokens that don't have unlock risk
+SKIP_TOKENS = {
+    "USDT", "USDC", "USD₮0", "BUSD", "DAI", "FRAX", "TUSD", "USDP",
+    "WETH", "WBNB", "WBTC", "WMATIC", "WAVAX",
+    "ETH", "BNB", "BTC", "MATIC", "AVAX",
+    "ZEC",  # PoW coin, no unlocks
+}
+
+
+def get_portfolio_alt_tokens() -> List[dict]:
+    """Get alt tokens from LP positions with their exposure."""
+    if not os.path.exists(POSITIONS_FILE):
+        return []
+    
+    with open(POSITIONS_FILE) as f:
+        positions = json.load(f).get("positions", [])
+    
+    token_exposure = {}
+    for p in positions:
+        balance = p.get("balance_usd", 0)
+        for key in ("token0_symbol", "token1_symbol"):
+            token = p.get(key, "")
+            if token and token not in SKIP_TOKENS:
+                token_exposure[token] = token_exposure.get(token, 0) + balance / 2
+    
+    return [
+        {"symbol": s, "exposure_usd": e}
+        for s, e in sorted(token_exposure.items(), key=lambda x: -x[1])
+    ]
+
+
+def check_unlocks_ai(tokens: List[dict]) -> str:
+    """Use OpenAI with web search to check for upcoming token unlocks."""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logger.warning("OPENAI_API_KEY not set — skipping unlock check")
+        return ""
+    
+    if not tokens:
+        return ""
+    
+    token_list = ", ".join([f"{t['symbol']} (${t['exposure_usd']:,.0f})" for t in tokens])
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    prompt = f"""Check for upcoming token unlock/vesting events for: {token_list}
+Today: {today}. Check next 14 days.
+
+For each token search for: vesting schedules, cliff unlocks, team/investor token releases.
+
+Reply ONLY in this compact format (for Telegram):
+🔓 Unlocks (14d):
+
+If unlock found:
+⚠️ SYMBOL — [date] [amount]% supply ([type]) — Risk: HIGH/MED
+
+If no unlocks:
+✅ SYMBOL — no unlocks
+
+One line per token. No extra text."""
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": "gpt-4o-mini-search-preview",
+                "messages": [
+                    {"role": "system", "content": "Crypto research assistant. Search web for token unlock schedules. Be factual, concise."},
+                    {"role": "user", "content": prompt}
+                ],
+                "web_search_options": {"search_context_size": "medium"}
+            },
+            timeout=60
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"OpenAI unlock check error: {response.status_code}")
+            return ""
+        
+        result = response.json()["choices"][0]["message"]["content"]
+        logger.info(f"Unlock check done ({len(result)} chars)")
+        return result.strip()
+    except Exception as e:
+        logger.error(f"Unlock check exception: {e}")
+        return ""
+
 
 def load_digest_history() -> List[dict]:
     """Load accumulated weekly digests"""
@@ -416,6 +502,12 @@ def format_weekly_digest(stats: dict) -> str:
     if uncollected > 0:
         lines.append(f"Uncollected: ${uncollected:,.2f}")
     
+    # Token unlock check
+    unlock_report = stats.get("unlock_report", "")
+    if unlock_report:
+        lines.append("")
+        lines.append(unlock_report)
+    
     # Historical summary (if available)
     history = stats.get("history_summary")
     if history and history.get("has_data") and history.get("weeks_count", 0) > 1:
@@ -509,6 +601,14 @@ def main():
     if history:
         history_summary = calculate_period_summary(history)
         stats["history_summary"] = history_summary
+    
+    # Token unlock check
+    alt_tokens = get_portfolio_alt_tokens()
+    if alt_tokens:
+        logger.info(f"Checking unlocks for: {[t['symbol'] for t in alt_tokens]}")
+        unlock_report = check_unlocks_ai(alt_tokens)
+        if unlock_report:
+            stats["unlock_report"] = unlock_report
     
     # Save current digest
     save_digest(stats)
