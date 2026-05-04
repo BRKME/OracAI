@@ -272,6 +272,7 @@ def run_monitor() -> Optional[dict]:
             "count": summary.total_positions,
             "in_range": summary.positions_in_range,
             "by_wallet": summary.by_wallet,
+            "failed_wallets": getattr(monitor, 'failed_wallets', []),
         }
         
     except Exception as e:
@@ -652,6 +653,12 @@ def format_unified_report(
     
     lines.append(f"TVL: ${tvl:,.0f} | Fees: ${fees:,.2f}")
     lines.append(range_status)
+    
+    # Warning for failed wallets (RPC errors)
+    failed_wallets = monitor_data.get("failed_wallets", [])
+    if failed_wallets:
+        lines.append(f"🔴 НЕ ЗАГРУЖЕНЫ: {', '.join(failed_wallets)}")
+        lines.append("⚠️ TVL неполный! RPC не ответил.")
     
     # Portfolio APY if available
     portfolio_apy = opportunities_data.get("portfolio_apy") if opportunities_data else None

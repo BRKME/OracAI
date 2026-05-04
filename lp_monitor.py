@@ -391,6 +391,7 @@ class LPMonitor:
     def scan_all_positions(self) -> List[Position]:
         """Scan all wallets on all chains"""
         self.positions = []
+        self.failed_wallets = []
         
         for chain_name, w3 in self.web3_clients.items():
             config = CHAINS[chain_name]
@@ -398,14 +399,19 @@ class LPMonitor:
             logger.info(f"Scanning {chain_name.upper()}")
             logger.info(f"{'='*50}")
             
-            chain_positions = self._scan_chain(w3, chain_name, config)
+            chain_positions, chain_failed = self._scan_chain(w3, chain_name, config)
             self.positions.extend(chain_positions)
+            self.failed_wallets.extend(chain_failed)
+        
+        if self.failed_wallets:
+            logger.warning(f"⚠️ Failed wallets: {self.failed_wallets}")
         
         return self.positions
     
     def _scan_chain(self, w3: Web3, chain_name: str, config: dict) -> List[Position]:
         """Scan all wallets on a specific chain"""
         positions = []
+        failed_wallets = []
         
         pm_address = w3.to_checksum_address(config["position_manager"])
         factory_address = w3.to_checksum_address(config["factory"])
@@ -415,34 +421,46 @@ class LPMonitor:
         
         for wallet in WALLET_ADDRESSES:
             wallet_name = WALLETS.get(wallet.lower(), "Unknown")
+            wallet_loaded = False
             
-            try:
-                wallet_checksum = w3.to_checksum_address(wallet)
-                num_positions = pm_contract.functions.balanceOf(wallet_checksum).call()
-                
-                if num_positions == 0:
-                    continue
-                
-                logger.info(f"\n{wallet_name}: {num_positions} positions")
-                
-                for i in range(num_positions):
-                    try:
-                        position = self._get_position(
-                            w3, chain_name, config,
-                            pm_contract, factory_contract,
-                            wallet_checksum, wallet_name, i
-                        )
-                        if position:
-                            positions.append(position)
-                            status = "🟢" if position.in_range else "🔴"
-                            logger.info(f"  {status} {position.token0_symbol}-{position.token1_symbol}: ${position.balance_usd:.0f} (fees: ${position.uncollected_fees_usd:.2f})")
-                    except Exception as e:
-                        logger.warning(f"  Error getting position {i}: {e}")
+            for attempt in range(3):  # 3 attempts per wallet
+                try:
+                    wallet_checksum = w3.to_checksum_address(wallet)
+                    num_positions = pm_contract.functions.balanceOf(wallet_checksum).call()
+                    
+                    if num_positions == 0:
+                        wallet_loaded = True
+                        break
+                    
+                    logger.info(f"\n{wallet_name}: {num_positions} positions")
+                    
+                    for i in range(num_positions):
+                        try:
+                            position = self._get_position(
+                                w3, chain_name, config,
+                                pm_contract, factory_contract,
+                                wallet_checksum, wallet_name, i
+                            )
+                            if position:
+                                positions.append(position)
+                                status = "🟢" if position.in_range else "🔴"
+                                logger.info(f"  {status} {position.token0_symbol}-{position.token1_symbol}: ${position.balance_usd:.0f} (fees: ${position.uncollected_fees_usd:.2f})")
+                        except Exception as e:
+                            logger.warning(f"  Error getting position {i}: {e}")
+                    
+                    wallet_loaded = True
+                    break
                         
-            except Exception as e:
-                logger.warning(f"Error scanning {wallet_name} on {chain_name}: {e}")
+                except Exception as e:
+                    logger.warning(f"Error scanning {wallet_name} on {chain_name} (attempt {attempt+1}/3): {e}")
+                    if attempt < 2:
+                        time.sleep(2 * (attempt + 1))  # 2s, 4s backoff
+            
+            if not wallet_loaded:
+                logger.error(f"⚠️ FAILED to load {wallet_name} on {chain_name} after 3 attempts")
+                failed_wallets.append(f"{wallet_name}/{chain_name}")
         
-        return positions
+        return positions, failed_wallets
     
     def _get_position(
         self,
