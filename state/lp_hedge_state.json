@@ -1,29 +1,29 @@
 {
   "decision": {
-    "timestamp": "2026-05-07T04:27:07.223967+00:00",
+    "timestamp": "2026-05-07T11:59:48.930636+00:00",
     "action": "NO_HEDGE",
     "reason": "Hedge Score \u043d\u0438\u0437\u043a\u0438\u0439 (0.00 < 0.4)",
-    "dir_value": 0.6665,
+    "dir_value": 0.6705,
     "tail_risk_active": false,
     "tail_polarity": null,
     "confidence": 0.6048,
-    "vol_z": -1.3773,
+    "vol_z": -1.3359,
     "hedge_score": 0,
     "hedge_ratio": 0,
-    "total_tvl": 36308.97468618625,
+    "total_tvl": 36540.0689002993,
     "hedgeable_exposure": {
-      "ETH": 8910.388723089576,
-      "BTC": 5940.259148726384,
+      "ETH": 8968.55281131394,
+      "BTC": 5979.035207542627,
       "BNB": 0
     },
-    "non_hedgeable_exposure": 21458.326814370295,
+    "non_hedgeable_exposure": 21592.480881442738,
     "recommendations": []
   },
   "classifications": [
     {
       "token0": "WETH",
       "token1": "USD\u20ae0",
-      "balance_usd": 5373.072262541317,
+      "balance_usd": 5392.576314461965,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -35,11 +35,11 @@
     {
       "token0": "WETH",
       "token1": "USDC",
-      "balance_usd": 2983.7226252532514,
+      "balance_usd": 3028.357929973672,
       "hedgeable": true,
       "hedge_type": "full",
       "underlying": "ETH",
-      "exposure_eth": 1491.8613126266257,
+      "exposure_eth": 1514.178964986836,
       "exposure_btc": 0,
       "exposure_bnb": 0,
       "note": "PUT ETH \u0445\u0435\u0434\u0436\u0438\u0440\u0443\u0435\u0442 IL"
@@ -47,7 +47,7 @@
     {
       "token0": "WETH",
       "token1": "USD\u20ae0",
-      "balance_usd": 3984.493029228413,
+      "balance_usd": 3999.1093027796687,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -59,7 +59,7 @@
     {
       "token0": "WETH",
       "token1": "USD\u20ae0",
-      "balance_usd": 1853.0568765823375,
+      "balance_usd": 1854.0686532199568,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -71,7 +71,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1630.721693211644,
+      "balance_usd": 1637.859642046474,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -83,7 +83,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 799.7069179163923,
+      "balance_usd": 811.5705382227055,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -95,7 +95,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1932.474816822085,
+      "balance_usd": 1942.154903070248,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -107,7 +107,7 @@
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 2235.7337302539877,
+      "balance_usd": 2245.519920651337,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -119,19 +119,19 @@
     {
       "token0": "USDT",
       "token1": "WBNB",
-      "balance_usd": 5259.24630400837,
+      "balance_usd": 5274.337226296723,
       "hedgeable": true,
       "hedge_type": "full",
       "underlying": "BNB",
       "exposure_eth": 0,
       "exposure_btc": 0,
-      "exposure_bnb": 2629.623152004185,
+      "exposure_bnb": 2637.1686131483616,
       "note": "PUT BNB (\u0435\u0441\u043b\u0438 \u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d)"
     },
     {
       "token0": "ASTER",
       "token1": "USDT",
-      "balance_usd": 1627.49890076051,
+      "balance_usd": 1669.873096232638,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -143,7 +143,7 @@
     {
       "token0": "ZEC",
       "token1": "USDT",
-      "balance_usd": 2021.5685870536079,
+      "balance_usd": 2039.7485107577452,
       "hedgeable": false,
       "hedge_type": "none",
       "underlying": null,
@@ -153,5 +153,5 @@
       "note": "\u041d\u0435\u0442 \u043b\u0438\u043a\u0432\u0438\u0434\u043d\u044b\u0445 \u043e\u043f\u0446\u0438\u043e\u043d\u043e\u0432 \u043d\u0430 alt \u0442\u043e\u043a\u0435\u043d\u044b"
     }
   ],
-  "updated": "2026-05-07T04:27:07.224281+00:00"
+  "updated": "2026-05-07T11:59:48.930808+00:00"
 }
