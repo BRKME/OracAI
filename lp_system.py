@@ -666,9 +666,8 @@ def format_unified_report(
     if in_range == count:
         lines.append(f"✅ {in_range}/{count} in range")
     else:
-        # Show only out-of-range positions, compact, с 🟠 подсветкой
-        out_of_range = count - in_range
-        lines.append(f"🟠 {in_range}/{count} in range ({out_of_range} вне диапазона)")
+        # Шапку показываем нейтрально — детали с 🟠 ниже сами говорят
+        lines.append(f"{in_range}/{count} in range")
         
         positions = monitor_data.get("positions", [])
         for p in positions:
