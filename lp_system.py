@@ -316,6 +316,7 @@ def run_opportunities() -> Optional[dict]:
         
         return {
             "regime": regime,
+            "regime_stale": scanner.regime_state.get("stale", False),
             "regime_penalty": regime_penalty,
             "lp_recommendation": lp_recommendations_ru.get(regime, "Неизвестный режим."),
             "top_pools": [
@@ -778,6 +779,8 @@ def format_unified_report(
         lp_recommendation = opportunities_data.get("lp_recommendation", "")
         
         lines.append(f"{regime_emoji} Market: {regime}")
+        if opportunities_data.get("regime_stale"):
+            lines.append("  ⚠️ Данные режима устарели (>12ч)")
         if lp_recommendation:
             lines.append(f"  {lp_recommendation}")
         lines.append("")

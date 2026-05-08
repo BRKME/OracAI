@@ -180,7 +180,8 @@ def is_whitelisted_pool(token0: str, token1: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_regime_state() -> dict:
-    """Load current market regime from engine state"""
+    """Load current market regime from engine state.
+    Warns if state is stale (>12h old)."""
     state_files = [
         "state/engine_state.json",
         "state/last_output.json",
@@ -189,6 +190,12 @@ def load_regime_state() -> dict:
     for filepath in state_files:
         if os.path.exists(filepath):
             try:
+                # Check freshness
+                import time as _time
+                file_age_hours = (_time.time() - os.path.getmtime(filepath)) / 3600
+                if file_age_hours > 12:
+                    logger.warning(f"⚠️ Regime state is {file_age_hours:.0f}h old ({filepath}) — may be stale")
+                
                 with open(filepath, 'r') as f:
                     data = json.load(f)
                     
@@ -205,12 +212,13 @@ def load_regime_state() -> dict:
                     return {
                         "regime": regime,
                         "lp_score": lp_score,
-                        "source": filepath
+                        "source": filepath,
+                        "stale": file_age_hours > 12
                     }
             except Exception as e:
                 logger.warning(f"Error reading {filepath}: {e}")
     
-    return {"regime": "UNKNOWN", "lp_score": None, "source": None}
+    return {"regime": "UNKNOWN", "lp_score": None, "source": None, "stale": True}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -2,11 +2,11 @@ name: LP Intelligence System
 
 on:
   schedule:
-    # 06:30 MSK (03:30 UTC)
-    - cron: '30 0 * * *'
-    # 14:00 MSK (11:00 UTC)
+    # 06:00 MSK (03:00 UTC) — after regime_check at 05:30
+    - cron: '0 3 * * *'
+    # 13:00 MSK (10:00 UTC)
     - cron: '0 10 * * *'
-    # 18:30 MSK (15:30 UTC)
+    # 15:30 MSK (12:30 UTC)
     - cron: '30 12 * * *'
   
   workflow_dispatch:
