@@ -134,7 +134,38 @@ def main():
     # Add allocation to output for JSON
     if allocation:
         output["asset_allocation"] = allocation
-    
+
+    # ── Cycle position (BTC) for downstream consumers ─────
+    # Adds phase / cycle_position / bottom_proximity / top_proximity to snapshot
+    # so external bots (e.g. hl_weekly_planner) can read regime + cycle in one file
+    # without re-running the full pipeline.
+    try:
+        from cycle_metrics_collector import get_cycle_position as _gcp
+        _m, _pos = _gcp("BTC")
+        if _pos is not None:
+            output["cycle"] = {
+                "phase": _pos.phase.value if hasattr(_pos.phase, "value") else str(_pos.phase),
+                "phase_confidence": round(_pos.phase_confidence, 4),
+                "cycle_position": round(_pos.cycle_position, 2),
+                "bottom_proximity": round(_pos.bottom_proximity, 4),
+                "top_proximity": round(_pos.top_proximity, 4),
+                "bottom_top_signal": (
+                    _pos.bottom_top_signal.value
+                    if hasattr(_pos.bottom_top_signal, "value")
+                    else str(_pos.bottom_top_signal)
+                ),
+                "signal_strength": round(_pos.signal_strength, 4),
+                "action": (
+                    _pos.action.value if hasattr(_pos.action, "value") else str(_pos.action)
+                ),
+                "action_confidence": round(_pos.action_confidence, 4),
+                "rsi_d1": round(_pos.rsi, 2) if hasattr(_pos, "rsi") else None,
+                "vs_200ma_pct": round(_pos.vs_200ma_pct, 4),
+                "vs_ath_pct": round(_pos.vs_ath_pct, 4),
+            }
+    except Exception as _e:
+        logger.warning(f"Cycle position export failed (non-fatal): {_e}")
+
     with open(output_file, "w") as f:
         json.dump(output, f, indent=2, default=str)
     logger.info(f"Full output saved to {output_file}")
