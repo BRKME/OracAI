@@ -32,9 +32,12 @@ CHAINS = {
         "chain_id": 42161,
         "rpc": os.getenv("ARB_RPC", "https://arbitrum.llamarpc.com"),
         "rpc_fallbacks": [
+            "https://arbitrum.drpc.org",
             "https://arb1.arbitrum.io/rpc",
             "https://arbitrum-one.public.blastapi.io",
             "https://rpc.ankr.com/arbitrum",
+            "https://arbitrum-one-rpc.publicnode.com",
+            "https://1rpc.io/arb",
         ],
         "position_manager": "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",  # Uniswap V3
         "factory": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
@@ -48,9 +51,13 @@ CHAINS = {
         "chain_id": 56,
         "rpc": os.getenv("BSC_RPC", "https://bsc.llamarpc.com"),
         "rpc_fallbacks": [
-            "https://bsc-dataseed1.binance.org",
-            "https://bsc-dataseed2.binance.org",
+            "https://bsc.drpc.org",
+            "https://binance.llamarpc.com",
             "https://rpc.ankr.com/bsc",
+            "https://bsc-rpc.publicnode.com",
+            "https://1rpc.io/bnb",
+            # Binance public — последним резервом, они жёстко лимитят:
+            "https://bsc-dataseed1.binance.org",
         ],
         # Uniswap V3 официальные контракты на BSC
         "position_manager": "0x7b8A01B39D58278b5DE7e48c8449c9f4F5170613",

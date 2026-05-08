@@ -434,19 +434,31 @@ class LPMonitor:
                     
                     logger.info(f"\n{wallet_name}: {num_positions} positions")
                     
+                    skipped_count = 0
                     for i in range(num_positions):
-                        try:
-                            position = self._get_position(
-                                w3, chain_name, config,
-                                pm_contract, factory_contract,
-                                wallet_checksum, wallet_name, i
-                            )
-                            if position:
-                                positions.append(position)
-                                status = "🟢" if position.in_range else "🔴"
-                                logger.info(f"  {status} {position.token0_symbol}-{position.token1_symbol}: ${position.balance_usd:.0f} (fees: ${position.uncollected_fees_usd:.2f})")
-                        except Exception as e:
-                            logger.warning(f"  Error getting position {i}: {e}")
+                        position = self._get_position_with_retry(
+                            chain_name, config,
+                            wallet_checksum, wallet_name, i
+                        )
+                        if position == "_RPC_FAIL":
+                            skipped_count += 1
+                            continue
+                        if position:
+                            positions.append(position)
+                            status = "🟢" if position.in_range else "🔴"
+                            logger.info(f"  {status} {position.token0_symbol}-{position.token1_symbol}: ${position.balance_usd:.0f} (fees: ${position.uncollected_fees_usd:.2f})")
+                        # tiny pause to не выжигать RPC лимиты
+                        if i % 20 == 19:
+                            time.sleep(0.3)
+                    
+                    if skipped_count > 0:
+                        logger.error(
+                            f"⚠️ {wallet_name}/{chain_name}: {skipped_count}/{num_positions} "
+                            f"positions UNREADABLE — TVL может быть занижен!"
+                        )
+                        failed_wallets.append(
+                            f"{wallet_name}/{chain_name} ({skipped_count}/{num_positions} skipped)"
+                        )
                     
                     wallet_loaded = True
                     break
@@ -461,6 +473,55 @@ class LPMonitor:
                 failed_wallets.append(f"{wallet_name}/{chain_name}")
         
         return positions, failed_wallets
+    
+    def _get_position_with_retry(
+        self, chain_name: str, config: dict,
+        wallet: str, wallet_name: str, index: int,
+    ):
+        """Получить позицию с retry на смежные RPC при rate-limit ошибках.
+        
+        Возвращает Position, None (пустая позиция) или "_RPC_FAIL" (не смогли).
+        """
+        rpcs = [config["rpc"]] + config.get("rpc_fallbacks", [])
+        last_err = None
+        
+        for attempt, rpc_url in enumerate(rpcs):
+            try:
+                w3 = self.web3_clients[chain_name]
+                # На retry — пересоздаём клиент на следующий RPC
+                if attempt > 0:
+                    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 15}))
+                    if not w3.is_connected():
+                        continue
+                
+                pm_contract = w3.eth.contract(
+                    address=config["position_manager"], abi=POSITION_MANAGER_ABI
+                )
+                factory_contract = w3.eth.contract(
+                    address=config["factory"], abi=FACTORY_ABI
+                )
+                return self._get_position(
+                    w3, chain_name, config,
+                    pm_contract, factory_contract,
+                    wallet, wallet_name, index
+                )
+            except Exception as e:
+                err_str = str(e).lower()
+                last_err = e
+                # rate limit / 429 / busy — пробуем следующий RPC
+                if any(s in err_str for s in (
+                    "limit exceeded", "rate limit", "429", "too many",
+                    "timeout", "busy", "-32005",
+                )):
+                    if attempt < len(rpcs) - 1:
+                        time.sleep(0.5 * (attempt + 1))
+                        continue
+                # non-recoverable — выходим
+                logger.warning(f"  position {index} fail (non-rate): {e}")
+                return "_RPC_FAIL"
+        
+        logger.warning(f"  position {index} fail after {len(rpcs)} RPCs: {last_err}")
+        return "_RPC_FAIL"
     
     def _get_position(
         self,
