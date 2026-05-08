@@ -629,178 +629,71 @@ def format_unified_report(
     hedge_report: Optional[str] = None,
     hack_report: Optional[str] = None
 ) -> str:
-    """Format unified Telegram report - clean UX"""
+    """Format compact daily Telegram report — only actionable info."""
     
     now = datetime.now(timezone.utc)
     msk_time = now + timedelta(hours=3)
     
-    lines = [
-        f"📊 LP Report | {msk_time.strftime('%d.%m %H:%M')} MSK",
-        "",
-    ]
+    lines = [f"LP | {msk_time.strftime('%d.%m')}"]
     
-    # Summary
+    # Line 1: TVL + 24h change + APY
     tvl = monitor_data.get("tvl", 0)
-    fees = monitor_data.get("fees", 0)
     count = monitor_data.get("count", 0)
     in_range = monitor_data.get("in_range", 0)
     
-    # Visual in-range indicator
-    if in_range == count:
-        range_status = f"✓ {in_range}/{count} in range"
-    else:
-        out_of_range = count - in_range
-        range_status = f"⚠️ {out_of_range}/{count} out of range"
+    summary_parts = [f"${tvl:,.0f}"]
     
-    lines.append(f"TVL: ${tvl:,.0f} | Fees: ${fees:,.2f}")
-    lines.append(range_status)
+    # 24h change
+    if len(history) >= 2:
+        abs_1d, pct_1d = get_tvl_change(history, tvl, 1)
+        if abs_1d is not None:
+            sign = "+" if abs_1d >= 0 else ""
+            summary_parts.append(f"{sign}${abs_1d:,.0f} (24h)")
+    
+    # APY
+    portfolio_apy = opportunities_data.get("portfolio_apy") if opportunities_data else None
+    if portfolio_apy and portfolio_apy < 1000:
+        summary_parts.append(f"APY {portfolio_apy:.0f}%")
+    
+    lines.append(" | ".join(summary_parts))
     
     # Warning for failed wallets (RPC errors)
     failed_wallets = monitor_data.get("failed_wallets", [])
     if failed_wallets:
-        lines.append(f"🔴 НЕ ЗАГРУЖЕНЫ: {', '.join(failed_wallets)}")
-        lines.append("⚠️ TVL неполный! RPC не ответил.")
+        lines.append(f"НЕ ЗАГРУЖЕНЫ: {', '.join(failed_wallets)} — TVL неполный!")
     
-    # Portfolio APY if available
-    portfolio_apy = opportunities_data.get("portfolio_apy") if opportunities_data else None
-    benchmark_apy = None
-    if opportunities_data and opportunities_data.get("top_pools"):
-        top_5 = opportunities_data["top_pools"][:5]
-        if top_5:
-            benchmark_apy = sum(p.get("risk_adj_apy", 0) for p in top_5) / len(top_5)
-    
-    if portfolio_apy and portfolio_apy < 1000:  # Sanity check
-        apy_line = f"APY: {portfolio_apy:.1f}%"
-        if benchmark_apy:
-            diff = portfolio_apy - benchmark_apy
-            if diff > 0:
-                apy_line += f" (vs benchmark {benchmark_apy:.0f}%: +{diff:.0f}%)"
-            else:
-                apy_line += f" (vs benchmark {benchmark_apy:.0f}%: {diff:.0f}%)"
-        lines.append(apy_line)
-    
-    # TVL Changes - only show if we have real data
-    if len(history) >= 2:
-        abs_1d, pct_1d = get_tvl_change(history, tvl, 1)
-        abs_7d, pct_7d = get_tvl_change(history, tvl, 7)
-        
-        if abs_1d is not None:
-            lines.append("")
-            change_line = f"24h: {format_change(abs_1d, pct_1d)}"
-            if abs_7d is not None:
-                change_line += f" | 7d: {format_change(abs_7d, pct_7d)}"
-            lines.append(change_line)
-    
-    # Positions by wallet - show details only when problems exist
-    lines.append("")
-    
-    positions = monitor_data.get("positions", [])
-    
-    # Group positions by wallet
-    from collections import defaultdict
-    wallet_positions = defaultdict(list)
-    for p in positions:
-        wallet_positions[p.get("wallet_name", "")].append(p)
-    
-    # Check if all positions are in range
-    all_in_range = all(p.get("in_range", False) for p in positions)
-    
-    if all_in_range:
-        # Compact: one line with wallet totals
-        wallet_parts = []
-        for wallet_name in sorted(wallet_positions.keys()):
-            w_total = sum(p.get("balance_usd", 0) for p in wallet_positions[wallet_name])
-            wallet_parts.append(f"{wallet_name}: ${w_total:,.0f}")
-        lines.append(" | ".join(wallet_parts))
-        lines.append("")
+    # In-range status
+    if in_range == count:
+        lines.append(f"{in_range}/{count} in range")
     else:
-        # Show only wallets that have out-of-range positions
-        for wallet_name in sorted(wallet_positions.keys()):
-            w_positions = sorted(wallet_positions[wallet_name], key=lambda x: x.get("balance_usd", 0), reverse=True)
-            has_problems = any(not p.get("in_range", False) for p in w_positions)
-            
-            if not has_problems:
-                # Healthy wallet — one line
-                w_total = sum(p.get("balance_usd", 0) for p in w_positions)
-                lines.append(f"{wallet_name}: ${w_total:,.0f} ✓")
-            else:
-                # Problem wallet — show all positions
-                w_total = sum(p.get("balance_usd", 0) for p in w_positions)
-                w_fees = sum(p.get("uncollected_fees_usd", 0) for p in w_positions)
-                lines.append(f"{wallet_name}: ${w_total:,.0f} (fees: ${w_fees:.2f})")
+        # Show only out-of-range positions, compact
+        lines.append(f"{in_range}/{count} in range")
+        
+        positions = monitor_data.get("positions", [])
+        for p in positions:
+            if not p.get("in_range", False):
+                symbol = f"{p.get('token0_symbol', '')}-{p.get('token1_symbol', '')}"
+                balance = p.get("balance_usd", 0)
+                wallet = p.get("wallet_name", "")
                 
-                for p in w_positions:
-                    status = "🟢" if p.get("in_range", False) else "🔴"
-                    symbol = f"{p.get('token0_symbol', '')}-{p.get('token1_symbol', '')}"
-                    balance = p.get("balance_usd", 0)
-                    lines.append(f"  {status} {symbol} ${balance:,.0f}")
-                    
-                    if not p.get("in_range", False):
-                        if p.get("current_tick", 0) < p.get("tick_lower", 0):
-                            pct = abs(p.get('distance_to_lower_pct', 0))
-                            lines.append(f"     ↓ {pct:.1f}% below range")
-                        else:
-                            pct = abs(p.get('distance_to_upper_pct', 0))
-                            lines.append(f"     ↑ {pct:.1f}% above range")
-            
-            lines.append("")
+                if p.get("current_tick", 0) < p.get("tick_lower", 0):
+                    pct = abs(p.get('distance_to_lower_pct', 0))
+                    lines.append(f"  {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% below")
+                else:
+                    pct = abs(p.get('distance_to_upper_pct', 0))
+                    lines.append(f"  {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% above")
     
-    # Asset allocation (non-stable tokens only)
+    # Asset allocation
+    positions = monitor_data.get("positions", [])
     allocation = calculate_asset_allocation(positions)
     if allocation:
         alloc_parts = [f"{a['token']} {a['pct']:.0f}%" for a in allocation]
-        lines.append(f"📌 Активы: {' | '.join(alloc_parts)}")
+        lines.append(" | ".join(alloc_parts))
+    
+    # DeFi hack check — only if hacks found
+    if hack_report and "no hacks" not in hack_report.lower():
         lines.append("")
-    
-    # Top opportunities - compact
-    if opportunities_data and opportunities_data.get("top_pools"):
-        arb_pools = [p for p in opportunities_data["top_pools"] if p.get("chain", "").lower() == "arbitrum"]
-        bsc_pools = [p for p in opportunities_data["top_pools"] if p.get("chain", "").lower() == "bsc"]
-        
-        if arb_pools or bsc_pools:
-            lines.append("💎 Top Opportunities:")
-            
-            if arb_pools:
-                top_arb = arb_pools[:3]
-                arb_str = " | ".join([f"{p['symbol']} {p['risk_adj_apy']:.0f}%" for p in top_arb])
-                lines.append(f"  ARB: {arb_str}")
-            
-            if bsc_pools:
-                top_bsc = bsc_pools[:3]
-                bsc_str = " | ".join([f"{p['symbol']} {p['risk_adj_apy']:.0f}%" for p in top_bsc])
-                lines.append(f"  BSC: {bsc_str}")
-            
-            lines.append("")
-    
-    # Regime - simple
-    if opportunities_data:
-        regime = opportunities_data.get("regime", "UNKNOWN")
-        regime_emoji = {"BULL": "🟢", "BEAR": "🔴", "RANGE": "🟡", "TRANSITION": "⚪"}.get(regime, "⚪")
-        lp_recommendation = opportunities_data.get("lp_recommendation", "")
-        
-        lines.append(f"{regime_emoji} Market: {regime}")
-        if opportunities_data.get("regime_stale"):
-            lines.append("  ⚠️ Данные режима устарели (>12ч)")
-        if lp_recommendation:
-            lines.append(f"  {lp_recommendation}")
-        lines.append("")
-    
-    # AI Summary - only if specific
-    if ai_summary and len(ai_summary) > 20:
-        # Clean up generic phrases
-        summary = ai_summary.replace("Портфель работает нормально, ", "").strip()
-        if summary:
-            lines.append(f"💡 {summary}")
-            lines.append("")
-    
-    # DeFi hack check
-    if hack_report:
         lines.append(hack_report)
-        lines.append("")
-    
-    # Hedge Report
-    if hedge_report:
-        lines.append(hedge_report)
     
     return "\n".join(lines)
 
@@ -886,33 +779,13 @@ def main():
     else:
         logger.warning("Opportunities scan failed")
     
-    # Stage 3: Advisor
-    logger.info("\n--- STAGE 3: ADVISOR ---")
+    # Stage 3: AI Advisor — skipped in daily (shown in weekly only)
+    logger.info("\n--- STAGE 3: ADVISOR (skipped — daily compact mode) ---")
     ai_summary = None
     
-    openai_key = os.getenv("OPENAI_API_KEY")
-    if not openai_key:
-        logger.warning("OPENAI_API_KEY not set - AI summary disabled")
-    elif monitor_data:
-        ai_summary = run_advisor(monitor_data, opportunities_data, history)
-        if ai_summary:
-            logger.info(f"AI summary: {ai_summary[:100]}...")
-        else:
-            logger.warning("AI summary failed")
-    
-    # Stage 4: Hedge Analysis
-    logger.info("\n--- STAGE 4: HEDGE ANALYSIS ---")
+    # Stage 4: Hedge — skipped in daily (shown in weekly only)
+    logger.info("\n--- STAGE 4: HEDGE (skipped — daily compact mode) ---")
     hedge_report = None
-    try:
-        from lp_hedge_engine import LPHedgeEngine
-        hedge_engine = LPHedgeEngine()
-        if hedge_engine.load_data():
-            hedge_engine.calculate_decision()
-            hedge_engine.save_state()
-            hedge_report = hedge_engine.format_report()
-            logger.info(f"Hedge decision: {hedge_engine.decision.action if hedge_engine.decision else 'N/A'}")
-    except Exception as e:
-        logger.warning(f"Hedge analysis failed: {e}")
     
     # DeFi hack check
     logger.info("\n--- STAGE 5: DEFI HACK CHECK ---")
