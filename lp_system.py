@@ -664,10 +664,11 @@ def format_unified_report(
     
     # In-range status
     if in_range == count:
-        lines.append(f"{in_range}/{count} in range")
+        lines.append(f"✅ {in_range}/{count} in range")
     else:
-        # Show only out-of-range positions, compact
-        lines.append(f"{in_range}/{count} in range")
+        # Show only out-of-range positions, compact, с 🟠 подсветкой
+        out_of_range = count - in_range
+        lines.append(f"🟠 {in_range}/{count} in range ({out_of_range} вне диапазона)")
         
         positions = monitor_data.get("positions", [])
         for p in positions:
@@ -678,10 +679,10 @@ def format_unified_report(
                 
                 if p.get("current_tick", 0) < p.get("tick_lower", 0):
                     pct = abs(p.get('distance_to_lower_pct', 0))
-                    lines.append(f"  {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% below")
+                    lines.append(f"  🟠 {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% below")
                 else:
                     pct = abs(p.get('distance_to_upper_pct', 0))
-                    lines.append(f"  {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% above")
+                    lines.append(f"  🟠 {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% above")
     
     # Asset allocation
     positions = monitor_data.get("positions", [])
