@@ -490,7 +490,7 @@ class LPMonitor:
                 w3 = self.web3_clients[chain_name]
                 # На retry — пересоздаём клиент на следующий RPC
                 if attempt > 0:
-                    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 15}))
+                    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 8}))
                     if not w3.is_connected():
                         continue
                 
@@ -508,10 +508,16 @@ class LPMonitor:
             except Exception as e:
                 err_str = str(e).lower()
                 last_err = e
-                # rate limit / 429 / busy — пробуем следующий RPC
+                # rate limit / 5xx / timeout — пробуем следующий RPC.
+                # 500/502/503/504 от RPC = тот же сигнал что и rate-limit,
+                # просто провайдер вместо 429 шлёт 5xx. Лечится одинаково.
                 if any(s in err_str for s in (
                     "limit exceeded", "rate limit", "429", "too many",
                     "timeout", "busy", "-32005",
+                    "500 server error", "502 ", "503 ", "504 ",
+                    "internal server error", "bad gateway",
+                    "service unavailable", "gateway timeout",
+                    "connection", "max retries",
                 )):
                     if attempt < len(rpcs) - 1:
                         time.sleep(0.5 * (attempt + 1))
