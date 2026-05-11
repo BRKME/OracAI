@@ -14,6 +14,7 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, asdict
 from decimal import Decimal
@@ -369,6 +370,13 @@ class LPMonitor:
         self.web3_clients: Dict[str, Web3] = {}
         self.positions: List[Position] = []
         
+        # Empty-positions cache: tokenId которые уже отмечены liquidity=0,
+        # пропускаем их в следующих прогонах. Сильно ускоряет когда на
+        # кошельке 500+ NFT, из которых активных 1-2.
+        self._empty_cache_path = Path("state/empty_positions.json")
+        self._empty_positions_cache: set[str] = self._load_empty_cache()
+        self._empty_cache_dirty = False
+        
         # Initialize Web3 clients with fallback RPCs
         for chain_name, config in CHAINS.items():
             # Try main RPC first, then fallbacks
@@ -387,6 +395,32 @@ class LPMonitor:
             
             if chain_name not in self.web3_clients:
                 logger.warning(f"✗ Failed to connect to {chain_name} (tried {len(rpcs_to_try)} RPCs)")
+        
+        if self._empty_positions_cache:
+            logger.info(f"✓ Loaded {len(self._empty_positions_cache)} cached empty positions")
+    
+    def _load_empty_cache(self) -> set[str]:
+        try:
+            if self._empty_cache_path.exists():
+                data = json.loads(self._empty_cache_path.read_text())
+                return set(data.get("empty", []))
+        except Exception as e:
+            logger.warning(f"Failed to load empty cache: {e}")
+        return set()
+    
+    def _save_empty_cache(self) -> None:
+        if not self._empty_cache_dirty:
+            return
+        try:
+            self._empty_cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self._empty_cache_path.write_text(json.dumps({
+                "empty": sorted(self._empty_positions_cache),
+                "count": len(self._empty_positions_cache),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }, indent=2))
+            logger.info(f"✓ Saved {len(self._empty_positions_cache)} empty positions to cache")
+        except Exception as e:
+            logger.warning(f"Failed to save empty cache: {e}")
     
     def scan_all_positions(self) -> List[Position]:
         """Scan all wallets on all chains"""
@@ -405,6 +439,9 @@ class LPMonitor:
         
         if self.failed_wallets:
             logger.warning(f"⚠️ Failed wallets: {self.failed_wallets}")
+        
+        # Persist empty-positions cache
+        self._save_empty_cache()
         
         return self.positions
     
@@ -545,12 +582,21 @@ class LPMonitor:
         # Get token ID
         token_id = pm_contract.functions.tokenOfOwnerByIndex(wallet, index).call()
         
+        # Empty-positions cache: если этот tokenId ранее был зафиксирован
+        # как пустой (liquidity == 0), пропускаем без второго RPC-вызова.
+        # Кэш персистится в state/empty_positions.json между прогонами.
+        cache_key = f"{chain_name}:{token_id}"
+        if cache_key in self._empty_positions_cache:
+            return None
+        
         # Get position data
         pos_data = pm_contract.functions.positions(token_id).call()
         liquidity = pos_data[7]
         
-        # Skip empty positions
+        # Skip empty positions — и запоминаем в кэше
         if liquidity == 0:
+            self._empty_positions_cache.add(cache_key)
+            self._empty_cache_dirty = True
             return None
         
         token0 = pos_data[2]
