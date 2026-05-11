@@ -657,6 +657,48 @@ def format_unified_report(
     
     lines.append(" | ".join(summary_parts))
     
+    # Fees: текущие несобранные в открытых позициях + накопленные за всё время +
+    # сколько накапало за 24ч (это реальный заработок, в отличие от дельты TVL,
+    # которая содержит и переоценку токенов)
+    if history:
+        last = history[-1]
+        current_fees = last.get("fees", 0)
+        cum_fees = last.get("fees_cumulative", 0)
+        # Дельта по cumulative за 24ч — устойчиво к harvest (harvest обнуляет
+        # current_fees, но cumulative продолжает расти)
+        fees_24h_delta = None
+        if len(history) >= 2:
+            # Найти snapshot ~24ч назад
+            from datetime import datetime as _dt, timedelta as _td
+            now_ts = _dt.utcnow()
+            target = now_ts - _td(hours=24)
+            best = None
+            for s in reversed(history[:-1]):
+                ts_str = s.get("timestamp")
+                if not ts_str:
+                    continue
+                try:
+                    ts = _dt.fromisoformat(ts_str.replace("Z", ""))
+                except Exception:
+                    continue
+                if ts <= target:
+                    best = s
+                    break
+            if best is None:
+                best = history[0]
+            prev_cum = best.get("fees_cumulative", 0)
+            fees_24h_delta = cum_fees - prev_cum
+        
+        fees_line_parts = []
+        if current_fees > 0:
+            fees_line_parts.append(f"💰 Fees: ${current_fees:,.2f} к сбору")
+        if fees_24h_delta is not None and fees_24h_delta > 0:
+            fees_line_parts.append(f"+${fees_24h_delta:,.2f} (24h)")
+        if cum_fees > 0:
+            fees_line_parts.append(f"всего ${cum_fees:,.0f}")
+        if fees_line_parts:
+            lines.append(" · ".join(fees_line_parts))
+    
     # Warning for failed wallets (RPC errors)
     failed_wallets = monitor_data.get("failed_wallets", [])
     if failed_wallets:
