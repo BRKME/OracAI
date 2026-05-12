@@ -669,8 +669,8 @@ def format_unified_report(
         fees_24h_delta = None
         if len(history) >= 2:
             # Найти snapshot ~24ч назад
-            from datetime import datetime as _dt, timedelta as _td
-            now_ts = _dt.utcnow()
+            from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+            now_ts = _dt.now(_tz.utc)
             target = now_ts - _td(hours=24)
             best = None
             for s in reversed(history[:-1]):
@@ -678,7 +678,9 @@ def format_unified_report(
                 if not ts_str:
                     continue
                 try:
-                    ts = _dt.fromisoformat(ts_str.replace("Z", ""))
+                    ts = _dt.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=_tz.utc)
                 except Exception:
                     continue
                 if ts <= target:
