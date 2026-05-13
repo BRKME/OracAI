@@ -2,12 +2,8 @@ name: LP Intelligence System
 
 on:
   schedule:
-    # 04:00 MSK (01:00 UTC) — после regime_check, с запасом на задержку GH Actions
-    - cron: '0 1 * * *'
-    # 13:00 MSK (10:00 UTC)
-    - cron: '0 10 * * *'
-    # 15:30 MSK (12:30 UTC)
-    - cron: '30 12 * * *'
+    # 09:00 MSK (06:00 UTC) — one daily LP report
+    - cron: '0 6 * * *'
   
   workflow_dispatch:
 
