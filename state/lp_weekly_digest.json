@@ -1,82 +1,82 @@
 {
-  "timestamp": "2026-05-17T10:59:05.643672+00:00",
+  "timestamp": "2026-05-24T11:09:42.172548+00:00",
   "stats": {
     "has_data": true,
     "period": {
-      "start": "2026-05-10",
-      "end": "2026-05-17",
+      "start": "2026-05-17",
+      "end": "2026-05-24",
       "days": 7
     },
     "portfolio": {
-      "start_tvl": 19772.84101225713,
-      "end_tvl": 28936.997996094018,
-      "tvl_change": 9164.156983836889,
+      "start_tvl": 28907.781132768385,
+      "end_tvl": 28797.657267082235,
+      "tvl_change": -110.12386568614966,
       "withdrawals": 300.0,
-      "adjusted_tvl_change": 9464.156983836889,
-      "fees_earned": 3003.3819407453275,
-      "real_pnl": 12467.538924582215,
-      "real_efficiency_pct": 63.05385714098254
+      "adjusted_tvl_change": 189.87613431385034,
+      "fees_earned": 3924.6623908350866,
+      "real_pnl": 4114.538525148937,
+      "real_efficiency_pct": 14.233325298304914
     },
     "wallets": [
       {
         "wallet": "MMA_1",
-        "start_tvl": 2442.9759310458194,
-        "end_tvl": 10397.218015647395,
-        "tvl_change": 7954.242084601576,
-        "fees_estimated": 371.0741308459524,
-        "uncollected": 21.92217079010581,
-        "real_pnl": 8325.316215447529,
-        "efficiency_pct": 340.78584687011323
+        "start_tvl": 10386.111513836438,
+        "end_tvl": 10142.993813819106,
+        "tvl_change": -243.11770001733203,
+        "fees_estimated": 1410.0695261999003,
+        "uncollected": 179.01868346565615,
+        "real_pnl": 1166.9518261825683,
+        "efficiency_pct": 11.235695136028035
       },
       {
         "wallet": "MMA_2",
-        "start_tvl": 5966.70837487993,
-        "end_tvl": 5842.978664440359,
-        "tvl_change": -123.72971043957023,
-        "fees_estimated": 906.30902092924,
-        "uncollected": 12.880455794315445,
-        "real_pnl": 782.5793104896698,
-        "efficiency_pct": 13.115762683900535
+        "start_tvl": 5832.71703072725,
+        "end_tvl": 5750.795558454971,
+        "tvl_change": -81.92147227227906,
+        "fees_estimated": 791.8783202952219,
+        "uncollected": 71.12505397970466,
+        "real_pnl": 709.9568480229428,
+        "efficiency_pct": 12.171974815216128
       },
       {
         "wallet": "MMA_3",
-        "start_tvl": 7644.691699370061,
-        "end_tvl": 7389.505712225338,
-        "tvl_change": -255.18598714472228,
-        "fees_estimated": 1161.185131576234,
-        "uncollected": 124.69096469293942,
-        "real_pnl": 905.9991444315117,
-        "efficiency_pct": 11.85134966928971
+        "start_tvl": 7379.233840370667,
+        "end_tvl": 7527.116310374835,
+        "tvl_change": 147.88247000416777,
+        "fees_estimated": 1001.841040426711,
+        "uncollected": 188.77482782902277,
+        "real_pnl": 1149.7235104308788,
+        "efficiency_pct": 15.580526858234473
       },
       {
         "wallet": "MMA_4",
-        "start_tvl": 3718.465006961321,
-        "end_tvl": 5307.295603780926,
-        "tvl_change": 1588.8305968196055,
-        "fees_estimated": 564.8136573939014,
-        "uncollected": 25.43933471101831,
-        "real_pnl": 2153.644254213507,
-        "efficiency_pct": 57.917561417995856
+        "start_tvl": 5309.718747834029,
+        "end_tvl": 5376.751584433327,
+        "tvl_change": 67.0328365992973,
+        "fees_estimated": 720.8735039132534,
+        "uncollected": 209.98863782497094,
+        "real_pnl": 787.9063405125507,
+        "efficiency_pct": 14.838946805496203
       }
     ],
     "positions": {
       "count": 11,
       "in_range": 11
     },
-    "fees_uncollected": 184.93292598837897,
+    "fees_uncollected": 648.9072030993545,
     "history_summary": {
       "has_data": true,
-      "weeks_count": 10,
+      "weeks_count": 11,
       "period_start": "2026-03-08",
-      "period_end": "2026-05-17",
+      "period_end": "2026-05-24",
       "start_tvl": 30317.921437284327,
-      "end_tvl": 28936.997996094018,
-      "total_tvl_change": -11628.372190183138,
-      "total_withdrawals": 3000.0,
-      "total_fees": 8600.195647057448,
-      "total_pnl": -28.17654312569357,
-      "avg_efficiency_pct": 2.084828644056561
+      "end_tvl": 28797.657267082235,
+      "total_tvl_change": -11738.496055869287,
+      "total_withdrawals": 3300.0,
+      "total_fees": 12524.858037892534,
+      "total_pnl": 4086.3619820232434,
+      "avg_efficiency_pct": 3.189237430806411
     },
-    "unlock_report": "## Stock market information for Aster (ASTER)\n- Aster is a crypto in the CRYPTO market.\n- The price is 0.66653 USD currently with a change of 0.01 USD (0.01%) from the previous close.\n- The intraday high is 0.671967 USD and the intraday low is 0.659108 USD.\n\n\n\ud83d\udd13 Unlocks (14d):\n\n\u26a0\ufe0f ASTER \u2014 [May 17, 2026] 2.1% supply (cliff) \u2014 Risk: HIGH\n\n([app.tokenomics.com](https://app.tokenomics.com/tokenomics/aster-prev-astherus/unlocks?utm_source=openai))"
+    "unlock_report": "\ud83d\udd13 Unlocks (14d):\n\n\u26a0\ufe0f ASTER \u2014 [May 30, 2026] 0.087% supply (Ecosystem & Community) \u2014 Risk: HIGH\n\n\u26a0\ufe0f PENDLE \u2014 [May 28, 2026] 0.1% supply (Foundation) \u2014 Risk: MED"
   }
 }
