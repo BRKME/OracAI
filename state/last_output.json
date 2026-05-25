@@ -39,7 +39,7 @@
   },
   "metadata": {
     "model_version": "3.3",
-    "timestamp": "2026-05-24T06:14:04.190455"
+    "timestamp": "2026-05-25T06:50:52.466965"
   },
   "lp_policy": {
     "lp_regime": "MEAN_REVERT",
@@ -96,15 +96,15 @@
   "cycle": {
     "phase": "EARLY_BEAR",
     "phase_confidence": 0.5,
-    "cycle_position": 29.7,
-    "bottom_proximity": 0.4,
+    "cycle_position": 32.2,
+    "bottom_proximity": 0.24,
     "top_proximity": 0.0,
     "bottom_top_signal": "NO_SIGNAL",
     "signal_strength": 0.0,
     "action": "SELL",
     "action_confidence": 0.5,
-    "rsi_d1": 29.09,
-    "vs_200ma_pct": -0.0471,
-    "vs_ath_pct": -0.385
+    "rsi_d1": 33.47,
+    "vs_200ma_pct": -0.0377,
+    "vs_ath_pct": -0.3799
   }
 }
