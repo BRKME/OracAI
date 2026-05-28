@@ -432,10 +432,13 @@ def calculate_rsi(closes: list, period: int = 14) -> float:
 
 
 def fetch_rsi_multi_timeframe(symbol: str = "BTCUSDT") -> dict:
-    """Fetch RSI for multiple timeframes with fallbacks."""
+    """Fetch RSI for multiple timeframes with fallbacks.
+    
+    Chain: Binance → Yahoo → CoinGecko OHLC → manual from BTC price data
+    """
     result = {"rsi_1d": None, "rsi_2h": None, "rsi_1d_7": None, "source": None}
     
-    # Try Binance SPOT first
+    # 1. Try Binance SPOT
     closes_1d = fetch_binance_klines(symbol, "1d", 50)
     if closes_1d and len(closes_1d) >= 15:
         result["rsi_1d"] = calculate_rsi(closes_1d, 14)
@@ -448,12 +451,55 @@ def fetch_rsi_multi_timeframe(symbol: str = "BTCUSDT") -> dict:
         result["rsi_2h"] = calculate_rsi(closes_2h, 14)
         logger.info(f"  ✓ RSI 2H: {result['rsi_2h']:.1f} (Binance)")
     
-    # Fallback to Yahoo
+    # 2. Fallback to Yahoo
     if result["rsi_1d"] is None:
         yahoo_symbol = "BTC-USD" if "BTC" in symbol else "ETH-USD"
         yahoo_rsi = fetch_yahoo_rsi(yahoo_symbol)
         if yahoo_rsi["rsi_1d"] is not None:
             result.update(yahoo_rsi)
+    
+    # 3. Fallback to CoinGecko OHLC
+    if result["rsi_1d"] is None:
+        logger.warning("  ⚠️ Binance + Yahoo RSI failed, trying CoinGecko...")
+        try:
+            cg_symbol = "bitcoin" if "BTC" in symbol else "ethereum"
+            url = f"{CG_BASE}/coins/{cg_symbol}/ohlc"
+            resp = requests.get(url, params={"vs_currency": "usd", "days": 60}, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            # OHLC: [timestamp, open, high, low, close]
+            closes = [float(candle[4]) for candle in data]
+            if len(closes) >= 15:
+                result["rsi_1d"] = calculate_rsi(closes, 14)
+                result["rsi_1d_7"] = calculate_rsi(closes, 7)
+                result["source"] = "coingecko"
+                logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f} (CoinGecko)")
+        except Exception as e:
+            logger.warning(f"  CoinGecko RSI failed: {e}")
+    
+    # 4. Last resort: calculate from BTC price history already in memory
+    if result["rsi_1d"] is None:
+        logger.warning("  ⚠️ All RSI sources failed, trying OKX klines...")
+        try:
+            okx_url = "https://www.okx.com/api/v5/market/candles"
+            okx_symbol = "BTC-USDT" if "BTC" in symbol else "ETH-USDT"
+            resp = requests.get(okx_url, params={
+                "instId": okx_symbol, "bar": "1D", "limit": "50"
+            }, timeout=10)
+            resp.raise_for_status()
+            data = resp.json().get("data", [])
+            # OKX: [ts, open, high, low, close, vol, volCcy, volCcyQuote, confirm]
+            closes = [float(c[4]) for c in reversed(data)]  # OKX returns newest first
+            if len(closes) >= 15:
+                result["rsi_1d"] = calculate_rsi(closes, 14)
+                result["rsi_1d_7"] = calculate_rsi(closes, 7)
+                result["source"] = "okx"
+                logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f} (OKX)")
+        except Exception as e:
+            logger.warning(f"  OKX RSI failed: {e}")
+    
+    if result["rsi_1d"] is None:
+        logger.error("  ❌ ALL RSI SOURCES FAILED (Binance, Yahoo, CoinGecko, OKX)")
     
     return result
 
