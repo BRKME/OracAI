@@ -432,43 +432,77 @@ def calculate_rsi(closes: list, period: int = 14) -> float:
 
 
 def fetch_rsi_multi_timeframe(symbol: str = "BTCUSDT") -> dict:
-    """Fetch RSI from OKX only. No fallbacks — one source, transparent."""
-    result = {"rsi_1d": None, "rsi_2h": None, "rsi_1d_7": None, "source": None}
+    """Fetch RSI from 4 sources for reliability. Source is internal, not exposed."""
+    result = {"rsi_1d": None, "rsi_2h": None, "rsi_1d_7": None}
     
     okx_symbol = "BTC-USDT" if "BTC" in symbol else "ETH-USDT"
-    okx_url = "https://www.okx.com/api/v5/market/candles"
+    yahoo_symbol = "BTC-USD" if "BTC" in symbol else "ETH-USD"
+    cg_symbol = "bitcoin" if "BTC" in symbol else "ethereum"
     
+    # 1. OKX (primary — already used for funding + OI)
     try:
-        # Daily RSI
-        resp = requests.get(okx_url, params={
+        resp = requests.get("https://www.okx.com/api/v5/market/candles", params={
             "instId": okx_symbol, "bar": "1D", "limit": "50"
         }, timeout=10)
         resp.raise_for_status()
-        data = resp.json().get("data", [])
-        closes = [float(c[4]) for c in reversed(data)]
-        
+        closes = [float(c[4]) for c in reversed(resp.json().get("data", []))]
         if len(closes) >= 15:
             result["rsi_1d"] = calculate_rsi(closes, 14)
             result["rsi_1d_7"] = calculate_rsi(closes, 7)
-            result["source"] = "OKX"
-            logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f} (OKX)")
+            logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f}")
     except Exception as e:
-        logger.error(f"  ❌ OKX RSI 1D failed: {e}")
+        logger.debug(f"  OKX RSI failed: {e}")
     
-    try:
-        # 2H RSI
-        resp = requests.get(okx_url, params={
-            "instId": okx_symbol, "bar": "2H", "limit": "50"
-        }, timeout=10)
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
-        closes = [float(c[4]) for c in reversed(data)]
-        
-        if len(closes) >= 15:
-            result["rsi_2h"] = calculate_rsi(closes, 14)
-            logger.info(f"  ✓ RSI 2H: {result['rsi_2h']:.1f} (OKX)")
-    except Exception as e:
-        logger.error(f"  ❌ OKX RSI 2H failed: {e}")
+    # 2. Binance
+    if result["rsi_1d"] is None:
+        closes = fetch_binance_klines(symbol, "1d", 50)
+        if closes and len(closes) >= 15:
+            result["rsi_1d"] = calculate_rsi(closes, 14)
+            result["rsi_1d_7"] = calculate_rsi(closes, 7)
+            logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f}")
+    
+    # 3. Yahoo
+    if result["rsi_1d"] is None:
+        yahoo_rsi = fetch_yahoo_rsi(yahoo_symbol)
+        if yahoo_rsi.get("rsi_1d") is not None:
+            result["rsi_1d"] = yahoo_rsi["rsi_1d"]
+            result["rsi_1d_7"] = yahoo_rsi.get("rsi_1d_7")
+            result["rsi_2h"] = yahoo_rsi.get("rsi_2h")
+            logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f}")
+    
+    # 4. CoinGecko
+    if result["rsi_1d"] is None:
+        try:
+            resp = requests.get(f"{CG_BASE}/coins/{cg_symbol}/ohlc", 
+                              params={"vs_currency": "usd", "days": 60}, timeout=15)
+            resp.raise_for_status()
+            closes = [float(c[4]) for c in resp.json()]
+            if len(closes) >= 15:
+                result["rsi_1d"] = calculate_rsi(closes, 14)
+                result["rsi_1d_7"] = calculate_rsi(closes, 7)
+                logger.info(f"  ✓ RSI 1D: {result['rsi_1d']:.1f}")
+        except Exception as e:
+            logger.debug(f"  CoinGecko RSI failed: {e}")
+    
+    # 2H RSI (OKX → Binance)
+    if result["rsi_2h"] is None:
+        try:
+            resp = requests.get("https://www.okx.com/api/v5/market/candles", params={
+                "instId": okx_symbol, "bar": "2H", "limit": "50"
+            }, timeout=10)
+            resp.raise_for_status()
+            closes = [float(c[4]) for c in reversed(resp.json().get("data", []))]
+            if len(closes) >= 15:
+                result["rsi_2h"] = calculate_rsi(closes, 14)
+                logger.info(f"  ✓ RSI 2H: {result['rsi_2h']:.1f}")
+        except Exception:
+            closes = fetch_binance_klines(symbol, "2h", 50)
+            if closes and len(closes) >= 15:
+                result["rsi_2h"] = calculate_rsi(closes, 14)
+                logger.info(f"  ✓ RSI 2H: {result['rsi_2h']:.1f}")
+    
+    if result["rsi_1d"] is None:
+        logger.error("  ❌ RSI unavailable from all 4 sources")
     
     return result
 
