@@ -1,9 +1,8 @@
 name: LP Weekly Digest
 
 on:
-  # DISABLED - Alexander requested removal 2026-05-06
-  # schedule:
-  #   - cron: '0 10 * * 0'  # Sunday 10:00 UTC = 13:00 MSK
+  schedule:
+    - cron: '0 10 * * 0'  # Sunday 10:00 UTC = 13:00 MSK
   workflow_dispatch:
 
 permissions:
