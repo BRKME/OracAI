@@ -1,0 +1,2 @@
+date_utc,price,mvrv,mvrv_peak_90d,mayer,dd_from_ath_pct,zone,drawdown_call,confidence,engine_regime,engine_risk_state,mvrv_source
+2026-05-31,73907.3,1.365,1.517,0.929,-40.7,NEUTRAL,AMBIGUOUS,0.3,BEAR,RISK_OFF,coinmetrics_live(2026-05-30)
