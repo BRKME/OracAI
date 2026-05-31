@@ -1,0 +1,30 @@
+name: Cycle Layer Test
+
+# Запускается ТОЛЬКО вручную (кнопка Run workflow во вкладке Actions).
+# Ничего не публикует, ничего не коммитит, в бота не лезет.
+# Задача: проверить, идёт ли живой MVRV из CoinMetrics, и распечатать карточку.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cycle-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 1. Проверка живого MVRV (CoinMetrics)
+        run: python mvrv_fetcher.py
+
+      - name: 2. Карточка стадии рынка (на текущих данных)
+        run: python cycle_layer.py
