@@ -366,13 +366,22 @@ def calculate_weekly_stats(snapshots: List[dict]) -> dict:
     end_wallets = end_snapshot.get("by_wallet", {})
     end_fees = end_snapshot.get("by_wallet_fees", {})
     
-    # Get all wallets (union of start and end)
+    # Closed/empty wallets to skip
+    SKIP_WALLETS = {"MMA_4"}
+    
+    # Get all wallets (union of start and end), excluding closed ones
     all_wallets = set(start_wallets.keys()) | set(end_wallets.keys())
+    all_wallets = {w for w in all_wallets if w not in SKIP_WALLETS}
     
     wallet_stats = []
     for wallet in all_wallets:
         w_start_tvl = start_wallets.get(wallet, 0)
         w_end_tvl = end_wallets.get(wallet, 0)
+        
+        # Skip wallets with 0 TVL on both ends
+        if w_start_tvl <= 0 and w_end_tvl <= 0:
+            continue
+        
         w_tvl_change = w_end_tvl - w_start_tvl
         
         # Current uncollected fees for this wallet
@@ -485,8 +494,11 @@ def format_weekly_digest(stats: dict) -> str:
     
     lines.append("")
     
-    # Wallets (sorted 1-5)
+    # Wallets (sorted 1-5, skip empty/closed wallets)
     lines.append("BY WALLET")
+    
+    # Skip closed wallets
+    SKIP_WALLETS = {"MMA_4"}
     
     wallets = stats.get("wallets", [])
     for w in wallets:
@@ -494,6 +506,10 @@ def format_weekly_digest(stats: dict) -> str:
         w_tvl = w.get("end_tvl", 0)
         w_pnl = w.get("real_pnl", 0)
         w_eff = w.get("efficiency_pct", 0)
+        
+        # Skip closed/empty wallets
+        if name in SKIP_WALLETS or w_tvl <= 0:
+            continue
         
         # Format wallet number
         num = name.split('_')[1] if '_' in name else name
