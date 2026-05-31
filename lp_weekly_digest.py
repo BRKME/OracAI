@@ -76,22 +76,23 @@ def check_unlocks_ai(tokens: List[dict]) -> str:
     
     token_list = ", ".join([f"{t['symbol']} (${t['exposure_usd']:,.0f})" for t in tokens])
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    next_14d = (datetime.now(timezone.utc) + timedelta(days=14)).strftime("%Y-%m-%d")
     
-    prompt = f"""Check for upcoming token unlock/vesting events for: {token_list}
-Today: {today}. Check next 14 days.
+    prompt = f"""Check token unlock events for: {token_list}
+Today: {today}. Only check unlocks between {today} and {next_14d} (next 14 days).
 
-For each token search for: vesting schedules, cliff unlocks, team/investor token releases.
+IMPORTANT: Only include unlocks within the next 14 days. Ignore anything beyond {next_14d}.
 
-Reply ONLY in this compact format (for Telegram):
+Reply ONLY in this exact format:
 🔓 Unlocks (14d):
-
-If unlock found:
-⚠️ SYMBOL — [date] [amount]% supply ([type]) — Risk: HIGH/MED
-
-If no unlocks:
+⚠️ SYMBOL — [YYYY-MM-DD] X.X% supply — Risk: HIGH
 ✅ SYMBOL — no unlocks
 
-One line per token. No extra text."""
+Rules:
+- One line per token
+- Only dates between {today} and {next_14d}
+- No extra text, no stock prices, no market info
+- If no unlock in 14 days, mark as ✅"""
 
     try:
         response = requests.post(
@@ -100,10 +101,11 @@ One line per token. No extra text."""
             json={
                 "model": "gpt-4o-mini-search-preview",
                 "messages": [
-                    {"role": "system", "content": "Crypto research assistant. Search web for token unlock schedules. Be factual, concise."},
+                    {"role": "system", "content": "Token unlock analyst. Return ONLY unlock dates in next 14 days. No stock prices, no market info."},
                     {"role": "user", "content": prompt}
                 ],
-                "web_search_options": {"search_context_size": "medium"}
+                "web_search_options": {"search_context_size": "low"},
+                "max_tokens": 500
             },
             timeout=60
         )
@@ -112,9 +114,25 @@ One line per token. No extra text."""
             logger.error(f"OpenAI unlock check error: {response.status_code}")
             return ""
         
-        result = response.json()["choices"][0]["message"]["content"]
+        result = response.json()["choices"][0]["message"]["content"].strip()
+        
+        # Filter: only keep lines starting with 🔓, ⚠️, ✅
+        lines = result.split('\n')
+        filtered = []
+        for line in lines:
+            line = line.strip()
+            if line.startswith(('🔓', '⚠️', '✅')):
+                filtered.append(line)
+        
+        # Limit to max 10 lines
+        if len(filtered) > 10:
+            filtered = filtered[:10]
+            filtered.append("...")
+        
+        result = '\n'.join(filtered) if filtered else ""
+        
         logger.info(f"Unlock check done ({len(result)} chars)")
-        return result.strip()
+        return result
     except Exception as e:
         logger.error(f"Unlock check exception: {e}")
         return ""
