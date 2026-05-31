@@ -676,7 +676,64 @@
         }
       ],
       "timestamp": "2026-05-24T11:09:39.700952+00:00"
+    },
+    {
+      "week_end": "2026-05-31",
+      "week_start": "2026-05-24",
+      "days": 7,
+      "start_tvl": 29061.90394263349,
+      "end_tvl": 28105.703409744943,
+      "tvl_change": -956.2005328885461,
+      "withdrawals": 300.0,
+      "fees_earned": 1730.264114862779,
+      "real_pnl": 1074.0635819742329,
+      "efficiency_pct": 3.695778446224211,
+      "positions_count": 7,
+      "positions_in_range": 7,
+      "wallets": [
+        {
+          "wallet": "MMA_1",
+          "start_tvl": 10105.359596697446,
+          "end_tvl": 14893.080283434632,
+          "tvl_change": 4787.720686737186,
+          "fees_estimated": 601.6447206096357,
+          "uncollected": 30.654129201727862,
+          "real_pnl": 5389.3654073468215,
+          "efficiency_pct": 53.33175287604938
+        },
+        {
+          "wallet": "MMA_2",
+          "start_tvl": 5944.787303120676,
+          "end_tvl": 5866.122945097823,
+          "tvl_change": -78.66435802285378,
+          "fees_estimated": 353.9359348714955,
+          "uncollected": 43.88383346135738,
+          "real_pnl": 275.2715768486417,
+          "efficiency_pct": 4.630469734453573
+        },
+        {
+          "wallet": "MMA_3",
+          "start_tvl": 7505.078895182336,
+          "end_tvl": 7346.500181212489,
+          "tvl_change": -158.57871396984683,
+          "fees_estimated": 446.8313128135425,
+          "uncollected": 18.50277939117774,
+          "real_pnl": 288.2525988436957,
+          "efficiency_pct": 3.840767070799628
+        },
+        {
+          "wallet": "MMA_4",
+          "start_tvl": 5506.6781476330325,
+          "end_tvl": 0,
+          "tvl_change": -5506.6781476330325,
+          "fees_estimated": 327.85214656810547,
+          "uncollected": 0,
+          "real_pnl": -5178.826001064927,
+          "efficiency_pct": -94.04628093782769
+        }
+      ],
+      "timestamp": "2026-05-31T11:39:46.712544+00:00"
     }
   ],
-  "updated": "2026-05-24T11:09:39.701121+00:00"
+  "updated": "2026-05-31T11:39:46.712712+00:00"
 }
