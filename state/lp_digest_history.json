@@ -733,7 +733,54 @@
         }
       ],
       "timestamp": "2026-05-31T11:39:46.712544+00:00"
+    },
+    {
+      "week_end": "2026-06-07",
+      "week_start": "2026-05-31",
+      "days": 7,
+      "start_tvl": 27802.19598382237,
+      "end_tvl": 22291.727312129733,
+      "tvl_change": -5510.468671692637,
+      "withdrawals": 300.0,
+      "fees_earned": 2055.240149550793,
+      "real_pnl": -3155.228522141844,
+      "efficiency_pct": -11.348846414786152,
+      "positions_count": 9,
+      "positions_in_range": 7,
+      "wallets": [
+        {
+          "wallet": "MMA_1",
+          "start_tvl": 14772.907523150243,
+          "end_tvl": 16487.57915993258,
+          "tvl_change": 1714.6716367823356,
+          "fees_estimated": 1092.067428229281,
+          "uncollected": 253.78845003956917,
+          "real_pnl": 2806.7390650116167,
+          "efficiency_pct": 18.999232619667104
+        },
+        {
+          "wallet": "MMA_2",
+          "start_tvl": 5792.631915604716,
+          "end_tvl": 0,
+          "tvl_change": -5792.631915604716,
+          "fees_estimated": 428.2125660666372,
+          "uncollected": 0,
+          "real_pnl": -5364.419349538079,
+          "efficiency_pct": -92.60763376120829
+        },
+        {
+          "wallet": "MMA_3",
+          "start_tvl": 7236.656545067408,
+          "end_tvl": 5804.148152197155,
+          "tvl_change": -1432.5083928702534,
+          "fees_estimated": 534.9601552548745,
+          "uncollected": 144.8276537842529,
+          "real_pnl": -897.5482376153789,
+          "efficiency_pct": -12.40280275878449
+        }
+      ],
+      "timestamp": "2026-06-07T11:45:39.067533+00:00"
     }
   ],
-  "updated": "2026-05-31T11:39:46.712712+00:00"
+  "updated": "2026-06-07T11:45:39.067705+00:00"
 }

@@ -1,82 +1,72 @@
 {
-  "timestamp": "2026-05-31T11:39:59.399039+00:00",
+  "timestamp": "2026-06-07T11:45:41.326059+00:00",
   "stats": {
     "has_data": true,
     "period": {
-      "start": "2026-05-24",
-      "end": "2026-05-31",
+      "start": "2026-05-31",
+      "end": "2026-06-07",
       "days": 7
     },
     "portfolio": {
-      "start_tvl": 29061.90394263349,
-      "end_tvl": 28105.703409744943,
-      "tvl_change": -956.2005328885461,
+      "start_tvl": 27802.19598382237,
+      "end_tvl": 22291.727312129733,
+      "tvl_change": -5510.468671692637,
       "withdrawals": 300.0,
-      "adjusted_tvl_change": -656.2005328885461,
-      "fees_earned": 1730.264114862779,
-      "real_pnl": 1074.0635819742329,
-      "real_efficiency_pct": 3.695778446224211
+      "adjusted_tvl_change": -5210.468671692637,
+      "fees_earned": 2055.240149550793,
+      "real_pnl": -3155.228522141844,
+      "real_efficiency_pct": -11.348846414786152
     },
     "wallets": [
       {
         "wallet": "MMA_1",
-        "start_tvl": 10105.359596697446,
-        "end_tvl": 14893.080283434632,
-        "tvl_change": 4787.720686737186,
-        "fees_estimated": 601.6447206096357,
-        "uncollected": 30.654129201727862,
-        "real_pnl": 5389.3654073468215,
-        "efficiency_pct": 53.33175287604938
+        "start_tvl": 14772.907523150243,
+        "end_tvl": 16487.57915993258,
+        "tvl_change": 1714.6716367823356,
+        "fees_estimated": 1092.067428229281,
+        "uncollected": 253.78845003956917,
+        "real_pnl": 2806.7390650116167,
+        "efficiency_pct": 18.999232619667104
       },
       {
         "wallet": "MMA_2",
-        "start_tvl": 5944.787303120676,
-        "end_tvl": 5866.122945097823,
-        "tvl_change": -78.66435802285378,
-        "fees_estimated": 353.9359348714955,
-        "uncollected": 43.88383346135738,
-        "real_pnl": 275.2715768486417,
-        "efficiency_pct": 4.630469734453573
+        "start_tvl": 5792.631915604716,
+        "end_tvl": 0,
+        "tvl_change": -5792.631915604716,
+        "fees_estimated": 428.2125660666372,
+        "uncollected": 0,
+        "real_pnl": -5364.419349538079,
+        "efficiency_pct": -92.60763376120829
       },
       {
         "wallet": "MMA_3",
-        "start_tvl": 7505.078895182336,
-        "end_tvl": 7346.500181212489,
-        "tvl_change": -158.57871396984683,
-        "fees_estimated": 446.8313128135425,
-        "uncollected": 18.50277939117774,
-        "real_pnl": 288.2525988436957,
-        "efficiency_pct": 3.840767070799628
-      },
-      {
-        "wallet": "MMA_4",
-        "start_tvl": 5506.6781476330325,
-        "end_tvl": 0,
-        "tvl_change": -5506.6781476330325,
-        "fees_estimated": 327.85214656810547,
-        "uncollected": 0,
-        "real_pnl": -5178.826001064927,
-        "efficiency_pct": -94.04628093782769
+        "start_tvl": 7236.656545067408,
+        "end_tvl": 5804.148152197155,
+        "tvl_change": -1432.5083928702534,
+        "fees_estimated": 534.9601552548745,
+        "uncollected": 144.8276537842529,
+        "real_pnl": -897.5482376153789,
+        "efficiency_pct": -12.40280275878449
       }
     ],
     "positions": {
-      "count": 7,
+      "count": 9,
       "in_range": 7
     },
-    "fees_uncollected": 93.04074205426296,
+    "fees_uncollected": 398.616103823822,
     "history_summary": {
       "has_data": true,
-      "weeks_count": 12,
+      "weeks_count": 13,
       "period_start": "2026-03-08",
-      "period_end": "2026-05-31",
+      "period_end": "2026-06-07",
       "start_tvl": 30317.921437284327,
-      "end_tvl": 28105.703409744943,
-      "total_tvl_change": -12694.696588757834,
-      "total_withdrawals": 3600.0,
-      "total_fees": 14255.122152755313,
-      "total_pnl": 5160.425563997476,
-      "avg_efficiency_pct": 3.2314491820912274
+      "end_tvl": 22291.727312129733,
+      "total_tvl_change": -18205.16526045047,
+      "total_withdrawals": 3900.0,
+      "total_fees": 16310.362302306106,
+      "total_pnl": 2005.197041855632,
+      "avg_efficiency_pct": 2.109887982331429
     },
-    "unlock_report": "## Stock market information for Aster (ASTER)\n- Aster is a crypto in the CRYPTO market.\n- The price is 0.737205 USD currently with a change of 0.05 USD (0.07%) from the previous close.\n- The intraday high is 0.777429 USD and the intraday low is 0.688964 USD.\n\n\n\ud83d\udd13 Unlocks (14d):\n\n\u26a0\ufe0f ASTER \u2014 [2026-06-17] 2.1% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-07-17] 2.1% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-08-17] 2.1% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-09-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-10-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-11-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2026-12-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-01-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-02-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-03-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-04-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-05-17] 0.7% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-06-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-07-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-08-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-09-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-10-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-11-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2027-12-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-01-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-02-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-03-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-04-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-05-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-06-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-07-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-08-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-09-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-10-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-11-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2028-12-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-01-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-02-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-03-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-04-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-05-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-06-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-07-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-08-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH\n\n\u26a0\ufe0f ASTER \u2014 [2029-09-17] 2.2% supply ([cliff]) \u2014 Risk: HIGH"
+    "unlock_report": "\ud83d\udd13 Unlocks (14d):\n\u26a0\ufe0f ASTER \u2014 [2026-06-17] 8.16% supply \u2014 Risk: HIGH"
   }
 }
