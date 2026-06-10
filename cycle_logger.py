@@ -107,16 +107,23 @@ def main():
             lstate = {}
         prev_zone = lstate.get("prev_zone")
 
+        # v1.2: consecutive days below the SMA200 (mayer < 1.0) — powers the
+        # trend-break sell rung. Missing mayer keeps the counter unchanged.
+        from cycle_ladder import update_below_trend_days
+        below_days = update_below_trend_days(
+            lstate.get("below_trend_days", 0), m.get("mayer_multiple"))
+
         signal = compute_signal(
             zone=v["zone"], prev_zone=prev_zone,
             drawdown_call=v["drawdown_call"],
             days_above_sma200=days_above,
+            below_trend_days=below_days,
             state=lstate.get("ladder", {}),
         )
 
         # persist memory for tomorrow's run
         new_state = {"prev_zone": v["zone"], "ladder": signal["new_state"],
-                     "updated": today}
+                     "below_trend_days": below_days, "updated": today}
         state_path.write_text(_json.dumps(new_state, ensure_ascii=False, indent=1))
 
         # contract: keep v1 fields (multiplier) for compatibility + v1.1 signal

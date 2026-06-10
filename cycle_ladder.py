@@ -121,7 +121,7 @@ def compute_ladder(zone: str,
 # fractions are budgeted to sum to <=1.0 across a full descent, and selling in
 # EUPHORIA resets the budget for the next cycle.
 
-SIGNAL_POLICY_VERSION = "ladder-v1.1"
+SIGNAL_POLICY_VERSION = "ladder-v1.2"
 
 BUY_ON_ENTRY = {            # one-time, % of capital, on entering the zone
     "NEUTRAL": 0.30,
@@ -132,19 +132,48 @@ SELL_ON_ENTRY = {           # one-time, % of current stack
     "DISTRIBUTION": 0.25,
     "EUPHORIA": 0.50,
 }
+# v1.2: MVRV cycle peaks decay (4.72 in 2017 -> 3.96 in 2021 -> 2.52 in 2025),
+# so the EUPHORIA rung may never fire again. The robust second sell rung is a
+# TREND BREAK: the market was hot this cycle (DISTRIBUTION visited) and the
+# trend then broke (>=10d below SMA200) -> protect profits without guessing
+# the next peak's MVRV. On the 2025 top this would have fixed a second tranche
+# around the SMA200 loss (~$85-90k) instead of riding 75% of the stack to -50%.
+TREND_BREAK_SELL_FRACTION = 0.25
+TREND_BREAK_DAYS_BELOW = 10        # symmetric to the re-risk trigger
+
+
+def update_below_trend_days(current: int, mayer: Optional[float]) -> int:
+    """Consecutive daily runs with price below the SMA200 (mayer < 1.0).
+
+    Maintained by the daily logger in ladder_state. Missing data keeps the
+    counter unchanged — absent metrics must not fake a trend change.
+    """
+    if mayer is None:
+        return int(current or 0)
+    try:
+        m = float(mayer)
+    except (TypeError, ValueError):
+        return int(current or 0)
+    return int(current or 0) + 1 if m < 1.0 else 0
 
 
 def compute_signal(zone: str,
                    prev_zone: Optional[str],
                    drawdown_call: str = "AMBIGUOUS",
                    days_above_sma200: int = 0,
+                   below_trend_days: int = 0,
                    state: Optional[Dict] = None) -> Dict:
     """One-time, percent-of-capital signal on zone transitions.
 
     `state` carries memory between daily runs:
-      bought_zones : zones whose buy tranche is already spent this cycle
-      sold_zones   : zones whose fixation already fired this cycle
-      re_risk_fired: the SMA200 reserve deployment already happened
+      bought_zones     : zones whose buy tranche is already spent this cycle
+      sold_zones       : zones whose fixation already fired this cycle
+      re_risk_fired    : the SMA200 reserve deployment already happened
+      trend_break_fired: the post-distribution trend-break sell already fired
+      spent            : fraction of capital actually deployed this descent
+
+    `below_trend_days` — consecutive daily runs with price below SMA200
+    (maintained by the caller); powers the trend-break sell rung.
 
     Returns the signal plus `new_state` for the caller to persist.
     """
@@ -154,6 +183,7 @@ def compute_signal(zone: str,
     bought = list(st.get("bought_zones", []))
     sold = list(st.get("sold_zones", []))
     re_risk_fired = bool(st.get("re_risk_fired", False))
+    trend_break_fired = bool(st.get("trend_break_fired", False))
     spent = float(st.get("spent", sum(BUY_ON_ENTRY.get(z, 0.0) for z in bought)))
 
     def _out(action, frac_cap=0.0, frac_stack=0.0, trigger="", why=""):
@@ -168,6 +198,7 @@ def compute_signal(zone: str,
             "rationale": why,
             "new_state": {"bought_zones": bought, "sold_zones": sold,
                           "re_risk_fired": re_risk_fired,
+                          "trend_break_fired": trend_break_fired,
                           "spent": round(spent, 4)},
         }
 
@@ -185,6 +216,27 @@ def compute_signal(zone: str,
         return _out("SELL", frac_stack=frac, trigger=f"entered_{zone}",
                     why=f"Вход в зону {zone} — разовая фиксация "
                         f"{frac*100:.0f}% стэка")
+
+    # ── v1.2 SELL: trend break after a hot top (one-time per cycle) ──
+    # The market visited DISTRIBUTION/EUPHORIA this cycle AND price has now
+    # spent >=10 days below the SMA200: the top is behind us, protect profits.
+    # MVRV peaks decay cycle over cycle, so waiting for EUPHORIA alone leaves
+    # 75% of the stack riding the full drawdown (exactly what 2025-26 did).
+    was_hot = any(z in sold for z in ("DISTRIBUTION", "EUPHORIA"))
+    if (was_hot and not trend_break_fired
+            and below_trend_days >= TREND_BREAK_DAYS_BELOW):
+        trend_break_fired = True
+        # a new descent is starting — reset the buy budget so the ladder can
+        # accumulate it back lower
+        bought = []
+        re_risk_fired = False
+        spent = 0.0
+        return _out("SELL", frac_stack=TREND_BREAK_SELL_FRACTION,
+                    trigger="trend_break_after_distribution",
+                    why=f"Цикл был горячим (DISTRIBUTION пройдена), и цена "
+                        f"{below_trend_days}д под SMA200 — тренд сломан. "
+                        f"Фиксация ещё {TREND_BREAK_SELL_FRACTION*100:.0f}% "
+                        f"стэка; buy-бюджет сброшен под новый спуск")
 
     # ── Re-risk: objective SMA200 trigger deploys the REMAINDER, once ──
     if days_above_sma200 >= RE_RISK_DAYS_ABOVE_SMA200 and not re_risk_fired:
@@ -205,6 +257,10 @@ def compute_signal(zone: str,
             frac *= STRUCTURAL_BEAR_HALF_STEP
             why_extra = (" (половинный шаг: просадка началась с перегретой "
                          "вершины — урок 2022; остальное ждёт ACCUMULATION)")
+        if zone == "ACCUMULATION":
+            # cycle bottom: re-arm the sell side for the NEXT top
+            sold = []
+            trend_break_fired = False
         bought.append(zone)
         spent += frac
         return _out("BUY", frac_cap=frac, trigger=f"entered_{zone}",
