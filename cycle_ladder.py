@@ -110,3 +110,106 @@ def compute_ladder(zone: str,
         "days_above_sma200": int(days_above_sma200 or 0),
         "rationale": "; ".join(rationale_bits),
     }
+
+
+# ════════════════════════════════════════════════════════════════════
+# v1.1 — event-based percent-of-capital signals
+# ════════════════════════════════════════════════════════════════════
+# v1's weekly multiplier required defining a base stake in dollars. v1.1
+# replaces it with ONE-TIME signals on zone entry, expressed as a fraction of
+# capital ("buy 30% of capital"). No concrete sums exist anywhere; the buy
+# fractions are budgeted to sum to <=1.0 across a full descent, and selling in
+# EUPHORIA resets the budget for the next cycle.
+
+SIGNAL_POLICY_VERSION = "ladder-v1.1"
+
+BUY_ON_ENTRY = {            # one-time, % of capital, on entering the zone
+    "NEUTRAL": 0.30,
+    "ACCUMULATION": 0.30,
+}
+STRUCTURAL_BEAR_HALF_STEP = 0.5   # NEUTRAL entry under top-driven bear: half
+SELL_ON_ENTRY = {           # one-time, % of current stack
+    "DISTRIBUTION": 0.25,
+    "EUPHORIA": 0.50,
+}
+
+
+def compute_signal(zone: str,
+                   prev_zone: Optional[str],
+                   drawdown_call: str = "AMBIGUOUS",
+                   days_above_sma200: int = 0,
+                   state: Optional[Dict] = None) -> Dict:
+    """One-time, percent-of-capital signal on zone transitions.
+
+    `state` carries memory between daily runs:
+      bought_zones : zones whose buy tranche is already spent this cycle
+      sold_zones   : zones whose fixation already fired this cycle
+      re_risk_fired: the SMA200 reserve deployment already happened
+
+    Returns the signal plus `new_state` for the caller to persist.
+    """
+    zone = (zone or "UNKNOWN").upper()
+    prev = (prev_zone or "").upper()
+    st = dict(state or {})
+    bought = list(st.get("bought_zones", []))
+    sold = list(st.get("sold_zones", []))
+    re_risk_fired = bool(st.get("re_risk_fired", False))
+    spent = float(st.get("spent", sum(BUY_ON_ENTRY.get(z, 0.0) for z in bought)))
+
+    def _out(action, frac_cap=0.0, frac_stack=0.0, trigger="", why=""):
+        return {
+            "policy_version": SIGNAL_POLICY_VERSION,
+            "zone": zone,
+            "drawdown_call": drawdown_call,
+            "action": action,
+            "fraction_of_capital": round(frac_cap, 4),
+            "fraction_of_stack": round(frac_stack, 4),
+            "trigger": trigger,
+            "rationale": why,
+            "new_state": {"bought_zones": bought, "sold_zones": sold,
+                          "re_risk_fired": re_risk_fired,
+                          "spent": round(spent, 4)},
+        }
+
+    entered = zone != prev
+
+    # ── SELL on entering overheated zones (one-time per cycle) ──
+    if entered and zone in SELL_ON_ENTRY and zone not in sold:
+        frac = SELL_ON_ENTRY[zone]
+        sold.append(zone)
+        if zone == "EUPHORIA":
+            # top of the cycle: reset the buy budget for the next descent
+            bought = []
+            re_risk_fired = False
+            spent = 0.0
+        return _out("SELL", frac_stack=frac, trigger=f"entered_{zone}",
+                    why=f"Вход в зону {zone} — разовая фиксация "
+                        f"{frac*100:.0f}% стэка")
+
+    # ── Re-risk: objective SMA200 trigger deploys the REMAINDER, once ──
+    if days_above_sma200 >= RE_RISK_DAYS_ABOVE_SMA200 and not re_risk_fired:
+        remainder = max(0.0, min(1.0, 1.0 - spent))
+        re_risk_fired = True
+        if remainder > 0:
+            spent += remainder
+            return _out("BUY", frac_cap=remainder, trigger="re_risk_sma200",
+                        why=f"{days_above_sma200}д выше SMA200 — объективный "
+                            f"триггер, разворачиваем остаток резерва "
+                            f"({remainder*100:.0f}% капитала)")
+
+    # ── BUY on entering cheap zones (one-time per cycle) ──
+    if entered and zone in BUY_ON_ENTRY and zone not in bought:
+        frac = BUY_ON_ENTRY[zone]
+        why_extra = ""
+        if zone == "NEUTRAL" and drawdown_call == "STRUCTURAL_BEAR_RISK":
+            frac *= STRUCTURAL_BEAR_HALF_STEP
+            why_extra = (" (половинный шаг: просадка началась с перегретой "
+                         "вершины — урок 2022; остальное ждёт ACCUMULATION)")
+        bought.append(zone)
+        spent += frac
+        return _out("BUY", frac_cap=frac, trigger=f"entered_{zone}",
+                    why=f"Вход в зону {zone} — покупка на "
+                        f"{frac*100:.0f}% капитала{why_extra}")
+
+    return _out("HOLD", trigger="no_event",
+                why=f"Зона {zone} без события — держим план, не импровизируем")

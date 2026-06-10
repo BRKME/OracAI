@@ -88,32 +88,81 @@ def main():
     print(f"OK {today}: {v['zone']} / {v['drawdown_call']} / MVRV {m['mvrv']}")
 
     # ── Publish the ladder contract for hl_weekly_planner ──
-    # zone -> weekly DCA multiplier + fixation + re-risk trigger. Consumed via
-    # raw.githubusercontent per the BRKME inter-bot contract convention.
+    # v1.1: one-time percent-of-capital signals on zone transitions, with
+    # persistent state (prev zone / spent budget) in state/ladder_state.json.
     try:
         import json as _json
-        from cycle_ladder import compute_ladder
+        from cycle_ladder import compute_ladder, compute_signal
         days_above = 0
         if engine:
             days_above = int(
                 ((engine.get("risk") or {}).get("days_above_sma200"))
                 or ((engine.get("metadata") or {}).get("days_above_sma200"))
                 or _find_days_above(engine) or 0)
-        ladder = compute_ladder(
-            zone=v["zone"],
+
+        state_path = Path(__file__).parent / "state" / "ladder_state.json"
+        try:
+            lstate = _json.loads(state_path.read_text())
+        except Exception:  # noqa: BLE001 — first run / corrupt -> fresh state
+            lstate = {}
+        prev_zone = lstate.get("prev_zone")
+
+        signal = compute_signal(
+            zone=v["zone"], prev_zone=prev_zone,
             drawdown_call=v["drawdown_call"],
             days_above_sma200=days_above,
-            mvrv=m["mvrv"],
+            state=lstate.get("ladder", {}),
         )
+
+        # persist memory for tomorrow's run
+        new_state = {"prev_zone": v["zone"], "ladder": signal["new_state"],
+                     "updated": today}
+        state_path.write_text(_json.dumps(new_state, ensure_ascii=False, indent=1))
+
+        # contract: keep v1 fields (multiplier) for compatibility + v1.1 signal
+        ladder = compute_ladder(zone=v["zone"], drawdown_call=v["drawdown_call"],
+                                days_above_sma200=days_above, mvrv=m["mvrv"])
+        ladder["signal"] = {k: signal[k] for k in
+                            ("policy_version", "action", "fraction_of_capital",
+                             "fraction_of_stack", "trigger", "rationale")}
         ladder["date_utc"] = today
         ladder["price"] = m["price"]
         out = Path(__file__).parent / "state" / "cycle_ladder.json"
         out.write_text(_json.dumps(ladder, ensure_ascii=False, indent=1))
-        print(f"ladder: x{ladder['dca_multiplier']:g} dca · "
-              f"fixation {ladder['fixation_fraction']:g} · "
-              f"re_risk={ladder['re_risk']}")
+        print(f"ladder: {signal['action']} "
+              f"cap={signal['fraction_of_capital']:g} "
+              f"stack={signal['fraction_of_stack']:g} ({signal['trigger']})")
+
+        # BUY/SELL are rare cycle events — push them to Telegram immediately.
+        if signal["action"] in ("BUY", "SELL"):
+            _send_signal_telegram(signal, m["price"], v["zone"])
     except Exception as e:  # noqa: BLE001 — ladder must never break the log
         logging.warning("ladder publish failed: %s", e)
+
+
+def _send_signal_telegram(signal: dict, price: float, zone: str) -> None:
+    """One-time cycle signals go straight to Telegram (HOLD stays silent)."""
+    import os
+    import requests
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        print("  (no telegram creds — signal printed only)")
+        return
+    if signal["action"] == "BUY":
+        head = f"🟢 ЛЕСТНИЦА: ПОКУПКА на {signal['fraction_of_capital']*100:.0f}% капитала"
+    else:
+        head = f"🔴 ЛЕСТНИЦА: ФИКСАЦИЯ {signal['fraction_of_stack']*100:.0f}% стэка"
+    msg = (f"{head}\nBTC ${price:,.0f} · зона {zone}\n"
+           f"{signal['rationale']}\n"
+           f"(событие цикла — срабатывает один раз; {signal['policy_version']})")
+    try:
+        requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
+                      json={"chat_id": chat, "text": msg},
+                      timeout=10).raise_for_status()
+        print("  signal sent to telegram")
+    except Exception as e:  # noqa: BLE001
+        print(f"  telegram send failed: {e}")
 
 
 def _find_days_above(engine: dict) -> int:
