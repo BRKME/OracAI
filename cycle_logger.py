@@ -87,6 +87,52 @@ def main():
                  today, v["zone"], v["drawdown_call"], m["mvrv"], v["mvrv_source"])
     print(f"OK {today}: {v['zone']} / {v['drawdown_call']} / MVRV {m['mvrv']}")
 
+    # ── Publish the ladder contract for hl_weekly_planner ──
+    # zone -> weekly DCA multiplier + fixation + re-risk trigger. Consumed via
+    # raw.githubusercontent per the BRKME inter-bot contract convention.
+    try:
+        import json as _json
+        from cycle_ladder import compute_ladder
+        days_above = 0
+        if engine:
+            days_above = int(
+                ((engine.get("risk") or {}).get("days_above_sma200"))
+                or ((engine.get("metadata") or {}).get("days_above_sma200"))
+                or _find_days_above(engine) or 0)
+        ladder = compute_ladder(
+            zone=v["zone"],
+            drawdown_call=v["drawdown_call"],
+            days_above_sma200=days_above,
+            mvrv=m["mvrv"],
+        )
+        ladder["date_utc"] = today
+        ladder["price"] = m["price"]
+        out = Path(__file__).parent / "state" / "cycle_ladder.json"
+        out.write_text(_json.dumps(ladder, ensure_ascii=False, indent=1))
+        print(f"ladder: x{ladder['dca_multiplier']:g} dca · "
+              f"fixation {ladder['fixation_fraction']:g} · "
+              f"re_risk={ladder['re_risk']}")
+    except Exception as e:  # noqa: BLE001 — ladder must never break the log
+        logging.warning("ladder publish failed: %s", e)
+
+
+def _find_days_above(engine: dict) -> int:
+    """days_above_sma200 lives at different depths across engine versions —
+    search shallowly rather than hardcoding one path."""
+    for key in ("risk", "metadata", "operational_hints"):
+        sub = engine.get(key)
+        if isinstance(sub, dict) and "days_above_sma200" in sub:
+            try:
+                return int(sub["days_above_sma200"])
+            except (TypeError, ValueError):
+                pass
+    if "days_above_sma200" in engine:
+        try:
+            return int(engine["days_above_sma200"])
+        except (TypeError, ValueError):
+            pass
+    return 0
+
 
 if __name__ == "__main__":
     main()

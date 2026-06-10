@@ -1,0 +1,13 @@
+{
+ "policy_version": "ladder-v1.0",
+ "zone": "NEUTRAL",
+ "drawdown_call": "AMBIGUOUS",
+ "mvrv": 1.271,
+ "dca_multiplier": 1.5,
+ "fixation_fraction": 0.0,
+ "re_risk": false,
+ "days_above_sma200": 0,
+ "rationale": "Зона NEUTRAL: недельный DCA ×1.5 по лестнице, без фиксаций",
+ "date_utc": "2026-06-10",
+ "price": 61380.0
+}

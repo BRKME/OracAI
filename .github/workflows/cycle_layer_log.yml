@@ -36,7 +36,7 @@ jobs:
         run: |
           git config user.name "cycle-bot"
           git config user.email "bot@cycle-layer.local"
-          git add state/cycle_log.csv || true
+          git add state/cycle_log.csv state/cycle_ladder.json || true
           git diff --cached --quiet || git commit -m "cycle_log: $(date -u +%Y-%m-%d)"
           git pull --rebase || true
           git push || true

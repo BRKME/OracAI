@@ -1,0 +1,112 @@
+"""
+cycle_ladder.py — turn cycle position into MONEY decisions.
+
+The audit chain (Phase 3→4, cycle_context validation on 2013-2026) showed two
+things at once: daily regime classification adds ~nothing over a one-line
+SMA200 rule, while the slow valuation extremes (MVRV/Mayer) HAVE been reliably
+distinguishable for 13 years. So the money is not in classifying today better;
+it's in a handful of big pre-committed decisions per cycle:
+
+  • buy harder when the market trades below its aggregate cost basis,
+  • take chips off when it's visibly overheated,
+  • re-risk the reserve on the objective trend trigger (10d above SMA200),
+  • and DON'T improvise in the ambiguous middle.
+
+This module encodes those decisions as a ladder: zone → weekly-DCA multiplier
++ fixation fraction + re-risk flag. It's pre-committed precisely so that in
+the moment of fear (ACCUMULATION) or euphoria (EUPHORIA) the plan executes
+instead of being re-debated.
+
+Published daily as state/cycle_ladder.json — the inter-bot contract consumed
+by hl_weekly_planner's Saturday DCA run (raw.githubusercontent fetch, per the
+BRKME contract convention).
+
+Policy defaults (v1) — change ONLY via a versioned policy update, never ad hoc:
+
+  zone           MVRV band   DCA mult   fixation
+  ACCUMULATION   < 1.0       2.0        0
+  NEUTRAL        1.0–1.5     1.5        0      (capped to 1.0 under
+                                                STRUCTURAL_BEAR_RISK — the
+                                                2022 lesson: cheap-ish didn't
+                                                stop a top-driven bear)
+  EXPANSION      1.5–2.2     1.0        0
+  DISTRIBUTION   2.2–3.0     0.5        0.25   (sell 25% of stack on entry)
+  EUPHORIA       >= 3.0      0.0        0.50   (stop buys, sell half)
+
+Re-risk: days_above_sma200 >= 10 → deploy reserve (mirrors the Phase 4
+recovery override; same objective trigger, applied to the DCA reserve).
+"""
+from __future__ import annotations
+from typing import Optional, Dict
+
+POLICY_VERSION = "ladder-v1.0"
+
+DCA_MULTIPLIERS = {
+    "ACCUMULATION": 2.0,
+    "NEUTRAL": 1.5,
+    "EXPANSION": 1.0,
+    "DISTRIBUTION": 0.5,
+    "EUPHORIA": 0.0,
+    "UNKNOWN": 1.0,      # no data -> behave like base, never like an extreme
+}
+
+FIXATION_DISTRIBUTION = 0.25   # take 25% off when entering DISTRIBUTION
+FIXATION_EUPHORIA = 0.50       # take 50% off in EUPHORIA
+
+RE_RISK_DAYS_ABOVE_SMA200 = 10  # same objective trigger as Phase 4 override
+
+
+def compute_ladder(zone: str,
+                   drawdown_call: str = "AMBIGUOUS",
+                   days_above_sma200: int = 0,
+                   mvrv: Optional[float] = None) -> Dict:
+    """Pure policy: cycle reading -> concrete weekly actions.
+
+    Returns the full contract dict the planner consumes. No I/O.
+    """
+    zone = (zone or "UNKNOWN").upper()
+    mult = DCA_MULTIPLIERS.get(zone, 1.0)
+    rationale_bits = []
+
+    # The 2022 guard: NEUTRAL (1.0-1.5) looked "cheap-ish" in mid-2022 and the
+    # market still halved, because that drawdown began from an overheated top.
+    # When the cycle layer flags exactly that pattern, don't lean in at 1.5x —
+    # hold base DCA until the market is genuinely below cost basis.
+    if zone == "NEUTRAL" and drawdown_call == "STRUCTURAL_BEAR_RISK":
+        mult = min(mult, 1.0)
+        rationale_bits.append(
+            "NEUTRAL при риске структурного медведя — множитель удержан на 1.0 "
+            "(урок 2022: 'почти дёшево' не остановило топ-движимый медвежий рынок)")
+
+    fixation = 0.0
+    if zone == "DISTRIBUTION":
+        fixation = FIXATION_DISTRIBUTION
+        rationale_bits.append(
+            f"Зона распределения — фиксация {FIXATION_DISTRIBUTION*100:.0f}% "
+            "стэка при входе в зону")
+    elif zone == "EUPHORIA":
+        fixation = FIXATION_EUPHORIA
+        rationale_bits.append(
+            f"Эйфория — покупки остановлены, фиксация {FIXATION_EUPHORIA*100:.0f}%")
+
+    re_risk = days_above_sma200 >= RE_RISK_DAYS_ABOVE_SMA200
+    if re_risk:
+        rationale_bits.append(
+            f"{days_above_sma200}д выше SMA200 (порог {RE_RISK_DAYS_ABOVE_SMA200}) "
+            "— объективный триггер: разворачивай резерв")
+
+    if not rationale_bits:
+        rationale_bits.append(
+            f"Зона {zone}: недельный DCA ×{mult:g} по лестнице, без фиксаций")
+
+    return {
+        "policy_version": POLICY_VERSION,
+        "zone": zone,
+        "drawdown_call": drawdown_call,
+        "mvrv": mvrv,
+        "dca_multiplier": mult,
+        "fixation_fraction": fixation,
+        "re_risk": re_risk,
+        "days_above_sma200": int(days_above_sma200 or 0),
+        "rationale": "; ".join(rationale_bits),
+    }
