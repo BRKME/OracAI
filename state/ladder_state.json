@@ -1,0 +1,14 @@
+{
+ "prev_zone": "NEUTRAL",
+ "ladder": {
+  "bought_zones": [
+   "NEUTRAL"
+  ],
+  "sold_zones": [],
+  "re_risk_fired": false,
+  "trend_break_fired": false,
+  "spent": 0.3
+ },
+ "below_trend_days": 1,
+ "updated": "2026-06-11"
+}

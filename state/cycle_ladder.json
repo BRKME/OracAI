@@ -2,12 +2,20 @@
  "policy_version": "ladder-v1.0",
  "zone": "NEUTRAL",
  "drawdown_call": "AMBIGUOUS",
- "mvrv": 1.271,
+ "mvrv": 1.149,
  "dca_multiplier": 1.5,
  "fixation_fraction": 0.0,
  "re_risk": false,
  "days_above_sma200": 0,
  "rationale": "Зона NEUTRAL: недельный DCA ×1.5 по лестнице, без фиксаций",
- "date_utc": "2026-06-10",
- "price": 61380.0
+ "signal": {
+  "policy_version": "ladder-v1.2",
+  "action": "BUY",
+  "fraction_of_capital": 0.3,
+  "fraction_of_stack": 0.0,
+  "trigger": "entered_NEUTRAL",
+  "rationale": "Вход в зону NEUTRAL — покупка на 30% капитала"
+ },
+ "date_utc": "2026-06-11",
+ "price": 62900.1
 }
