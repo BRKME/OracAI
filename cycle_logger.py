@@ -142,12 +142,39 @@ def main():
 
         # BUY/SELL are rare cycle events — push them to Telegram immediately.
         if signal["action"] in ("BUY", "SELL"):
-            _send_signal_telegram(signal, m["price"], v["zone"])
+            _send_signal_telegram(signal, m["price"], v["zone"], ctx=v)
     except Exception as e:  # noqa: BLE001 — ladder must never break the log
         logging.warning("ladder publish failed: %s", e)
 
 
-def _send_signal_telegram(signal: dict, price: float, zone: str) -> None:
+def bottom_status_line(ctx: dict) -> str:
+    """Человеческая строка «где мы относительно дна» для Telegram.
+
+    Делает кворум дна видимым оператору: сколько метрик из 2 указывают на дно
+    и где историческая полоса дна. Без этой строки «BUY 30%» читается как
+    «дно достигнуто», хотя система так не считает. Пусто, если якоря нет.
+    """
+    anchor = (ctx.get("metrics") or {}).get("bottom_anchor") or {}
+    rp = anchor.get("realized_price")
+    if rp is None:
+        return ""
+    count = (ctx.get("bottom_quorum") or {}).get("count", 0)
+    low, high = anchor.get("bottom_low"), anchor.get("bottom_high")
+    band = (f"полоса дна ${low:,.0f}–{high:,.0f}"
+            if low and high else "")
+    if count >= 2:
+        head = f"🎯 Дно: подтверждено {count}/2 метрик — зона накопления"
+    elif count == 1:
+        head = f"⏳ Дно: 1/2 метрик — приближаемся, ещё не подтверждено"
+    else:
+        head = (f"⏳ Дно ещё не подтверждено (0/2 метрик) — "
+                f"это первая ступень, не финальная закупка")
+    tail = f"\n   realized ${rp:,.0f} · {band}" if band else ""
+    return head + tail
+
+
+def _send_signal_telegram(signal: dict, price: float, zone: str,
+                          ctx: dict = None) -> None:
     """One-time cycle signals go straight to Telegram (HOLD stays silent)."""
     import os
     import requests
@@ -160,7 +187,9 @@ def _send_signal_telegram(signal: dict, price: float, zone: str) -> None:
         head = f"🟢 ЛЕСТНИЦА: ПОКУПКА на {signal['fraction_of_capital']*100:.0f}% капитала"
     else:
         head = f"🔴 ЛЕСТНИЦА: ФИКСАЦИЯ {signal['fraction_of_stack']*100:.0f}% стэка"
-    msg = (f"{head}\nBTC ${price:,.0f} · зона {zone}\n"
+    bottom = bottom_status_line(ctx) if ctx else ""
+    bottom_block = f"\n{bottom}" if bottom else ""
+    msg = (f"{head}\nBTC ${price:,.0f} · зона {zone}{bottom_block}\n"
            f"{signal['rationale']}\n"
            f"(событие цикла — срабатывает один раз; {signal['policy_version']})")
     try:
