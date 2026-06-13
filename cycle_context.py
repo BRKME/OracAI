@@ -29,6 +29,38 @@ def _mayer(close):
     return float(close[-1] / np.mean(close[-200:]))
 
 
+# Galaxy Research (12.06.2026): дно цикла исторически на 25-44% ниже realized
+# price (средней цены покупки всех монет). realized = price / MVRV — это
+# знаменатель MVRV, выраженный в цене. Второй независимый индикатор дна.
+BOTTOM_DRAWDOWN_MIN = 0.25      # дно начинается на -25% от realized
+BOTTOM_DRAWDOWN_MAX = 0.44      # и доходит до -44% (затем — овершут)
+
+
+def realized_price_anchor(price, mvrv):
+    """Ценовой якорь дна от realized price. None, если MVRV недоступен/<=0.
+
+    Возвращает realized_price, полосу дна (-25..44%) и состояние цены
+    относительно неё. Это ПРИОР согласия с MVRV-зоной, НЕ торговый таргет.
+    """
+    if mvrv is None or mvrv <= 0:
+        return None
+    realized = price / mvrv
+    bottom_high = realized * (1 - BOTTOM_DRAWDOWN_MIN)   # верх полосы дна (-25%)
+    bottom_low = realized * (1 - BOTTOM_DRAWDOWN_MAX)    # низ полосы дна (-44%)
+    if price > bottom_high:
+        state = "above_realized" if price > realized else "approaching_bottom"
+    elif price >= bottom_low:
+        state = "in_bottom_band"
+    else:
+        state = "below_band_overshoot"
+    return {
+        "realized_price": round(realized, 2),
+        "bottom_high": round(bottom_high, 2),
+        "bottom_low": round(bottom_low, 2),
+        "state": state,
+    }
+
+
 def compute_cycle_context(close, mvrv=None, mvrv_peak_90d=None):
     """mvrv_peak_90d: max MVRV over the trailing ~90 days. Used to detect that a
     drawdown began FROM an overheated state, even if MVRV has since compressed.
@@ -95,10 +127,33 @@ def compute_cycle_context(close, mvrv=None, mvrv_peak_90d=None):
                 rationale += (" Mayer<0.70: deep-value overshoot — 90d still "
                               "shaky but +40% mean fwd-180d historically.")
 
+    # ── Bottom anchor (Galaxy realized-price method) + кворум двух метрик ──
+    # Первый индикатор дна — MVRV<1.0 (цена ниже совокупной себестоимости).
+    # Второй, независимый — цена в полосе дна относительно realized price.
+    # Согласие обоих = кворум 2/2 (каркас Galaxy «4 из 13»); это усиливает
+    # уверенность в зоне накопления, но НЕ создаёт торговый таргет.
+    anchor = realized_price_anchor(price, mvrv)
+    mvrv_says_bottom = mvrv is not None and mvrv < 1.0
+    anchor_says_bottom = anchor is not None and anchor["state"] in (
+        "in_bottom_band", "below_band_overshoot")
+    quorum_count = int(mvrv_says_bottom) + int(anchor_says_bottom)
+    bottom_quorum = {
+        "count": quorum_count,
+        "agree": quorum_count == 2,
+        "mvrv_signal": bool(mvrv_says_bottom),
+        "anchor_signal": bool(anchor_says_bottom),
+    }
+    if bottom_quorum["agree"] and call == "CAPITULATION_VALUE_ZONE":
+        conf = min(0.80, conf + 0.10)     # две независимые метрики согласны
+        rationale += (f" Кворум 2/2: цена в полосе дна Galaxy "
+                      f"(realized ${anchor['realized_price']:,.0f}, "
+                      f"дно ${anchor['bottom_low']:,.0f}-{anchor['bottom_high']:,.0f}).")
+
     return {
         "zone": zone,
         "drawdown_call": call,
         "confidence": round(conf, 2),
+        "bottom_quorum": bottom_quorum,
         "metrics": {
             "price": round(price, 2),
             "mvrv": round(mvrv, 3) if mvrv is not None else None,
@@ -106,6 +161,7 @@ def compute_cycle_context(close, mvrv=None, mvrv_peak_90d=None):
             "mayer_multiple": round(mayer, 3) if mayer is not None else None,
             "drawdown_from_ath_pct": round(dd_ath, 1),
             "below_200d_sma": bool(below_trend),
+            "bottom_anchor": anchor or {"realized_price": None},
         },
         "rationale": rationale,
         "objective_reentry_trigger": "price closes above 200d SMA and holds >10 days",
