@@ -34,6 +34,39 @@ RISK_AIRPLANE = {
     "CRISIS": "Самолет срывается в штопор, падают маски. Связь с землей потеряна."
 }
 
+# Понятное определение каждого уровня: по какому порогу определён ("what") и
+# что это значит для действий ("action"). Метафора (RISK_AIRPLANE) — образный
+# довесок второй строкой; суть несёт это.
+RISK_LEVEL_INFO = {
+    "NORMAL": {
+        "what": "волатильность в норме (vol_z < 1.5), структура цела",
+        "action": "обычный режим — план работает как задумано",
+    },
+    "ELEVATED": {
+        "what": "повышенная волатильность (vol_z > 1.5) или слом структуры",
+        "action": "осторожнее с размером, шире стопы, не добавляй на всплесках",
+    },
+    "TAIL": {
+        "what": "хвостовой риск активен: глубокий risk-off (risk < −0.70) "
+                "или негативный структурный пробой — редкое сильное движение",
+        "action": "защита капитала важнее доходности; не лови ножи, "
+                  "сократи плечо, жди стабилизации",
+    },
+    "CRISIS": {
+        "what": "экстремальная волатильность (vol_z > 2.5) — паника/каскад ликвидаций",
+        "action": "режим выживания: в кэш/стейбл, новые позиции не открывать",
+    },
+}
+
+
+def risk_explainer(level: str) -> str:
+    """Строка-объяснение активного уровня риска: суть + действие + метафора."""
+    info = RISK_LEVEL_INFO.get(level)
+    if not info:
+        return ""
+    metaphor = RISK_AIRPLANE.get(level, "")
+    return f"{info['what']}\n→ {info['action']}\n({metaphor})"
+
 STRUCTURE_AIRPLANE = {
     "BULL": "Самолет стабильно набирает высоту, новые максимумы выше предыдущих.",
     "BEAR": "Самолет снижается, новые минимумы ниже предыдущих.",
@@ -371,7 +404,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append(f"TAIL {make_bar_simple(risk_state == 'TAIL')}")
     lines.append(f"CRIS {make_bar_simple(risk_state == 'CRISIS')}")
     lines.append("")
-    lines.append(f"→ {RISK_AIRPLANE.get(risk_state, '')}")
+    lines.append(f"→ {risk_explainer(risk_state)}")
     lines.append("")
     
     # ══════════════════════════════════════════════════════
