@@ -855,10 +855,10 @@ Rules:
         return ""
 
 
-def _is_morning_run() -> bool:
-    """True if current MSK time is around 7:00 (the daily morning report)."""
+def _is_monday_morning() -> bool:
+    """True if current MSK time is Monday around 7:00 (weekly unlock check)."""
     msk_now = datetime.now(timezone.utc) + timedelta(hours=3)
-    return abs(msk_now.hour - 7) <= 1
+    return msk_now.weekday() == 0 and abs(msk_now.hour - 7) <= 1
 
 
 def _should_send_report(monitor_data: dict) -> tuple:
@@ -981,10 +981,10 @@ def main():
     except Exception as e:
         logger.warning(f"Hack check failed: {e}")
     
-    # Stage 6: Token unlocks — only on morning run (avoids 12x/day OpenAI calls)
+    # Stage 6: Token unlocks — only Monday morning (weekly, avoids excess OpenAI calls)
     logger.info("\n--- STAGE 6: UNLOCK CHECK ---")
     unlock_report = None
-    if _is_morning_run() or os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
+    if _is_monday_morning() or os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
         try:
             all_positions = monitor_data.get("positions", [])
             # Aggregate exposure per non-stable token
@@ -1000,7 +1000,7 @@ def main():
         except Exception as e:
             logger.warning(f"Unlock check failed: {e}")
     else:
-        logger.info("Skipped (not morning run)")
+        logger.info("Skipped (not Monday morning)")
     
     # Generate unified report
     logger.info("\n--- GENERATING REPORT ---")
