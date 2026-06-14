@@ -1,8 +1,10 @@
 name: LP Weekly Digest
 
 on:
-  schedule:
-    - cron: '0 10 * * 0'  # Sunday 10:00 UTC = 13:00 MSK
+  # DISABLED 2026-06-14 — unlock info moved to daily morning report (lp_system).
+  # The weekly digest carried no new info beyond unlocks.
+  # schedule:
+  #   - cron: '0 10 * * 0'  # Sunday 10:00 UTC = 13:00 MSK
   workflow_dispatch:
 
 permissions:

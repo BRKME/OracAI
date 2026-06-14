@@ -627,7 +627,8 @@ def format_unified_report(
     ai_summary: Optional[str],
     history: List[dict],
     hedge_report: Optional[str] = None,
-    hack_report: Optional[str] = None
+    hack_report: Optional[str] = None,
+    unlock_report: Optional[str] = None
 ) -> str:
     """Format compact daily Telegram report — only actionable info."""
     
@@ -757,6 +758,11 @@ def format_unified_report(
         lines.append("")
         lines.append(hack_report)
     
+    # Token unlocks (morning report only) — show only if there's a real ⚠️ unlock
+    if unlock_report and "⚠️" in unlock_report:
+        lines.append("")
+        lines.append(unlock_report)
+    
     return "\n".join(lines)
 
 
@@ -787,6 +793,73 @@ def send_telegram(message: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
+
+def check_unlocks_ai(tokens: list) -> str:
+    """Check upcoming token unlocks (next 14d) via OpenAI web search.
+    
+    tokens: list of dicts with 'symbol' and 'exposure_usd'.
+    Returns compact formatted block or "" if none/error.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key or not tokens:
+        return ""
+    
+    token_list = ", ".join([f"{t['symbol']} (${t.get('exposure_usd', 0):,.0f})" for t in tokens])
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    next_14d = (datetime.now(timezone.utc) + timedelta(days=14)).strftime("%Y-%m-%d")
+    
+    prompt = f"""Check token unlock events for: {token_list}
+Today: {today}. Only check unlocks between {today} and {next_14d} (next 14 days).
+
+IMPORTANT: Only include unlocks within the next 14 days. Ignore anything beyond {next_14d}.
+
+Reply ONLY in this exact format:
+🔓 Unlocks (14d):
+⚠️ SYMBOL — [YYYY-MM-DD] X.X% supply — Risk: HIGH
+✅ SYMBOL — no unlocks
+
+Rules:
+- One line per token
+- Only dates between {today} and {next_14d}
+- No extra text, no stock prices, no market info
+- If no unlock in 14 days, mark as ✅"""
+
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": "gpt-4o-mini-search-preview",
+                "messages": [
+                    {"role": "system", "content": "Token unlock analyst. Return ONLY unlock dates in next 14 days. No stock prices, no market info."},
+                    {"role": "user", "content": prompt}
+                ],
+                "web_search_options": {"search_context_size": "low"},
+                "max_tokens": 500
+            },
+            timeout=60
+        )
+        if response.status_code != 200:
+            logger.error(f"OpenAI unlock check error: {response.status_code}")
+            return ""
+        result = response.json()["choices"][0]["message"]["content"].strip()
+        # Keep only relevant lines
+        filtered = [ln.strip() for ln in result.split('\n') if ln.strip().startswith(('🔓', '⚠️', '✅'))]
+        if len(filtered) > 10:
+            filtered = filtered[:10] + ["..."]
+        result = '\n'.join(filtered) if filtered else ""
+        logger.info(f"Unlock check done ({len(result)} chars)")
+        return result
+    except Exception as e:
+        logger.error(f"Unlock check exception: {e}")
+        return ""
+
+
+def _is_morning_run() -> bool:
+    """True if current MSK time is around 7:00 (the daily morning report)."""
+    msk_now = datetime.now(timezone.utc) + timedelta(hours=3)
+    return abs(msk_now.hour - 7) <= 1
+
 
 def _should_send_report(monitor_data: dict) -> tuple:
     """Decide whether to send the report.
@@ -908,9 +981,30 @@ def main():
     except Exception as e:
         logger.warning(f"Hack check failed: {e}")
     
+    # Stage 6: Token unlocks — only on morning run (avoids 12x/day OpenAI calls)
+    logger.info("\n--- STAGE 6: UNLOCK CHECK ---")
+    unlock_report = None
+    if _is_morning_run() or os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
+        try:
+            all_positions = monitor_data.get("positions", [])
+            # Aggregate exposure per non-stable token
+            exposure = {}
+            for p in all_positions:
+                bal = p.get("balance_usd", 0)
+                for sym in (p.get("token0_symbol", ""), p.get("token1_symbol", "")):
+                    if sym and sym not in STABLECOINS:
+                        exposure[sym] = exposure.get(sym, 0) + bal / 2
+            unlock_tokens = [{"symbol": s, "exposure_usd": v} for s, v in exposure.items()]
+            if unlock_tokens:
+                unlock_report = check_unlocks_ai(unlock_tokens)
+        except Exception as e:
+            logger.warning(f"Unlock check failed: {e}")
+    else:
+        logger.info("Skipped (not morning run)")
+    
     # Generate unified report
     logger.info("\n--- GENERATING REPORT ---")
-    report = format_unified_report(monitor_data, opportunities_data, ai_summary, history, hedge_report, hack_report)
+    report = format_unified_report(monitor_data, opportunities_data, ai_summary, history, hedge_report, hack_report, unlock_report)
     
     print("\n" + "=" * 60)
     print(report)
