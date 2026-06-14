@@ -788,6 +788,47 @@ def send_telegram(message: str) -> bool:
 # MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _should_send_report(monitor_data: dict) -> tuple:
+    """Decide whether to send the report.
+    
+    Returns (should_send: bool, reason: str).
+    
+    Rules:
+    - ALWAYS send if any position is out of range by more than 0.1%
+    - Otherwise send only at scheduled MSK hours (7:00 and 19:00)
+    - FORCE_SEND env var (manual dispatch) always sends
+    """
+    import os
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    
+    # Manual trigger always sends
+    if os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
+        return True, "manual/force"
+    
+    # Check for out-of-range positions beyond threshold
+    OUT_OF_RANGE_THRESHOLD_PCT = 0.1
+    positions = monitor_data.get("positions", [])
+    for p in positions:
+        if not p.get("in_range", True):
+            # Position is out of range — check how far
+            if p.get("current_tick", 0) < p.get("tick_lower", 0):
+                dist = abs(p.get("distance_to_lower_pct", 0))
+            else:
+                dist = abs(p.get("distance_to_upper_pct", 0))
+            if dist > OUT_OF_RANGE_THRESHOLD_PCT:
+                return True, f"out-of-range alert ({dist:.2f}%)"
+    
+    # No alerts — only send at scheduled MSK hours
+    msk_now = _dt.now(_tz.utc) + _td(hours=3)
+    SCHEDULED_HOURS = (7, 19)  # 7:00 and 19:00 MSK
+    # Allow ±1h window to tolerate GitHub Actions cron delays
+    for h in SCHEDULED_HOURS:
+        if abs(msk_now.hour - h) <= 1:
+            return True, f"scheduled ({msk_now.hour}:00 MSK)"
+    
+    return False, f"quiet hour ({msk_now.hour}:00 MSK)"
+
+
 def main():
     """Main entry point"""
     logger.info("=" * 60)
@@ -875,8 +916,13 @@ def main():
     print(report)
     print("=" * 60)
     
-    # Send to Telegram
-    send_telegram(report)
+    # Decide whether to send (flexible logic)
+    should_send, reason = _should_send_report(monitor_data)
+    if should_send:
+        logger.info(f"📤 Sending report ({reason})")
+        send_telegram(report)
+    else:
+        logger.info(f"🔕 Skipping send ({reason}) — not scheduled time, all positions OK")
     
     logger.info("\nDone!")
     return 0

@@ -2,14 +2,12 @@ name: LP Intelligence System
 
 on:
   schedule:
-    # 04:00 MSK (01:00 UTC)
-    - cron: '0 1 * * *'
-    # 21:00 MSK (18:00 UTC)
-    - cron: '0 18 * * *'
-    # 13:00 MSK (10:00 UTC)
-    - cron: '0 10 * * *'
-    # 15:30 MSK (12:30 UTC)
-    - cron: '30 12 * * *'
+    # Every 2 hours. Script decides whether to actually send to Telegram:
+    # - always sends if a position is out of range by >0.1%
+    # - otherwise sends only around 7:00 and 19:00 MSK
+    # Offset by 50 min to reduce GitHub Actions cron delay impact on the
+    # scheduled-hour window check.
+    - cron: '50 */2 * * *'
   
   workflow_dispatch:
 
@@ -40,6 +38,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          FORCE_SEND: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
         run: python lp_system.py
       
       - name: Commit state
