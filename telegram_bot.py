@@ -210,6 +210,46 @@ def generate_market_analysis(
 # MAIN FORMAT OUTPUT — v5.1 UI/UX
 # ============================================================
 
+def action_for(target_pos: float, risk_state: str,
+               dd_from_high: float, bear_confirmation: bool) -> tuple:
+    """Метка действия + примечание из целевой позиции и риск-состояния.
+
+    Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
+    «покупка дна» не отменяется (стратегически дно близко), но НЕ выдаётся как
+    «100% сразу» — вход ступенями, со ссылкой на повышенный риск. Целевая
+    позиция везде трактуется как цель к набору ЛЕСТНИЦЕЙ (cycle-ladder), а не
+    единовременная закупка.
+    """
+    target_pct = int(target_pos * 100)
+    if risk_state == "CRISIS":
+        return "⚫ ЗАЩИТА", f"Кризисный режим. Целевая позиция: {target_pct}%."
+    if target_pos >= 0.95:
+        if risk_state == "TAIL":
+            return ("🟢 ПОКУПАТЬ", (
+                f"Дно близко (цель {target_pct}%), НО активен хвостовой риск — "
+                f"входи ступенями лестницы, не на всё сразу; держи резерв и SL "
+                f"под локальный минимум. Согласуй с риск-блоком выше."))
+        return ("🟢 ПОКУПАТЬ", (
+            f"Сильный сигнал дна. Целевая позиция: {target_pct}% — набирай "
+            f"ступенями лестницы (зона/MVRV/SMA200), не единовременно."))
+    if target_pos >= 0.85:
+        return ("⚪ ДЕРЖАТЬ",
+                f"Базовая HODL-позиция: {target_pct}%. Долгосрочный аптренд BTC.")
+    if target_pos >= 0.55:
+        if dd_from_high < -15 and bear_confirmation:
+            return ("🟠 ФИКСИРОВАТЬ",
+                    f"Просадка {abs(dd_from_high):.0f}% + медвежье подтверждение. "
+                    f"Целевая позиция: {target_pct}%.")
+        return ("🟠 ФИКСИРОВАТЬ",
+                f"Сигнал вершины или TAIL риск. Целевая позиция: {target_pct}%.")
+    if dd_from_high < -25 and bear_confirmation:
+        return ("🔴 ПРОДАВАТЬ",
+                f"Глубокая просадка {abs(dd_from_high):.0f}% + подтверждение BEAR. "
+                f"Целевая позиция: {target_pct}%.")
+    return ("🔴 ПРОДАВАТЬ",
+            f"Экстремальная вершина. Целевая позиция: {target_pct}%.")
+
+
 def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     """
     New UI/UX format v5.1
@@ -553,30 +593,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     
     # Snap to 5% steps
     target_pos = round(target_pos * 20) / 20
-    target_pct = int(target_pos * 100)
-    
-    # Map target position to action label
-    if risk_state == "CRISIS":
-        action = "⚫ ЗАЩИТА"
-        action_note = f"Кризисный режим. Целевая позиция: {target_pct}%."
-    elif target_pos >= 0.95:
-        action = "🟢 ПОКУПАТЬ"
-        action_note = f"Сильный сигнал дна. Целевая позиция: {target_pct}%."
-    elif target_pos >= 0.85:
-        action = "⚪ ДЕРЖАТЬ"
-        action_note = f"Базовая HODL-позиция: {target_pct}%. Долгосрочный аптренд BTC."
-    elif target_pos >= 0.55:
-        action = "🟠 ФИКСИРОВАТЬ"
-        if dd_from_high < -15 and bear_confirmation:
-            action_note = f"Просадка {abs(dd_from_high):.0f}% + медвежье подтверждение. Целевая позиция: {target_pct}%."
-        else:
-            action_note = f"Сигнал вершины или TAIL риск. Целевая позиция: {target_pct}%."
-    else:
-        action = "🔴 ПРОДАВАТЬ"
-        if dd_from_high < -25 and bear_confirmation:
-            action_note = f"Глубокая просадка {abs(dd_from_high):.0f}% + подтверждение BEAR. Целевая позиция: {target_pct}%."
-        else:
-            action_note = f"Экстремальная вершина. Целевая позиция: {target_pct}%."
+
+    # Метка действия + примечание (TAIL гасит «100% сразу», согласовано с риском)
+    action, action_note = action_for(target_pos, risk_state,
+                                     dd_from_high, bear_confirmation)
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
