@@ -664,38 +664,22 @@ def format_unified_report(
         last = history[-1]
         current_fees = last.get("fees", 0)
         cum_fees = last.get("fees_cumulative", 0)
-        # Дельта по cumulative за 24ч — устойчиво к harvest (harvest обнуляет
-        # current_fees, но cumulative продолжает расти)
+        # Дельта по cumulative за период — устойчиво к harvest (harvest обнуляет
+        # current_fees, но cumulative продолжает расти).
+        # Берём ПРЕДЫДУЩИЙ снапшот (бот запускается раз в день), а не "первый
+        # старше 24ч" — иначе из-за разного времени запусков интервал растягивается
+        # на 1.5-2 дня и дельта раздувается.
         fees_24h_delta = None
         if len(history) >= 2:
-            # Найти snapshot ~24ч назад
-            from datetime import datetime as _dt, timedelta as _td, timezone as _tz
-            now_ts = _dt.now(_tz.utc)
-            target = now_ts - _td(hours=24)
-            best = None
-            for s in reversed(history[:-1]):
-                ts_str = s.get("timestamp")
-                if not ts_str:
-                    continue
-                try:
-                    ts = _dt.fromisoformat(str(ts_str).replace("Z", "+00:00"))
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=_tz.utc)
-                except Exception:
-                    continue
-                if ts <= target:
-                    best = s
-                    break
-            if best is None:
-                best = history[0]
-            prev_cum = best.get("fees_cumulative", 0)
+            prev_snapshot = history[-2]
+            prev_cum = prev_snapshot.get("fees_cumulative", 0)
             fees_24h_delta = cum_fees - prev_cum
         
         fees_line_parts = []
         if current_fees > 0:
             fees_line_parts.append(f"💰 Fees: ${current_fees:,.2f} к сбору")
         if fees_24h_delta is not None and fees_24h_delta > 0:
-            fees_line_parts.append(f"+${fees_24h_delta:,.2f} (24h)")
+            fees_line_parts.append(f"+${fees_24h_delta:,.2f} (сутки)")
         if cum_fees > 0:
             fees_line_parts.append(f"всего ${cum_fees:,.0f}")
         if fees_line_parts:
