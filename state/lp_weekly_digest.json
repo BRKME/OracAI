@@ -1,72 +1,62 @@
 {
-  "timestamp": "2026-06-07T11:45:41.326059+00:00",
+  "timestamp": "2026-06-14T11:54:13.571788+00:00",
   "stats": {
     "has_data": true,
     "period": {
-      "start": "2026-05-31",
-      "end": "2026-06-07",
+      "start": "2026-06-07",
+      "end": "2026-06-14",
       "days": 7
     },
     "portfolio": {
-      "start_tvl": 27802.19598382237,
-      "end_tvl": 22291.727312129733,
-      "tvl_change": -5510.468671692637,
+      "start_tvl": 22628.161882579752,
+      "end_tvl": 22999.5368650309,
+      "tvl_change": 371.37498245114693,
       "withdrawals": 300.0,
-      "adjusted_tvl_change": -5210.468671692637,
-      "fees_earned": 2055.240149550793,
-      "real_pnl": -3155.228522141844,
-      "real_efficiency_pct": -11.348846414786152
+      "adjusted_tvl_change": 671.3749824511469,
+      "fees_earned": 3538.0636726829216,
+      "real_pnl": 4209.4386551340685,
+      "real_efficiency_pct": 18.60265397153048
     },
     "wallets": [
       {
         "wallet": "MMA_1",
-        "start_tvl": 14772.907523150243,
-        "end_tvl": 16487.57915993258,
-        "tvl_change": 1714.6716367823356,
-        "fees_estimated": 1092.067428229281,
-        "uncollected": 253.78845003956917,
-        "real_pnl": 2806.7390650116167,
-        "efficiency_pct": 18.999232619667104
-      },
-      {
-        "wallet": "MMA_2",
-        "start_tvl": 5792.631915604716,
-        "end_tvl": 0,
-        "tvl_change": -5792.631915604716,
-        "fees_estimated": 428.2125660666372,
-        "uncollected": 0,
-        "real_pnl": -5364.419349538079,
-        "efficiency_pct": -92.60763376120829
+        "start_tvl": 16842.672490043315,
+        "end_tvl": 17215.011484925853,
+        "tvl_change": 372.3389948825388,
+        "fees_estimated": 2633.4639109062523,
+        "uncollected": 51.29346475829527,
+        "real_pnl": 3005.802905788791,
+        "efficiency_pct": 17.846353704055556
       },
       {
         "wallet": "MMA_3",
-        "start_tvl": 7236.656545067408,
-        "end_tvl": 5804.148152197155,
-        "tvl_change": -1432.5083928702534,
-        "fees_estimated": 534.9601552548745,
-        "uncollected": 144.8276537842529,
-        "real_pnl": -897.5482376153789,
-        "efficiency_pct": -12.40280275878449
+        "start_tvl": 5785.4893925364395,
+        "end_tvl": 5784.525380105048,
+        "tvl_change": -0.9640124313918932,
+        "fees_estimated": 904.5997617766697,
+        "uncollected": 37.68424110011682,
+        "real_pnl": 903.6357493452778,
+        "efficiency_pct": 15.619002784984993
       }
     ],
     "positions": {
-      "count": 9,
-      "in_range": 7
+      "count": 8,
+      "in_range": 8
     },
-    "fees_uncollected": 398.616103823822,
+    "fees_uncollected": 88.97770585841208,
     "history_summary": {
       "has_data": true,
-      "weeks_count": 13,
+      "weeks_count": 14,
       "period_start": "2026-03-08",
-      "period_end": "2026-06-07",
+      "period_end": "2026-06-14",
       "start_tvl": 30317.921437284327,
-      "end_tvl": 22291.727312129733,
-      "total_tvl_change": -18205.16526045047,
-      "total_withdrawals": 3900.0,
-      "total_fees": 16310.362302306106,
-      "total_pnl": 2005.197041855632,
-      "avg_efficiency_pct": 2.109887982331429
+      "end_tvl": 22999.5368650309,
+      "total_tvl_change": -17833.790277999324,
+      "total_withdrawals": 4200.0,
+      "total_fees": 19848.425974989026,
+      "total_pnl": 6214.635696989701,
+      "avg_efficiency_pct": 3.287942695845647
     },
-    "unlock_report": "\ud83d\udd13 Unlocks (14d):\n\u26a0\ufe0f ASTER \u2014 [2026-06-17] 8.16% supply \u2014 Risk: HIGH"
+    "unlock_report": "\ud83d\udd13 Unlocks (14d):\n\u26a0\ufe0f ASTER \u2014 [2026-06-30] 0.028% supply \u2014 Risk: HIGH\n\u2705 ARB \u2014 no unlocks"
   }
 }
