@@ -50,3 +50,38 @@ class TestLadderConsistency:
                                  dd_from_high=-50, bear_confirmation=True)
             # не должно звучать как «всё сразу»
             assert "сразу на всё" not in note.lower()
+
+
+class TestNoSellNearBottom:
+    """У дна (высокий bottom_prox / extreme fear / низкий RSI) ярлык не может
+    быть 'ФИКСИРОВАТЬ/ПРОДАВАТЬ', даже при умеренной целевой доле. Продавать
+    на просадке у дна = фиксировать убыток против лестницы. Баг 15.06:
+    bottom_prox 0.63 + просадка 20% дали 'ФИКСИРОВАТЬ 60%' у дна."""
+
+    def test_moderate_target_near_bottom_is_hold_not_fix(self):
+        action, note = action_for(target_pos=0.60, risk_state="TAIL",
+                                   dd_from_high=-20, bear_confirmation=True,
+                                   bottom_prox=0.63)
+        assert "ФИКСИРОВАТЬ" not in action
+        assert "ПРОДАВАТЬ" not in action
+        # у дна умеренная доля = удержание базовой позиции, не продажа
+        assert "ДЕРЖАТЬ" in action or "ПОКУПАТЬ" in action
+
+    def test_fix_still_valid_near_top(self):
+        # у вершины фиксация остаётся корректной
+        action, _ = action_for(target_pos=0.60, risk_state="NORMAL",
+                               dd_from_high=-10, bear_confirmation=True,
+                               bottom_prox=0.15)
+        assert "ФИКСИРОВАТЬ" in action
+
+    def test_sell_still_valid_near_top(self):
+        action, _ = action_for(target_pos=0.40, risk_state="NORMAL",
+                               dd_from_high=-15, bear_confirmation=True,
+                               bottom_prox=0.10)
+        assert "ПРОДАВАТЬ" in action
+
+    def test_bottom_prox_optional_backward_compatible(self):
+        # без bottom_prox старое поведение сохраняется
+        action, _ = action_for(target_pos=0.60, risk_state="NORMAL",
+                               dd_from_high=-15, bear_confirmation=True)
+        assert "ФИКСИРОВАТЬ" in action

@@ -211,7 +211,8 @@ def generate_market_analysis(
 # ============================================================
 
 def action_for(target_pos: float, risk_state: str,
-               dd_from_high: float, bear_confirmation: bool) -> tuple:
+               dd_from_high: float, bear_confirmation: bool,
+               bottom_prox: float = None) -> tuple:
     """Метка действия + примечание из целевой позиции и риск-состояния.
 
     Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
@@ -219,8 +220,15 @@ def action_for(target_pos: float, risk_state: str,
     «100% сразу» — вход ступенями, со ссылкой на повышенный риск. Целевая
     позиция везде трактуется как цель к набору ЛЕСТНИЦЕЙ (cycle-ladder), а не
     единовременная закупка.
+
+    bottom_prox (если передан): близость к дну. У дна (>= NEAR_BOTTOM) ярлык не
+    может быть ПРОДАВАТЬ/ФИКСИРОВАТЬ даже при умеренной целевой доле — продавать
+    на просадке у дна = фиксировать убыток против лестницы (баг 15.06).
     """
+    NEAR_BOTTOM = 0.55
     target_pct = int(target_pos * 100)
+    near_bottom = bottom_prox is not None and bottom_prox >= NEAR_BOTTOM
+
     if risk_state == "CRISIS":
         return "⚫ ЗАЩИТА", f"Кризисный режим. Целевая позиция: {target_pct}%."
     if target_pos >= 0.95:
@@ -235,6 +243,13 @@ def action_for(target_pos: float, risk_state: str,
     if target_pos >= 0.85:
         return ("⚪ ДЕРЖАТЬ",
                 f"Базовая HODL-позиция: {target_pct}%. Долгосрочный аптренд BTC.")
+    # Умеренная/низкая целевая доля: у ДНА это НЕ продажа — продавать на
+    # просадке у дна значит фиксировать убыток против лестницы.
+    if near_bottom:
+        return ("⚪ ДЕРЖАТЬ", (
+            f"Целевая доля {target_pct}% (медведь), но мы у дна — НЕ продаём "
+            f"на просадке. Держим базу, добор — ступенями лестницы по сигналам "
+            f"дна, не фиксируем убыток."))
     if target_pos >= 0.55:
         if dd_from_high < -15 and bear_confirmation:
             return ("🟠 ФИКСИРОВАТЬ",
@@ -594,9 +609,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Snap to 5% steps
     target_pos = round(target_pos * 20) / 20
 
-    # Метка действия + примечание (TAIL гасит «100% сразу», согласовано с риском)
+    # Метка действия + примечание (TAIL гасит «100% сразу»; у дна не продаём)
     action, action_note = action_for(target_pos, risk_state,
-                                     dd_from_high, bear_confirmation)
+                                     dd_from_high, bear_confirmation,
+                                     bottom_prox=bottom_prox)
     
     lines.append(f"🔘 Действие: {action}")
     lines.append(f"→ {action_note}")
