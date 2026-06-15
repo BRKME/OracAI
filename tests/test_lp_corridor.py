@@ -29,9 +29,11 @@ class TestATR:
 
 class TestPctChange:
     def test_24h_change(self):
-        # 24 часовых точки: 100 -> 120 = +20%
-        s = _series([100] + [110] * 22 + [120])
-        assert abs(pct_change_24h(s) - 20.0) < 1.0
+        # плавный рост со 100 до 120 за 24ч — медианный замер видит ~рост
+        s = _series(list(np.linspace(100, 100, 24)) + list(np.linspace(100, 120, 24)))
+        chg = pct_change_24h(s)
+        assert chg is not None
+        assert 15 < chg < 22       # около +20%, устойчиво к краям
 
     def test_none_without_enough(self):
         assert pct_change_24h(_series([100, 110])) is None
@@ -84,3 +86,43 @@ class TestDegradation:
         flat = _series([100 + (i % 3) for i in range(60)])
         c = suggest_corridor(price=100, history=flat)
         assert c["lower"] < 100 < c["upper"]
+
+
+class TestPctChangeRobust:
+    def test_robust_to_endpoint_noise(self):
+        # устойчивое +5%, но последний тик — шумовой выброс +40%
+        base = list(np.linspace(100, 105, 48))
+        base[-1] = 140.0          # одиночный выброс
+        s = _series(base)
+        # медианное сглаживание концов не должно показать +40%
+        chg = pct_change_24h(s)
+        assert chg is not None
+        assert chg < 20            # выброс не превращается в «памп»
+
+    def test_robust_still_detects_real_pump(self):
+        # настоящий устойчивый памп +25% за сутки
+        s = _series(list(np.linspace(100, 100, 24)) + list(np.linspace(100, 125, 24)))
+        chg = pct_change_24h(s)
+        assert chg is not None
+        assert chg >= 20
+
+
+class TestPumpDetectionTradeoff:
+    """Документирует сознательный выбор: памп определяется по УСТОЙЧИВОМУ
+    движению (медиана окон), а не номинальному. Следствие — слабый/размазанный
+    по шуму рост может не считаться пампом. Для LP это верный компромисс:
+    ложный сдвиг вниз дешевле, чем шумный ложный памп на каждой волатильной
+    монете. НЕ баг — не 'чинить' повышением чувствительности к одиночным тикам.
+    """
+    def test_clean_sustained_pump_detected(self):
+        # чистый устойчивый памп +25% — ловится уверенно
+        s = _series(list(np.linspace(100, 100, 24)) + list(np.linspace(100, 125, 24)))
+        c = suggest_corridor(float(s[-1]), s)
+        assert c["pump_detected"] is True
+
+    def test_single_tick_spike_not_pump(self):
+        # один шумовой выброс на конце — НЕ памп (устойчивость важнее)
+        base = list(np.linspace(100, 103, 47)) + [150.0]
+        s = _series(base)
+        c = suggest_corridor(float(s[-1]), s)
+        assert c["pump_detected"] is False

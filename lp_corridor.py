@@ -42,11 +42,24 @@ def atr_pct(history: np.ndarray) -> Optional[float]:
 
 
 def pct_change_24h(history: np.ndarray) -> Optional[float]:
-    """Изменение за последние ~24 точки (часовой ряд). None, если мало данных."""
+    """Изменение за ~24 точки (часовой ряд), устойчивое к шуму на концах.
+
+    Сравниваются МЕДИАНЫ коротких окон: вокруг точки −24 (центрированное окно,
+    чтобы не занижать постепенный дрейф) и на свежем конце. Медиана гасит
+    одиночные шумовые выбросы, не съедая настоящее устойчивое движение.
+    None, если данных мало.
+    """
     if history is None or len(history) < 24:
         return None
-    past = float(history[-24])
-    now = float(history[-1])
+    win = 3
+    # центрированное окно вокруг точки −24: [-25:-22] при достаточной длине
+    if len(history) >= 25:
+        past_window = history[-25:-22]
+    else:
+        past_window = history[-24:-24 + win]
+    now_window = history[-win:]
+    past = float(np.median(past_window))
+    now = float(np.median(now_window))
     if past <= 0:
         return None
     return (now - past) / past * 100.0
