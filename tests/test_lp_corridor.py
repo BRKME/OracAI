@@ -126,3 +126,53 @@ class TestPumpDetectionTradeoff:
         s = _series(base)
         c = suggest_corridor(float(s[-1]), s)
         assert c["pump_detected"] is False
+
+
+class TestPhaseAware:
+    """Фаза цикла даёт МЯГКИЙ наклон центра (±2-3%), ширину решает ATR.
+    Комбинация с пампом — максимум из двух сдвигов, не сумма (LP не должен
+    стать направленной ставкой)."""
+
+    def _flat(self):
+        return _series([100 + (i % 3) for i in range(60)])
+
+    def test_bear_bottom_shifts_center_down(self):
+        c = suggest_corridor(price=100, history=self._flat(),
+                             phase="CAPITULATION")
+        center = (c["upper"] + c["lower"]) / 2
+        assert center < 100              # запас вниз даже без пампа
+        assert c["phase_shift_applied"] is True
+
+    def test_euphoria_top_shifts_center_down_too(self):
+        # у вершины риск отката вниз — центр тоже ниже, верх не задираем
+        c = suggest_corridor(price=100, history=self._flat(), phase="EUPHORIA")
+        center = (c["upper"] + c["lower"]) / 2
+        assert center < 100
+
+    def test_neutral_phase_no_shift(self):
+        c = suggest_corridor(price=100, history=self._flat(), phase="NEUTRAL")
+        center = (c["upper"] + c["lower"]) / 2
+        assert abs(center - 100) / 100 < 0.01
+
+    def test_phase_shift_is_soft(self):
+        # сдвиг от фазы не больше ~3%
+        c = suggest_corridor(price=100, history=self._flat(),
+                             phase="CAPITULATION")
+        center = (c["upper"] + c["lower"]) / 2
+        assert (100 - center) / 100 <= 0.035
+
+    def test_pump_and_phase_take_max_not_sum(self):
+        # памп +25% в медвежьей фазе: сдвиг = max(памп, фаза), НЕ сумма
+        pumped = _series([100] * 24 + list(np.linspace(100, 125, 24)))
+        c_pump_only = suggest_corridor(price=125, history=pumped, phase="NEUTRAL")
+        c_both = suggest_corridor(price=125, history=pumped, phase="CAPITULATION")
+        shift_pump = (125 - (c_pump_only["upper"] + c_pump_only["lower"]) / 2) / 125
+        shift_both = (125 - (c_both["upper"] + c_both["lower"]) / 2) / 125
+        # комбинированный не больше суммы и не меньше максимального из компонент
+        assert shift_both >= shift_pump - 1e-9
+        assert shift_both <= shift_pump + 0.035 + 1e-9   # не сумма двух полных
+
+    def test_no_phase_backward_compatible(self):
+        # без фазы — поведение как раньше (фаза опциональна)
+        c = suggest_corridor(price=100, history=self._flat())
+        assert c["phase_shift_applied"] is False

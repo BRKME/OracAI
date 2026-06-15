@@ -59,11 +59,33 @@ def _fetch_hourly_history(platform: str, token_address: str) -> Optional["list"]
         return None
 
 
+_CYCLE_PHASE_CACHE = {"phase": None, "fetched": False}
+
+
+def _current_cycle_phase() -> Optional[str]:
+    """Текущая фаза цикла из OracAI (один раз за прогон, мягкий fail-safe)."""
+    if _CYCLE_PHASE_CACHE["fetched"]:
+        return _CYCLE_PHASE_CACHE["phase"]
+    _CYCLE_PHASE_CACHE["fetched"] = True
+    try:
+        import json as _json
+        ladder_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   "state", "cycle_ladder.json")
+        with open(ladder_path) as f:
+            data = _json.load(f)
+        # фаза цикла лежит в drawdown_call/zone; берём явную фазу, если есть
+        phase = data.get("phase") or data.get("drawdown_call") or data.get("zone")
+        _CYCLE_PHASE_CACHE["phase"] = phase
+        return phase
+    except Exception:
+        return None
+
+
 def _corridor_suggestion_line(position: dict) -> Optional[str]:
     """Строка предложения коридора для вышедшей из range позиции.
 
-    Берёт волатильный (не-стейбл) токен пары, тянет историю, считает коридор.
-    Возвращает None, если предложить нечего.
+    Берёт волатильный (не-стейбл) токен пары, тянет историю, считает коридор
+    с учётом фазы цикла. Возвращает None, если предложить нечего.
     """
     import numpy as np
     from lp_corridor import suggest_corridor, format_corridor_suggestion
@@ -83,7 +105,8 @@ def _corridor_suggestion_line(position: dict) -> Optional[str]:
     platform = position.get("chain", "")
     prices = _fetch_hourly_history(platform, addr)
     hist = np.array(prices, dtype=float) if prices else None
-    corridor = suggest_corridor(price=float(price), history=hist)
+    phase = _current_cycle_phase()
+    corridor = suggest_corridor(price=float(price), history=hist, phase=phase)
     return "  " + format_corridor_suggestion(sym, float(price), corridor).replace("\n", "\n  ")
 
 # ═══════════════════════════════════════════════════════════════════════════════
