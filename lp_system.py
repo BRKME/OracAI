@@ -28,6 +28,64 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+# CoinGecko asset platform по chain id монитора — для market_chart по контракту
+_CG_PLATFORM = {
+    "ethereum": "ethereum", "arbitrum": "arbitrum-one",
+    "base": "base", "optimism": "optimistic-ethereum",
+    "polygon": "polygon-pos", "bsc": "binance-smart-chain",
+}
+
+
+def _fetch_hourly_history(platform: str, token_address: str) -> Optional["list"]:
+    """~3 дня часовых цен токена по contract address (CoinGecko market_chart).
+
+    None при недоступности/нехватке данных (свежие токены) — тогда коридор
+    деградирует в симметричный дефолт. Мягкий fail-safe, без исключений наружу.
+    """
+    try:
+        cg = _CG_PLATFORM.get(platform)
+        if not cg or not token_address:
+            return None
+        url = (f"https://api.coingecko.com/api/v3/coins/{cg}/contract/"
+               f"{token_address.lower()}/market_chart")
+        r = requests.get(url, params={"vs_currency": "usd", "days": "3"},
+                         timeout=15)
+        if r.status_code != 200:
+            return None
+        prices = [p[1] for p in r.json().get("prices", []) if len(p) == 2]
+        return prices if len(prices) >= 15 else None
+    except Exception:
+        return None
+
+
+def _corridor_suggestion_line(position: dict) -> Optional[str]:
+    """Строка предложения коридора для вышедшей из range позиции.
+
+    Берёт волатильный (не-стейбл) токен пары, тянет историю, считает коридор.
+    Возвращает None, если предложить нечего.
+    """
+    import numpy as np
+    from lp_corridor import suggest_corridor, format_corridor_suggestion
+
+    # волатильный токен пары — тот, что не стейбл (по символу)
+    sym0 = position.get("token0_symbol", "")
+    sym1 = position.get("token1_symbol", "")
+    stables = {"USDT", "USDC", "USD₮0", "DAI", "USD"}
+    if sym1 and sym1.upper().rstrip("0").rstrip("₮") not in {s.rstrip("0").rstrip("₮") for s in stables}:
+        sym, addr, price = sym1, position.get("token1_address"), position.get("price1_usd", 0)
+    else:
+        sym, addr, price = sym0, position.get("token0_address"), position.get("price0_usd", 0)
+
+    if not price or price <= 0:
+        return None
+
+    platform = position.get("chain", "")
+    prices = _fetch_hourly_history(platform, addr)
+    hist = np.array(prices, dtype=float) if prices else None
+    corridor = suggest_corridor(price=float(price), history=hist)
+    return "  " + format_corridor_suggestion(sym, float(price), corridor).replace("\n", "\n  ")
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -745,6 +803,14 @@ def format_unified_report(
                 else:
                     pct = abs(p.get('distance_to_upper_pct', 0))
                     lines.append(f"  🟠 {wallet}: {symbol} ${balance:,.0f} — {pct:.1f}% above")
+
+                # Предложение нового коридора по ТА (опционально, мягкий fail-safe)
+                try:
+                    sug = _corridor_suggestion_line(p)
+                    if sug:
+                        lines.append(sug)
+                except Exception as e:  # noqa: BLE001
+                    logger.warning(f"corridor suggestion failed: {e}")
     
     # Asset allocation
     positions = monitor_data.get("positions", [])
