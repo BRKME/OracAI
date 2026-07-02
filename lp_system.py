@@ -163,51 +163,79 @@ def save_history(snapshots: List[dict]):
 
 
 def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int, 
-                 by_wallet: Dict[str, float], by_wallet_fees: Dict[str, float]):
-    """Add today's snapshot to history with cumulative fees tracking"""
+                 by_wallet: Dict[str, float], by_wallet_fees: Dict[str, float],
+                 positions_fees: Dict[str, float] = None):
+    """Add today's snapshot to history with cumulative fees tracking.
+
+    Учёт cumulative — ПО ПОЗИЦИЯМ (chain:token_id), не по агрегату. Прежняя
+    агрегатная детекция harvest («сумма упала -> добавить ВСЕ текущие fees
+    заново») надувала счётчик на каждой частичной просадке: не загрузился
+    кошелёк по RPC, переоткрыт коридор, закрыта одна позиция из семи — и
+    pending остальных доливался в копилку повторно. К 02.07 накрутило
+    «всего $5,999 / нед +$4,186» при честном run-rate на порядок ниже.
+
+    Пофиционные правила:
+      - позиция уже известна и fees выросли -> delta = рост
+      - fees упали -> harvest ЭТОЙ позиции -> delta = её текущие fees
+      - позиция впервые видна (новая или после миграции) -> baseline, delta 0
+        (консервативно: лучше недосчитать один интервал, чем накрутить)
+      - позиция отсутствует в этом прогоне (RPC-фейл кошелька / закрыта) ->
+        delta 0, её последние fees ПОМНИМ — вернётся, дельта посчитается от
+        сохранённого, а не задвоится
+    """
     snapshots = load_history()
+    positions_fees = positions_fees or {}
     
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     now = datetime.now(timezone.utc).isoformat()
     
-    # Calculate cumulative fees
-    # Logic: if current fees < previous fees, user did harvest
-    # We add the positive delta to cumulative, never subtract
-    fees_cumulative = fees  # default for first snapshot
+    fees_cumulative = 0.0
+    prev_pos_fees: Dict[str, float] = {}
+    legacy_note = {}
     
     if snapshots:
-        # Find the most recent snapshot (any date)
         prev_snapshot = snapshots[-1]
-        prev_fees = prev_snapshot.get("fees", 0)
-        prev_cumulative = prev_snapshot.get("fees_cumulative", prev_fees)
+        prev_cumulative = prev_snapshot.get("fees_cumulative", 0)
         prev_tvl = prev_snapshot.get("tvl", tvl)
+        prev_pos_fees = dict(prev_snapshot.get("positions_fees_tracking", {}))
         
-        if fees >= prev_fees:
-            # Fees grew normally - add the delta
-            delta = fees - prev_fees
+        if not prev_snapshot.get("positions_fees_tracking"):
+            # Миграция со старой (агрегатной) схемы: прежний cumulative надут
+            # фантомными harvest'ами — архивируем и начинаем честный счёт с 0.
+            legacy_note = {"fees_cumulative_legacy": prev_cumulative,
+                           "cumulative_reset_at": now}
+            logger.warning(f"fees_cumulative reset: legacy ${prev_cumulative:.0f} "
+                           f"archived (inflated by aggregate false-harvest bug)")
+            fees_cumulative = 0.0
         else:
-            # Fees dropped = harvest happened
-            # Add current fees as new accumulation since harvest
-            delta = fees
-            logger.info(f"Detected harvest: fees dropped from ${prev_fees:.2f} to ${fees:.2f}")
-        
-        # SANITY CHECK: daily fee delta cannot exceed 10% of TVL
-        # Catches data glitches, double-counting, and position resets
-        max_daily_delta = max(prev_tvl, tvl) * 0.10
-        if delta > max_daily_delta:
-            logger.warning(f"⚠️ Fee delta ${delta:.2f} exceeds 10% of TVL (${max_daily_delta:.0f}). Capping.")
-            delta = max_daily_delta
-        
-        fees_cumulative = prev_cumulative + delta
+            delta_total = 0.0
+            for key, cur in positions_fees.items():
+                if key in prev_pos_fees:
+                    prev = prev_pos_fees[key]
+                    delta_total += (cur - prev) if cur >= prev else cur
+                # новая позиция -> baseline, delta 0
+            # SANITY: суточный прирост fees > 1% TVL — это глитч данных
+            max_delta = max(prev_tvl, tvl) * 0.01
+            if delta_total > max_delta:
+                logger.warning(f"⚠️ Fee delta ${delta_total:.2f} exceeds 1% of "
+                               f"TVL (${max_delta:.0f}). Capping.")
+                delta_total = max_delta
+            fees_cumulative = prev_cumulative + max(0.0, delta_total)
+    
+    # обновить трекинг: виденные сейчас — текущими значениями, отсутствующие
+    # сохраняют последнее известное (чтобы возврат после RPC-фейла не задвоил)
+    tracking = dict(prev_pos_fees)
+    tracking.update(positions_fees)
     
     # Check if today's snapshot exists
     existing_idx = None
     for i, s in enumerate(snapshots):
         if s.get("date") == today:
             existing_idx = i
-            # Keep the higher cumulative (in case of multiple runs per day)
             prev_today_cumulative = s.get("fees_cumulative", 0)
-            fees_cumulative = max(fees_cumulative, prev_today_cumulative)
+            # после reset legacy-максимум не применяем — иначе вернётся надутое
+            if not legacy_note:
+                fees_cumulative = max(fees_cumulative, prev_today_cumulative)
             break
     
     snapshot = {
@@ -216,10 +244,12 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
         "tvl": tvl,
         "fees": fees,
         "fees_cumulative": fees_cumulative,
+        "positions_fees_tracking": tracking,
         "positions_count": positions_count,
         "positions_in_range": in_range,
         "by_wallet": by_wallet,
         "by_wallet_fees": by_wallet_fees,
+        **legacy_note,
     }
     
     if existing_idx is not None:
@@ -1015,6 +1045,10 @@ def main():
     # Save snapshot to history
     by_wallet_tvl = {k: v.get("balance_usd", 0) for k, v in monitor_data.get("by_wallet", {}).items()}
     by_wallet_fees = {k: v.get("fees_usd", 0) for k, v in monitor_data.get("by_wallet", {}).items()}
+    positions_fees = {
+        f"{p.get('chain','')}:{p.get('token_id','')}": float(p.get("uncollected_fees_usd", 0) or 0)
+        for p in monitor_data.get("positions", [])
+    }
     add_snapshot(
         tvl=monitor_data["tvl"],
         fees=monitor_data["fees"],
@@ -1022,6 +1056,7 @@ def main():
         in_range=monitor_data["in_range"],
         by_wallet=by_wallet_tvl,
         by_wallet_fees=by_wallet_fees,
+        positions_fees=positions_fees,
     )
     
     # Reload history after adding snapshot
