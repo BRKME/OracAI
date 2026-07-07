@@ -245,12 +245,28 @@ def calculate_uncollected_fees(
     decimals0: int,
     decimals1: int
 ) -> Tuple[float, float]:
-    """Calculate uncollected fees for a position"""
+    """Calculate uncollected fees for a position.
+
+    Фикс 07.07.2026 (фантом $1,783.90, «к сбору» превысил «всего»): при
+    пересечении границы диапазона insideLast (чекпоинт контракта) может
+    оказаться БОЛЬШЕ свежевычисленного inside — чтение тиков и global
+    неатомарно. Прежний `(diff) % Q128` превращал отрицательную дельту в
+    ~2^128 и accrued взрывался до размера ликвидности. Off-chain канон:
+    отрицательная/завёрнутая дельта = 0 — деньги не выдумываем, один
+    интервал недосчитать допустимо (следующий poke выровняет)."""
     Q128 = 2 ** 128
-    
-    # Accrued fees since last update
-    accrued0 = (liquidity * ((fee_growth_inside0 - fee_growth_inside0_last) % Q128)) // Q128
-    accrued1 = (liquidity * ((fee_growth_inside1 - fee_growth_inside1_last) % Q128)) // Q128
+    Q255 = 2 ** 255
+
+    def _accrued(inside: int, inside_last: int) -> int:
+        delta = (inside - inside_last) % (2 ** 256)
+        if delta >= Q255:          # wrap-форма отрицательной дельты
+            return 0
+        if delta >= Q128:          # физически невозможный рост за интервал
+            return 0
+        return (liquidity * delta) // Q128
+
+    accrued0 = _accrued(fee_growth_inside0, fee_growth_inside0_last)
+    accrued1 = _accrued(fee_growth_inside1, fee_growth_inside1_last)
     
     # Total uncollected = owed + accrued
     total0 = (tokens_owed0 + accrued0) / (10 ** decimals0)
@@ -674,6 +690,15 @@ class LPMonitor:
         amount1_usd = amount1 * price1
         balance_usd = amount0_usd + amount1_usd
         uncollected_fees_usd = uncollected0 * price0 + uncollected1 * price1
+
+        # Sanity-пояс (07.07): pending, сопоставимый с самой позицией, — это
+        # глитч данных (fee-growth/цена), не доход. Порог щедрый: >50% баланса И >$100.
+        if uncollected_fees_usd > 100 and uncollected_fees_usd > balance_usd * 0.5:
+            logger.warning(
+                f"⚠️ Фантомные fees ${uncollected_fees_usd:,.2f} при позиции "
+                f"${balance_usd:,.2f} ({chain_name}:{token_id}) — зажимаю в 0")
+            uncollected_fees_usd = 0.0
+            uncollected0 = uncollected1 = 0.0
         
         # Skip tiny positions
         if balance_usd < MIN_POSITION_VALUE_USD and uncollected_fees_usd < 1:
