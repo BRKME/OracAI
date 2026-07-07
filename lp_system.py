@@ -134,6 +134,40 @@ class DailySnapshot:
     by_wallet_fees: Dict[str, float]  # wallet_name -> fees
 
 
+def daily_fee_rate(snapshots, window_days: float = 30.0, now=None):
+    """Расчётный дневной fee: дельта fees_cumulative за скользящее окно
+    (до 30 дней), делённая на фактический охват в днях (07.07.2026).
+
+    Гарды: (1) снапшоты ДО per-position reset (без positions_fees_tracking)
+    игнорируются — их cumulative legacy-надутый; (2) охват < 1 дня -> None
+    (деление на шум); (3) monotone cumulative -> ставка неотрицательна.
+    Возвращает (rate_usd_per_day, actual_days) или None."""
+    from datetime import datetime, timezone, timedelta
+    if now is None:
+        now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=window_days)
+    rows = []
+    for s in snapshots:
+        if not s.get("positions_fees_tracking"):
+            continue
+        try:
+            ts = datetime.fromisoformat(s["timestamp"])
+        except (KeyError, ValueError):
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        if ts >= cutoff:
+            rows.append((ts, float(s.get("fees_cumulative", 0.0))))
+    if len(rows) < 2:
+        return None
+    rows.sort(key=lambda r: r[0])
+    (t0, c0), (t1, c1) = rows[0], rows[-1]
+    days = (t1 - t0).total_seconds() / 86400.0
+    if days < 1.0:
+        return None
+    return (max(0.0, c1 - c0) / days, days)
+
+
 def load_history() -> List[dict]:
     """Load history from file"""
     if not os.path.exists(HISTORY_FILE):
@@ -820,6 +854,11 @@ def format_unified_report(
         if cum_fees > 0:
             fees_line_parts.append(f"всего ${cum_fees:,.0f}")
         if fees_line_parts:
+            rate = daily_fee_rate(history)
+            if rate:
+                r, d = rate
+                tag = "ср. 30д" if d >= 29.5 else f"ср. за {d:.0f}д"
+                fees_line_parts.append(f"≈${r:,.2f}/день ({tag})")
             lines.append(" · ".join(fees_line_parts))
         
         # Динамика fees: неделя / месяц
