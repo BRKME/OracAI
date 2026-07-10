@@ -808,7 +808,17 @@ def format_unified_report(
     # которая содержит и переоценку токенов)
     if history:
         last = history[-1]
-        current_fees = last.get("fees", 0)
+        # «К сбору» — ЖИВАЯ сумма uncollected по текущим позициям монитора
+        # (10.07 фикс): поле snapshot['fees'] ловило момент после on-chain poke
+        # и занижало ($15 вместо ~$90), а positions_fees_tracking — накопитель,
+        # не сбрасывался при harvest и завышал ($199). Обе метрики неверны для
+        # «сейчас к сбору»; берём сумму позиций прямо из monitor_data.
+        live_positions = monitor_data.get("positions", [])
+        if live_positions:
+            current_fees = sum(float(p.get("uncollected_fees_usd", 0) or 0)
+                               for p in live_positions)
+        else:
+            current_fees = last.get("fees", 0)
         cum_fees = last.get("fees_cumulative", 0)
         
         # Дельта по cumulative за период — устойчиво к harvest (harvest обнуляет
