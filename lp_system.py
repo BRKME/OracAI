@@ -196,6 +196,46 @@ def save_history(snapshots: List[dict]):
     logger.info(f"History saved: {len(snapshots)} snapshots")
 
 
+STALE_TRACKING_DAYS = 3.0
+
+
+def prune_stale_tracking(tracking, last_seen, current_keys, now=None):
+    """Чистка мёртвых ключей трекинга (10.07): позиции, не виденные в сканах
+    > STALE_TRACKING_DAYS, удаляются (закрытые/перевёрнутые — OBED меняет
+    token_id при reopen; 18 стейлов держали залипшие $183 и ломали интуицию
+    «к сбору»). Фейл-режим безопасен: ошибочный prune живой позиции стоит
+    один интервал fees (вернётся -> baseline, delta 0), накрутки нет.
+    Миграция: ключ без last_seen и не в текущем скане -> prune сразу.
+    Возвращает (tracking, last_seen) — новые словари."""
+    from datetime import datetime, timezone, timedelta
+    if now is None:
+        now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=STALE_TRACKING_DAYS)
+    new_ls = {}
+    for k in tracking:
+        if k in current_keys:
+            new_ls[k] = now.isoformat()
+        elif k in last_seen:
+            new_ls[k] = last_seen[k]
+    for k in current_keys:
+        new_ls.setdefault(k, now.isoformat())
+    keep = set()
+    for k in tracking:
+        ts = new_ls.get(k)
+        if ts is None:
+            continue  # миграция: не в скане и истории нет -> prune
+        try:
+            seen = datetime.fromisoformat(ts)
+            if seen.tzinfo is None:
+                seen = seen.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if seen >= cutoff:
+            keep.add(k)
+    return ({k: v for k, v in tracking.items() if k in keep},
+            {k: v for k, v in new_ls.items() if k in keep or k in current_keys})
+
+
 def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int, 
                  by_wallet: Dict[str, float], by_wallet_fees: Dict[str, float],
                  positions_fees: Dict[str, float] = None):
@@ -260,6 +300,10 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
     # сохраняют последнее известное (чтобы возврат после RPC-фейла не задвоил)
     tracking = dict(prev_pos_fees)
     tracking.update(positions_fees)
+    prev_last_seen = (snapshots[-1].get("positions_last_seen", {})
+                      if snapshots else {})
+    tracking, positions_last_seen = prune_stale_tracking(
+        tracking, prev_last_seen, set((positions_fees or {}).keys()))
     
     # Check if today's snapshot exists
     existing_idx = None
@@ -279,6 +323,7 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
         "fees": fees,
         "fees_cumulative": fees_cumulative,
         "positions_fees_tracking": tracking,
+        "positions_last_seen": positions_last_seen,
         "positions_count": positions_count,
         "positions_in_range": in_range,
         "by_wallet": by_wallet,
