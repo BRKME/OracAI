@@ -197,7 +197,10 @@ def get_fee_growth_inside(
     fee_growth_global1: int
 ) -> Tuple[int, int]:
     """Calculate fee growth inside the position's range"""
-    Q128 = 2 ** 128
+    Q256 = 2 ** 256  # 12.07 фикс: канонический модуль uint256 (было mod-Q128).
+    # insideLast контракта на старых пулах >= 2^128 (счётчики копятся годами),
+    # обрезанный inside давал wrapped-дельту, кламп занулял accrued.
+    # Ground truth UI: $71.09 против отчётных $35.86 — недосчёт 2x.
     
     try:
         tick_lower_data = pool_contract.functions.ticks(tick_lower).call()
@@ -216,20 +219,20 @@ def get_fee_growth_inside(
         fee_growth_below0 = fee_growth_outside0_lower
         fee_growth_below1 = fee_growth_outside1_lower
     else:
-        fee_growth_below0 = (fee_growth_global0 - fee_growth_outside0_lower) % Q128
-        fee_growth_below1 = (fee_growth_global1 - fee_growth_outside1_lower) % Q128
+        fee_growth_below0 = (fee_growth_global0 - fee_growth_outside0_lower) % Q256
+        fee_growth_below1 = (fee_growth_global1 - fee_growth_outside1_lower) % Q256
     
     # Calculate fee growth above
     if current_tick < tick_upper:
         fee_growth_above0 = fee_growth_outside0_upper
         fee_growth_above1 = fee_growth_outside1_upper
     else:
-        fee_growth_above0 = (fee_growth_global0 - fee_growth_outside0_upper) % Q128
-        fee_growth_above1 = (fee_growth_global1 - fee_growth_outside1_upper) % Q128
+        fee_growth_above0 = (fee_growth_global0 - fee_growth_outside0_upper) % Q256
+        fee_growth_above1 = (fee_growth_global1 - fee_growth_outside1_upper) % Q256
     
     # Fee growth inside
-    fee_growth_inside0 = (fee_growth_global0 - fee_growth_below0 - fee_growth_above0) % Q128
-    fee_growth_inside1 = (fee_growth_global1 - fee_growth_below1 - fee_growth_above1) % Q128
+    fee_growth_inside0 = (fee_growth_global0 - fee_growth_below0 - fee_growth_above0) % Q256
+    fee_growth_inside1 = (fee_growth_global1 - fee_growth_below1 - fee_growth_above1) % Q256
     
     return fee_growth_inside0, fee_growth_inside1
 
