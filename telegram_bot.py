@@ -346,39 +346,30 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # 1. ФАЗА РЫНКА
     # ══════════════════════════════════════════════════════
     
-    lines.append("🔘 Фаза рынка:")
-    lines.append("")
-    
-    # Main info line
-    regime_line = f"{regime} ({days}d) | Conf. {conf_pct}%"
-    lines.append(regime_line)
-    
-    # RSI (no emoji)
+    # v6 (12.07): компактный макет — «одно измерение = одна строка»,
+    # визуальный якорь (бары режимов + цикл) сохранён по решению оператора.
+    from datetime import datetime as _dt
+    _dq = int(meta.get("data_completeness", 1.0) * 100)
+    lines.append(f"🧭 OracAI · {_dt.now().strftime('%d.%m')} · data {_dq}%")
+    summary = []
     if rsi_1d is not None or rsi_2h is not None:
         _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
         rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
         rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
-        lines.append(f"RSI: 1D={rsi_1d_str} | 2H={rsi_2h_str}")
-    
-    # Fear & Greed (after RSI)
+        summary.append(f"RSI: 1D {rsi_1d_str} · 2H {rsi_2h_str}")
     if fg_value is not None:
-        fg_label = fg_class or "?"
-        lines.append(f"FG: {fg_value} ({fg_label})")
-    
-    # Directional pressure + structure (compact)
+        summary.append(f"FG {fg_value} {fg_class or '?'}")
     dir_arrow = "↓" if risk_level < 0 else "↑"
-    dir_line = f"Dir: {dir_arrow} {abs(risk_level):.2f}"
-    if struct_break:
-        dir_line += " | Структура: BREAK"
-    lines.append(dir_line)
-    
+    _dir = f"{dir_arrow}{abs(risk_level):.2f}"
+    summary.append(f"структура BREAK {_dir}" if struct_break else f"давление {_dir}")
+    lines.append(" · ".join(summary))
     lines.append("")
     
     # ══════════════════════════════════════════════════════
     # РЕЖИМ РЫНКА (Probabilities) - aligned bars
     # ══════════════════════════════════════════════════════
     
-    lines.append("Режим рынка:")
+    lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
     
     def make_prob_bar(value, width=10):
         filled = int(value * width)
@@ -453,14 +444,20 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     else:
         risk_state = "NORMAL"
     
-    lines.append("🔘 Риск:")
-    lines.append(f"NORM {make_bar_simple(risk_state == 'NORMAL')}")
-    lines.append(f"ELEV {make_bar_simple(risk_state == 'ELEVATED')}")
-    lines.append(f"TAIL {make_bar_simple(risk_state == 'TAIL')}")
-    lines.append(f"CRIS {make_bar_simple(risk_state == 'CRISIS')}")
-    lines.append("")
-    lines.append(f"→ {risk_explainer(risk_state)}")
-    lines.append("")
+    # v6: риск — одной человеческой строкой (состояние -> что делать),
+    # без жаргона vol_z; движок его уже учёл в вердикте. Строки риска и
+    # действия группируются ниже, после расчёта bottom/top.
+    RISK_HUMAN = {
+        "NORMAL": "🟢 Риск обычный: рынок спокоен → работаем по плану",
+        "ELEVATED": ("⚡ Риск повышен: рынок дёргается сильнее обычного → "
+                     "если входишь — размер меньше и стоп шире, "
+                     "на резких свечах не докупать"),
+        "TAIL": ("🟠 Риск хвоста: возможно редкое сильное движение → "
+                 "капитал важнее доходности: без ножей, плечо убрать"),
+        "CRISIS": ("🔴 Кризис: паника и каскады ликвидаций → "
+                   "в кэш/стейбл, новые позиции не открывать"),
+    }
+    risk_line_v6 = RISK_HUMAN.get(risk_state, "")
     
     # ══════════════════════════════════════════════════════
     # 4. BOTTOM/TOP PROXIMITY (continuous calculation)
@@ -614,12 +611,23 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
                                      dd_from_high, bear_confirmation,
                                      bottom_prox=bottom_prox)
     
-    lines.append(f"🔘 Действие: {action}")
-    lines.append(f"→ {action_note}")
+    # v6: позиция в цикле — выводом, не голыми процентами
+    _t, _b = int(top_prox * 100), int(bottom_prox * 100)
+    if _t - _b >= 10:
+        cycle_pos_line = (f"📍 По циклу: ближе к вершине, чем к дну ({_t}% против {_b}%) "
+                          "→ новые крупные закупки не время, держать — да")
+    elif _b - _t >= 10:
+        cycle_pos_line = (f"📍 По циклу: ближе к дну, чем к вершине ({_b}% против {_t}%) "
+                          "→ зона накопления интереснее продаж")
+    else:
+        cycle_pos_line = (f"📍 По циклу: середина (top {_t}% / bottom {_b}%) "
+                          "→ без перекоса, по плану")
     if conflict_note:
-        lines.append(f"→ {conflict_note}")
-    lines.append(f"Bottom {make_bar(bottom_prox)} {int(bottom_prox*100):2d}%")
-    lines.append(f"Top    {make_bar(top_prox)} {int(top_prox*100):2d}%")
+        lines.append(conflict_note)
+    if risk_line_v6:
+        lines.append(risk_line_v6)
+    lines.append(cycle_pos_line)
+    lines.append(f"Действие: {action} · {action_note}")
     lines.append("")
     
     # ══════════════════════════════════════════════════════
@@ -627,26 +635,23 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     
     if lp_policy:
-        lines.append("🔘 LP:")
-        
-        # Range + Fees vs IL
-        range_str = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
-        range_line = f"Range: {range_str}"
+        _rw = lp_policy.range_width if hasattr(lp_policy, 'range_width') else "medium"
+        _rw_ru = {"wide": "широкие", "medium": "средние", "narrow": "узкие"}.get(_rw, _rw)
+        lp_parts = [f"LP: диапазоны {_rw_ru}"]
         if hasattr(lp_policy, 'fee_variance_ratio'):
             fv = lp_policy.fee_variance_ratio
             fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
-            range_line += f" | Fees vs IL: {fv:.1f}x {fv_status}"
-        lines.append(range_line)
-        
-        # Hedge
+            lp_parts.append(f"комиссии кроют IL с запасом {fv:.1f}x {fv_status}")
         hedge_required = (
-            lp_policy.hedge_recommended or 
+            lp_policy.hedge_recommended or
             risk_state in ("TAIL", "CRISIS") or
             (risk_state == "ELEVATED" and conf_pct < 30)
         )
-        hedge_str = "REQUIRED" if hedge_required else "recommended" if risk_state == "ELEVATED" else "optional"
-        lines.append(f"Hedge: {hedge_str}")
-        
+        hedge_ru = ("хедж ОБЯЗАТЕЛЕН" if hedge_required
+                    else "хедж рекомендован" if risk_state == "ELEVATED"
+                    else "хедж по желанию")
+        lp_parts.append(hedge_ru)
+        lines.append(" · ".join(lp_parts))
         lines.append("")
     
     # ══════════════════════════════════════════════════════
@@ -656,9 +661,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     
-    lines.append("📡 DATA STATUS v5.7 OracAi")
-    lines.append(f"Качество данных: {int(data_quality*100)}%")
-    
+    # v6: качество данных уже в хедере; внизу — только предупреждения
     if failed_sources:
         lines.append(f"Недоступны: {', '.join(failed_sources)}")
     
