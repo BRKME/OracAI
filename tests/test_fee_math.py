@@ -43,3 +43,19 @@ def test_huge_wrapped_delta_also_clamped():
         fee_growth_inside0_last=0, fee_growth_inside1_last=0,
         tokens_owed0=0, tokens_owed1=0, decimals0=18, decimals1=18)
     assert t0 == 0.0
+
+
+def test_large_legit_delta_small_liquidity_not_clamped():
+    """Регрессия 13.07: WETH-стороны обеих arbitrum-позиций обнулялись.
+    Дельта = fees-per-unit-liquidity * 2^128; у 18-децимальных токенов при
+    небольшой концентрированной ликвидности легитимная дельта > Q128
+    (напр. 50 wei/unit -> 50*Q128). Сторожок 'delta>=Q128 -> 0' резал
+    реальные комиссии. Настоящие защиты — wrap-кламп (>=Q255) и USD-пояс."""
+    liq = 10 ** 14
+    delta = 50 * Q128            # 50 wei комиссий на единицу ликвидности
+    t0, _ = calculate_uncollected_fees(
+        liquidity=liq,
+        fee_growth_inside0=delta, fee_growth_inside1=0,
+        fee_growth_inside0_last=0, fee_growth_inside1_last=0,
+        tokens_owed0=0, tokens_owed1=0, decimals0=18, decimals1=18)
+    assert t0 == pytest.approx(liq * 50 / 10**18)  # 0.005 WETH, не ноль

@@ -264,8 +264,10 @@ def calculate_uncollected_fees(
         delta = (inside - inside_last) % (2 ** 256)
         if delta >= Q255:          # wrap-форма отрицательной дельты
             return 0
-        if delta >= Q128:          # физически невозможный рост за интервал
-            return 0
+        # 13.07: сторожок «delta >= Q128 -> 0» УДАЛЁН — он резал легитимные
+        # WETH-комиссии (18 децималей + малая концентрированная ликвидность
+        # дают дельту > Q128 честно). Защита от фантомов остаётся двухслойной:
+        # wrap-кламп выше + USD-пояс у вызывающего.
         return (liquidity * delta) // Q128
 
     accrued0 = _accrued(fee_growth_inside0, fee_growth_inside0_last)
