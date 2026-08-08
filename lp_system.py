@@ -527,168 +527,6 @@ def run_opportunities() -> Optional[dict]:
         return None
 
 
-def run_advisor(monitor_data: dict, opportunities_data: Optional[dict], history: List[dict]) -> Optional[str]:
-    """Run LP Advisor with proper APY and regime analysis"""
-    
-    # Check for OpenAI key first
-    openai_key = os.getenv("OPENAI_API_KEY")
-    if not openai_key:
-        logger.warning("OPENAI_API_KEY not set - skipping AI summary")
-        return None
-    
-    try:
-        # === BUILD ANALYSIS CONTEXT ===
-        
-        tvl = monitor_data.get("tvl", 0)
-        fees = monitor_data.get("fees", 0)
-        positions = monitor_data.get("positions", [])
-        count = len(positions)
-        in_range = sum(1 for p in positions if p.get("in_range", False))
-        out_range = count - in_range
-        
-        # Regime info
-        regime = opportunities_data.get("regime", "UNKNOWN") if opportunities_data else "UNKNOWN"
-        
-        # Portfolio APY (calculated from history)
-        portfolio_apy = opportunities_data.get("portfolio_apy") if opportunities_data else None
-        
-        # Benchmark - average of top 5 pools
-        benchmark_apy = None
-        top_pools = []
-        if opportunities_data and opportunities_data.get("top_pools"):
-            top_pools = opportunities_data["top_pools"][:5]
-            if top_pools:
-                benchmark_apy = sum(p.get("risk_adj_apy", 0) for p in top_pools) / len(top_pools)
-        
-        # === DETERMINE PORTFOLIO HEALTH ===
-        
-        all_in_range = (in_range == count)
-        has_apy_data = portfolio_apy is not None
-        
-        # Token type classification
-        def get_token_type(symbol: str) -> str:
-            s = symbol.upper()
-            stables = {"USDC", "USDT", "DAI", "BUSD", "FRAX", "FDUSD"}
-            majors = {"WETH", "ETH", "WBTC", "BTC", "BTCB", "WBNB", "BNB"}
-            if s in stables:
-                return "stable"
-            if s in majors:
-                return "major"
-            return "alt"
-        
-        # Count position types
-        stable_stable = 0
-        stable_major = 0
-        major_major = 0
-        with_alt = 0
-        
-        for p in positions:
-            t0 = get_token_type(p.get("token0_symbol", ""))
-            t1 = get_token_type(p.get("token1_symbol", ""))
-            
-            if t0 == "stable" and t1 == "stable":
-                stable_stable += 1
-            elif (t0 == "stable" and t1 == "major") or (t0 == "major" and t1 == "stable"):
-                stable_major += 1
-            elif t0 == "major" and t1 == "major":
-                major_major += 1
-            else:
-                with_alt += 1
-        
-        # === BUILD AI PROMPT ===
-        
-        # Portfolio status
-        if all_in_range and fees > 0:
-            status_line = f"Все {count} позиций в диапазоне, накоплено ${fees:.0f} fees. Портфель работает."
-        elif out_range > 0:
-            status_line = f"ВНИМАНИЕ: {out_range} из {count} позиций ВНЕ диапазона! Требуется действие."
-        else:
-            status_line = f"{in_range}/{count} позиций активны."
-        
-        # APY comparison
-        if has_apy_data and benchmark_apy:
-            diff = portfolio_apy - benchmark_apy
-            if diff >= -5:
-                apy_line = f"APY портфеля: {portfolio_apy:.1f}% (бенчмарк: {benchmark_apy:.1f}%). На уровне рынка или лучше."
-            else:
-                apy_line = f"APY портфеля: {portfolio_apy:.1f}% (бенчмарк: {benchmark_apy:.1f}%). Есть потенциал для улучшения."
-        else:
-            apy_line = "APY: недостаточно данных для расчёта (нужно минимум 2 дня истории)."
-        
-        # Regime description
-        regime_descriptions = {
-            "BULL": "рост, тренд вверх",
-            "BEAR": "падение, тренд вниз",
-            "RANGE": "боковик, консолидация",
-            "TRENDING": "сильный тренд",
-            "VOLATILE_CHOP": "высокая волатильность",
-            "TRANSITION": "переходный период",
-            "HARVEST": "идеально для LP",
-            "CHURN": "хаотичное движение",
-        }
-        regime_desc = regime_descriptions.get(regime, regime)
-        
-        # Pair composition
-        composition = f"stable/stable: {stable_stable}, stable/major: {stable_major}, major/major: {major_major}, с alt: {with_alt}"
-        
-        prompt = f"""Ты LP-эксперт. Дай КРАТКУЮ оценку портфеля (3-4 предложения).
-
-СТАТУС: {status_line}
-
-ДОХОДНОСТЬ: {apy_line}
-
-ФАЗА РЫНКА: {regime} ({regime_desc})
-
-СОСТАВ ПАР: {composition}
-
-ПРАВИЛА ОТВЕТА:
-1. Если ВСЕ позиции в диапазоне и fees растут — НЕ рекомендуй менять позиции
-2. Если APY неизвестен — НЕ говори "отстаёт", просто отметь что данных пока нет
-3. Рекомендуй действия ТОЛЬКО если есть реальная проблема:
-   - Позиции вне диапазона
-   - APY известен И сильно ниже бенчмарка (>10%)
-4. При BEAR режиме отметь что пары с alt токенами несут повышенный риск IL, но НЕ требуй срочной смены если они в диапазоне
-5. Будь кратким и конкретным
-
-Ответ на русском, 2-4 предложения."""
-
-        # === CALL OPENAI ===
-        
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {openai_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "Ты спокойный и практичный DeFi LP эксперт. Не паникуешь, не даёшь лишних рекомендаций. Если портфель работает нормально — так и говоришь."
-                },
-                {"role": "user", "content": prompt}
-            ],
-            "max_tokens": 250,
-            "temperature": 0.7
-        }
-        
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code == 200:
-            data = response.json()
-            ai_text = data["choices"][0]["message"]["content"]
-            logger.info(f"AI response: {ai_text[:100]}...")
-            return ai_text
-        else:
-            logger.error(f"OpenAI error: {response.status_code} - {response.text[:200]}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Advisor error: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # TELEGRAM REPORT
@@ -814,9 +652,7 @@ Maximum 3-4 lines total. No extra text."""
 def format_unified_report(
     monitor_data: dict,
     opportunities_data: Optional[dict],
-    ai_summary: Optional[str],
     history: List[dict],
-    hedge_report: Optional[str] = None,
     hack_report: Optional[str] = None,
     unlock_report: Optional[str] = None
 ) -> str:
@@ -1189,16 +1025,8 @@ def main():
     
     logger.info(f"\n📤 Отчёт будет отправлен ({reason}) — продолжаем")
     
-    # Stage 3: AI Advisor — skipped in daily (shown in weekly only)
-    logger.info("\n--- STAGE 3: ADVISOR (skipped — daily compact mode) ---")
-    ai_summary = None
-    
-    # Stage 4: Hedge — skipped in daily (shown in weekly only)
-    logger.info("\n--- STAGE 4: HEDGE (skipped — daily compact mode) ---")
-    hedge_report = None
-    
     # DeFi hack check
-    logger.info("\n--- STAGE 5: DEFI HACK CHECK ---")
+    logger.info("\n--- STAGE 3: DEFI HACK CHECK ---")
     hack_report = None
     try:
         # Get tokens and chains from positions
@@ -1215,8 +1043,8 @@ def main():
     except Exception as e:
         logger.warning(f"Hack check failed: {e}")
     
-    # Stage 6: Token unlocks — only Monday morning (weekly, avoids excess OpenAI calls)
-    logger.info("\n--- STAGE 6: UNLOCK CHECK ---")
+    # Stage 4: Token unlocks — only Monday morning (weekly, avoids excess OpenAI calls)
+    logger.info("\n--- STAGE 4: UNLOCK CHECK ---")
     unlock_report = None
     if _is_monday_morning() or os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
         try:
@@ -1238,7 +1066,7 @@ def main():
     
     # Generate unified report
     logger.info("\n--- GENERATING REPORT ---")
-    report = format_unified_report(monitor_data, opportunities_data, ai_summary, history, hedge_report, hack_report, unlock_report)
+    report = format_unified_report(monitor_data, opportunities_data, history, hack_report, unlock_report)
     
     print("\n" + "=" * 60)
     print(report)
