@@ -25,7 +25,7 @@ from web3 import Web3
 from lp_config import (
     WALLETS, WALLET_ADDRESSES, CHAINS,
     POSITION_MANAGER_ABI, FACTORY_ABI, POOL_ABI, ERC20_ABI,
-    STABLECOINS, WRAPPED_NATIVE,
+    STABLECOIN_ADDRESSES, WRAPPED_NATIVE,
     MIN_POSITION_VALUE_USD, PRICE_CACHE_TTL, LP_STATE_FILE
 )
 
@@ -301,8 +301,8 @@ class PriceService:
             if time.time() - ts < self.cache_ttl:
                 return price
         
-        # Check if stablecoin
-        if token_address.lower() in STABLECOINS:
+        # Check if stablecoin (lookup by contract address)
+        if token_address.lower() in STABLECOIN_ADDRESSES:
             return 1.0
         
         # Fetch from CoinGecko
@@ -337,7 +337,7 @@ class PriceService:
             addr_lower = addr.lower()
             cache_key = f"{platform}:{addr_lower}"
             
-            if addr_lower in STABLECOINS:
+            if addr_lower in STABLECOIN_ADDRESSES:
                 results[addr_lower] = 1.0
             elif cache_key in self.cache:
                 price, ts = self.cache[cache_key]

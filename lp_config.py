@@ -71,12 +71,19 @@ CHAINS = {
 # TOKEN WHITELIST (Stablecoins and major tokens for price reference)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-STABLECOINS = {
+# NOTE: адресный словарь и символьный сет — РАЗНЫЕ структуры с разным
+# назначением. Раньше оба назывались STABLECOINS, и второе присваивание
+# (символы, ~строка 294) молча затирало первое → lp_monitor.get_token_price()
+# делал лукап адреса по сету символов, всегда получал False, и цена каждой
+# стейбл-ноги шла запросом в CoinGecko. При рейт-лимите возвращался 0 →
+# нога позиции оценивалась в $0 → занижался TVL.
+STABLECOIN_ADDRESSES = {
     # Arbitrum
     "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8": ("USDC.e", 6),
     "0xaf88d065e77c8cc2239327c5edb3a432268e5831": ("USDC", 6),
     "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9": ("USDT", 6),
     "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1": ("DAI", 18),
+    "0x9cbf099ff424979439dfba03f00b5961784c06ce": ("USD₮0", 6),
     # BSC
     "0x55d398326f99059ff775485246999027b3197955": ("USDT", 18),
     "0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d": ("USDC", 18),
@@ -290,11 +297,13 @@ MIN_TVL_USD = 100_000          # $100K minimum TVL
 MIN_VOLUME_24H_USD = 50_000    # $50K minimum daily volume
 MIN_APY = 1.0                   # 1% minimum APY
 
-# Token categories
+# Token categories — символьный сет (для сравнения по SYMBOL, не по адресу).
+# Для лукапа по контрактному адресу используй STABLECOIN_ADDRESSES выше.
 STABLECOINS = {
     "USDC", "USDT", "DAI", "BUSD", "FRAX", "TUSD", "USDP", "GUSD",
     "USDC.E", "USDT.E", "USDC.e", "USDT.e",
     "USDC-CIRCLE", "USDCE", "USDT-TETHER", "FDUSD",
+    "USD₮0",
 }
 
 MAJOR_TOKENS = {
