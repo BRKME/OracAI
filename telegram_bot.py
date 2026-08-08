@@ -351,14 +351,18 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     from datetime import datetime as _dt
     _dq = int(meta.get("data_completeness", 1.0) * 100)
     lines.append(f"🧭 OracAI · {_dt.now().strftime('%d.%m')} · data {_dq}%")
+    # v6.2: слот под TL;DR-буллеты. Действие считается ниже (~строка 610),
+    # поэтому резервируем позицию и заполняем её после расчёта target_pos.
+    _tldr_slot = len(lines)
+    lines.append("")  # placeholder, заменяется на 3 буллета
+    lines.append("")
     summary = []
     if rsi_1d is not None or rsi_2h is not None:
         _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
         rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
         rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
         summary.append(f"RSI: 1D {rsi_1d_str} · 2H {rsi_2h_str}")
-    if fg_value is not None:
-        summary.append(f"FG {fg_value} {fg_class or '?'}")
+    # FG вынесен в TL;DR — здесь не дублируем
     dir_arrow = "↓" if risk_level < 0 else "↑"
     _dir = f"{dir_arrow}{abs(risk_level):.2f}"
     summary.append(f"структура BREAK {_dir}" if struct_break else f"давление {_dir}")
@@ -615,6 +619,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     action, action_note = action_for(target_pos, risk_state,
                                      dd_from_high, bear_confirmation,
                                      bottom_prox=bottom_prox)
+    
+    # v6.2: TL;DR — три главных буллета в шапке, для беглого чтения.
+    # Заполняем зарезервированный слот (_tldr_slot), т.к. action считается здесь.
+    _tldr = [
+        f"• Цикл: {phase} {cycle_pos}%",
+        f"• FG: {fg_value} {fg_class or '?'}" if fg_value is not None else "• FG: н/д",
+        f"• Действие: {action} · {int(target_pos * 100)}%",
+    ]
+    lines[_tldr_slot:_tldr_slot + 1] = _tldr
     
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
