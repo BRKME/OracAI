@@ -424,10 +424,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     
     cycle_filled = int(cycle_pos / 10)
     cycle_bar = "#" * cycle_filled + "." * (10 - cycle_filled)
-    
-    lines.append(f"Цикл: {phase} [{cycle_bar}] {cycle_pos}%")
-    
-    lines.append("")
+    # v6.2: строка «Цикл: ...» переехала в TL;DR-буллет вместе с баром
     
     # ══════════════════════════════════════════════════════
     # 2. РИСК (without structure duplicate)
@@ -618,7 +615,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # v6.2: TL;DR — три главных буллета в шапке, для беглого чтения.
     # Заполняем зарезервированный слот (_tldr_slot), т.к. action считается здесь.
     _tldr = [
-        f"• Цикл: {phase} {cycle_pos}%",
+        f"• Цикл: {phase} [{cycle_bar}] {cycle_pos}%",
         f"• FG: {fg_value} {fg_class or '?'}" if fg_value is not None else "• FG: н/д",
         f"• Действие: {action} · {int(target_pos * 100)}%",
     ]
