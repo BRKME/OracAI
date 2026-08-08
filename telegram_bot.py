@@ -561,8 +561,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     #     (RSI below 50 AND directional pressure negative).
     # ───────────────────────────────────────────────────────────────────
     strong_bottom = (rsi_for_check < 30) or (bottom_prox > 0.70)
+    # v6.1: BEAR branch now requires conf > 25 — consistent with the
+    # "Confident bear regime" gate above (which demands conf > 30 for the
+    # same 0.60 cut). A 1-day BEAR at conf 17% is noise, not confirmation.
+    # The RSI+Dir and Greed-trap branches stay ungated: they are independent
+    # confirmations that don't rely on the regime classifier's confidence.
     bear_confirmation = (
-        regime == "BEAR"
+        (regime == "BEAR" and conf_pct > 25)
         or (rsi_for_check < 50 and risk_level < -0.2)
         or (fg_value is not None and fg_value > 65 and dd_from_high < -15)  # Greed in drawdown = trap
     )
@@ -612,13 +617,25 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
                                      bottom_prox=bottom_prox)
     
     # v6: позиция в цикле — выводом, не голыми процентами
+    # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
+    # относительного перекоса: bottom 32% против top 17% — это не дно, а просто
+    # «менее далеко от дна». Плюс строка не должна спорить с Действием:
+    # если целевая позиция снижается, «интереснее продаж» — дезориентирует.
     _t, _b = int(top_prox * 100), int(bottom_prox * 100)
+    reducing = target_pos < 0.85
     if _t - _b >= 10:
         cycle_pos_line = (f"📍 По циклу: ближе к вершине, чем к дну ({_t}% против {_b}%) "
                           "→ новые крупные закупки не время, держать — да")
     elif _b - _t >= 10:
-        cycle_pos_line = (f"📍 По циклу: ближе к дну, чем к вершине ({_b}% против {_t}%) "
-                          "→ зона накопления интереснее продаж")
+        if bottom_prox > 0.45 and not reducing:
+            cycle_pos_line = (f"📍 По циклу: ближе к дну, чем к вершине ({_b}% против {_t}%) "
+                              "→ зона накопления интереснее продаж")
+        elif reducing:
+            cycle_pos_line = (f"📍 По циклу: вершина далеко (top {_t}%), но и до дна не дошли "
+                              f"(bottom {_b}%) → пока защита важнее докупок")
+        else:
+            cycle_pos_line = (f"📍 По циклу: перекос к дну (bottom {_b}% / top {_t}%), "
+                              "но сигнал слабый → без спешки, ждём подтверждения")
     else:
         cycle_pos_line = (f"📍 По циклу: середина (top {_t}% / bottom {_b}%) "
                           "→ без перекоса, по плану")
