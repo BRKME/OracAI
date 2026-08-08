@@ -1173,6 +1173,22 @@ def main():
     else:
         logger.warning("Opportunities scan failed")
     
+    # ───────────────────────────────────────────────────────────────────
+    # Гейт отправки — ДО дорогих стадий.
+    # Stage 1-2 выше собирают данные (снапшот истории, opportunities-стейт)
+    # и должны выполняться на каждом запуске. Stage 5-6 ниже ходят в OpenAI
+    # и нужны ТОЛЬКО для отчёта. Воркфлоу крутится каждые 2ч (12 раз/сутки),
+    # а отчёт уходит ~2 раза — раньше 10 из 12 AI-вызовов делались впустую.
+    # ───────────────────────────────────────────────────────────────────
+    should_send, reason = _should_send_report(monitor_data)
+    if not should_send:
+        logger.info(f"\n🔕 Отчёт не отправляется ({reason}) — "
+                    f"пропускаем AI-стадии, данные уже сохранены")
+        logger.info("\nDone!")
+        return 0
+    
+    logger.info(f"\n📤 Отчёт будет отправлен ({reason}) — продолжаем")
+    
     # Stage 3: AI Advisor — skipped in daily (shown in weekly only)
     logger.info("\n--- STAGE 3: ADVISOR (skipped — daily compact mode) ---")
     ai_summary = None
@@ -1228,13 +1244,9 @@ def main():
     print(report)
     print("=" * 60)
     
-    # Decide whether to send (flexible logic)
-    should_send, reason = _should_send_report(monitor_data)
-    if should_send:
-        logger.info(f"📤 Sending report ({reason})")
-        send_telegram(report)
-    else:
-        logger.info(f"🔕 Skipping send ({reason}) — not scheduled time, all positions OK")
+    # Гейт уже пройден выше — здесь просто отправляем
+    logger.info(f"📤 Sending report ({reason})")
+    send_telegram(report)
     
     logger.info("\nDone!")
     return 0
