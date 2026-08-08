@@ -14,48 +14,14 @@ from typing import Optional, Dict, List, Tuple
 from datetime import datetime, timedelta
 import requests
 
+from common import calculate_rsi
+
 logger = logging.getLogger(__name__)
 
 
 # ============================================================
 # RSI CALCULATION
 # ============================================================
-
-def calculate_rsi(prices: List[float], period: int = 14) -> float:
-    """
-    Рассчитывает RSI.
-    
-    Args:
-        prices: Список цен (от старых к новым)
-        period: Период RSI
-    
-    Returns:
-        RSI значение (0-100)
-    """
-    if len(prices) < period + 1:
-        return 50.0  # Default neutral
-    
-    # Calculate price changes
-    deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
-    
-    # Separate gains and losses
-    gains = [d if d > 0 else 0 for d in deltas]
-    losses = [-d if d < 0 else 0 for d in deltas]
-    
-    # Use last 'period' values
-    recent_gains = gains[-period:]
-    recent_losses = losses[-period:]
-    
-    avg_gain = sum(recent_gains) / period
-    avg_loss = sum(recent_losses) / period
-    
-    if avg_loss == 0:
-        return 100.0
-    
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    
-    return round(rsi, 2)
 
 
 def calculate_ma(prices: List[float], period: int) -> float:

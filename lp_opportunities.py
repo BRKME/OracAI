@@ -20,6 +20,8 @@ from dataclasses import dataclass, asdict, field
 
 import requests
 
+from common import send_telegram_message
+
 from lp_config import (
     DEFILLAMA_POOLS_URL,
     SCAN_CHAINS, SCAN_PROTOCOLS,
@@ -564,33 +566,6 @@ class LPOpportunitiesScanner:
 # TELEGRAM
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def send_telegram_message(message: str) -> bool:
-    """Send message to Telegram"""
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    
-    if not bot_token or not chat_id:
-        logger.warning("Telegram credentials not set")
-        return False
-    
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {
-            "chat_id": chat_id,
-            "text": message,
-            "parse_mode": "HTML"
-        }
-        response = requests.post(url, data=payload, timeout=10)
-        
-        if response.status_code == 200:
-            logger.info("✓ Telegram message sent")
-            return True
-        else:
-            logger.error(f"Telegram error: {response.status_code}")
-            return False
-    except Exception as e:
-        logger.error(f"Telegram exception: {e}")
-        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -636,7 +611,7 @@ def main():
     print(report)
     
     # Send to Telegram
-    send_telegram_message(report)
+    send_telegram_message(report, parse_mode="HTML")
     
     return scanner.get_summary()
 

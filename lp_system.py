@@ -21,6 +21,14 @@ from dataclasses import dataclass, asdict
 
 import requests
 
+from common import (
+    send_telegram_message,
+    STABLECOIN_SYMBOLS as STABLECOINS,
+    MAJOR_SYMBOLS as MAJORS,
+    NO_UNLOCK_SYMBOLS,
+    token_tier,
+)
+
 # Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -532,8 +540,7 @@ def run_opportunities() -> Optional[dict]:
 # TELEGRAM REPORT
 # ═══════════════════════════════════════════════════════════════════════════════
 
-STABLECOINS = {"USDT", "USDC", "USD₮0", "BUSD", "DAI", "FRAX", "TUSD", "USDP"}
-MAJORS = {"WETH", "ETH", "WBNB", "BNB", "WBTC", "BTC"}
+# STABLECOINS / MAJORS импортированы из common.py
 
 
 def calculate_asset_allocation(positions: List[dict]) -> List[dict]:
@@ -550,14 +557,7 @@ def calculate_asset_allocation(positions: List[dict]) -> List[dict]:
     - ASTER-ZEC → 50/50
     """
     exposure = {}  # token -> total USD
-    
-    def token_tier(t: str) -> int:
-        """0=stable, 1=major, 2=alt"""
-        if t in STABLECOINS:
-            return 0
-        if t in MAJORS:
-            return 1
-        return 2
+    # token_tier() импортирован из common.py
     
     for p in positions:
         balance = p.get("balance_usd", 0)
@@ -815,28 +815,6 @@ def format_unified_report(
     return "\n".join(lines)
 
 
-def send_telegram(message: str) -> bool:
-    """Send message to Telegram"""
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    
-    if not bot_token or not chat_id:
-        logger.warning("Telegram credentials not set")
-        return False
-    
-    try:
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        response = requests.post(url, data={"chat_id": chat_id, "text": message}, timeout=10)
-        
-        if response.status_code == 200:
-            logger.info("Telegram sent")
-            return True
-        else:
-            logger.error(f"Telegram error: {response.status_code}")
-            return False
-    except Exception as e:
-        logger.error(f"Telegram exception: {e}")
-        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1049,12 +1027,14 @@ def main():
     if _is_monday_morning() or os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
         try:
             all_positions = monitor_data.get("positions", [])
-            # Aggregate exposure per non-stable token
+            # Экспозиция по токенам, у которых В ПРИНЦИПЕ бывают разлоки.
+            # Отсекаем стейблы и PoW/майнинговые монеты (ZEC, BTC, LTC...) —
+            # у них нет вестинга, спрашивать про них AI бессмысленно.
             exposure = {}
             for p in all_positions:
                 bal = p.get("balance_usd", 0)
                 for sym in (p.get("token0_symbol", ""), p.get("token1_symbol", "")):
-                    if sym and sym not in STABLECOINS:
+                    if sym and sym not in STABLECOINS and sym not in NO_UNLOCK_SYMBOLS:
                         exposure[sym] = exposure.get(sym, 0) + bal / 2
             unlock_tokens = [{"symbol": s, "exposure_usd": v} for s, v in exposure.items()]
             if unlock_tokens:
@@ -1074,7 +1054,7 @@ def main():
     
     # Гейт уже пройден выше — здесь просто отправляем
     logger.info(f"📤 Sending report ({reason})")
-    send_telegram(report)
+    send_telegram_message(report)
     
     logger.info("\nDone!")
     return 0

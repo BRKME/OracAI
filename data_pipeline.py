@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import requests
 
+from common import calculate_rsi
+
 logger = logging.getLogger(__name__)
 
 # ============================================================
@@ -405,30 +407,6 @@ def fetch_open_interest_with_fallback() -> Optional[float]:
 # RSI CALCULATION
 # ============================================================
 
-def calculate_rsi(closes: list, period: int = 14) -> float:
-    """Calculate RSI from close prices."""
-    if not closes or len(closes) < period + 1:
-        return 50.0
-    
-    try:
-        closes = [float(x) for x in closes if x is not None]
-    except:
-        return 50.0
-    
-    if len(closes) < period + 1:
-        return 50.0
-    
-    deltas = np.diff(closes)
-    gains = np.where(deltas > 0, deltas, 0.0)
-    losses = np.where(deltas < 0, -deltas, 0.0)
-    
-    avg_gain = float(np.mean(gains[-period:]))
-    avg_loss = float(np.mean(losses[-period:])) or 1e-10
-    
-    rs = avg_gain / avg_loss
-    rsi = 100.0 - (100.0 / (1.0 + rs))
-    
-    return round(rsi, 2)
 
 
 def fetch_rsi_multi_timeframe(symbol: str = "BTCUSDT") -> dict:

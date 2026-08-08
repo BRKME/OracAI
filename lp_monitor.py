@@ -20,6 +20,8 @@ from dataclasses import dataclass, asdict
 from decimal import Decimal
 
 import requests
+
+from common import send_telegram_message
 from web3 import Web3
 
 from lp_config import (
@@ -893,30 +895,6 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 
-def send_telegram_message(message: str) -> bool:
-    """Send message to Telegram"""
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        logger.warning("Telegram credentials not set")
-        return False
-    
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": TELEGRAM_CHAT_ID,
-            "text": message,
-            "parse_mode": "HTML"
-        }
-        response = requests.post(url, data=payload, timeout=10)
-        
-        if response.status_code == 200:
-            logger.info("✓ Telegram message sent")
-            return True
-        else:
-            logger.error(f"Telegram error: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        logger.error(f"Telegram exception: {e}")
-        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -966,7 +944,7 @@ def main():
     print(report)
     
     # Send to Telegram
-    send_telegram_message(report)
+    send_telegram_message(report, parse_mode="HTML")
     
     return state
 

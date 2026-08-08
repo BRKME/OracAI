@@ -297,15 +297,18 @@ MIN_TVL_USD = 100_000          # $100K minimum TVL
 MIN_VOLUME_24H_USD = 50_000    # $50K minimum daily volume
 MIN_APY = 1.0                   # 1% minimum APY
 
-# Token categories — символьный сет (для сравнения по SYMBOL, не по адресу).
-# Для лукапа по контрактному адресу используй STABLECOIN_ADDRESSES выше.
-STABLECOINS = {
-    "USDC", "USDT", "DAI", "BUSD", "FRAX", "TUSD", "USDP", "GUSD",
-    "USDC.E", "USDT.E", "USDC.e", "USDT.e",
-    "USDC-CIRCLE", "USDCE", "USDT-TETHER", "FDUSD",
-    "USD₮0",
-}
+# Token categories — символьный сет стейблов.
+# Единый источник истины — common.STABLECOIN_SYMBOLS; здесь только реэкспорт
+# для обратной совместимости импортов (lp_opportunities).
+# Для лукапа по КОНТРАКТНОМУ АДРЕСУ используй STABLECOIN_ADDRESSES выше.
+from common import STABLECOIN_SYMBOLS as STABLECOINS  # noqa: E402
 
+# ВНИМАНИЕ: MAJOR_TOKENS ≠ common.MAJOR_SYMBOLS — это РАЗНЫЕ понятия.
+#   common.MAJOR_SYMBOLS — только ETH/BNB/BTC, ярус риска для аллокации
+#                          (мажор играет роль «условного стейбла» против альта)
+#   MAJOR_TOKENS ниже    — голубые фишки для фильтра качества пулов
+#                          (включая LINK, UNI, PENDLE, LST/LRT и т.д.)
+# Не объединять.
 MAJOR_TOKENS = {
     # Native / Wrapped
     "WETH", "ETH", "WBTC", "BTC", "BTCB",
