@@ -1,33 +1,33 @@
 {
-  "timestamp": "2026-08-22T02:10:36.036810+00:00",
+  "timestamp": "2026-08-22T03:51:31.276823+00:00",
   "summary": {
-    "timestamp": "2026-08-22T02:10:36.036810+00:00",
+    "timestamp": "2026-08-22T03:51:31.276823+00:00",
     "total_positions": 5,
-    "positions_in_range": 1,
-    "positions_out_of_range": 4,
-    "total_balance_usd": 20248.476158474317,
-    "total_uncollected_fees_usd": 68.01934657134575,
+    "positions_in_range": 0,
+    "positions_out_of_range": 5,
+    "total_balance_usd": 20329.43429515184,
+    "total_uncollected_fees_usd": 68.96624827016103,
     "by_chain": {
       "arbitrum": {
         "balance_usd": 7210.466302,
-        "fees_usd": 20.920808243702353,
+        "fees_usd": 20.979864699439176,
         "count": 1
       },
       "bsc": {
-        "balance_usd": 13038.009856474317,
-        "fees_usd": 47.09853832764339,
+        "balance_usd": 13118.967993151842,
+        "fees_usd": 47.986383570721856,
         "count": 4
       }
     },
     "by_wallet": {
       "MMA_1": {
-        "balance_usd": 14797.477711036294,
-        "fees_usd": 53.68022497168755,
+        "balance_usd": 14802.50671471762,
+        "fees_usd": 54.44149399999408,
         "count": 3
       },
       "MMA_3": {
-        "balance_usd": 5450.9984474380235,
-        "fees_usd": 14.339121599658194,
+        "balance_usd": 5526.927580434221,
+        "fees_usd": 14.52475427016696,
         "count": 2
       }
     }
@@ -47,7 +47,7 @@
       "liquidity": 2192520750902315,
       "tick_lower": -199580,
       "tick_upper": -198210,
-      "current_tick": -198046,
+      "current_tick": -197992,
       "in_range": false,
       "amount0": 0.0,
       "amount1": 7210.466302,
@@ -56,12 +56,12 @@
       "balance_usd": 7210.466302,
       "uncollected_fees0": 0.004132712087951145,
       "uncollected_fees1": 10.555925,
-      "uncollected_fees_usd": 20.920808243702353,
-      "price0_usd": 2508.01,
+      "uncollected_fees_usd": 20.979864699439176,
+      "price0_usd": 2522.3,
       "price1_usd": 1.0,
-      "range_width_pct": 12.594143708187882,
-      "distance_to_lower_pct": 14.220688262669402,
-      "distance_to_upper_pct": -1.6265445544815202
+      "range_width_pct": 12.52632200658498,
+      "distance_to_lower_pct": 14.682625097689728,
+      "distance_to_upper_pct": -2.1563030911047476
     },
     {
       "wallet": "0x17e6D71D30d260e30BB7721C63539694aB02b036",
@@ -77,21 +77,21 @@
       "liquidity": 1555838458346611674030,
       "tick_lower": -65590,
       "tick_upper": -64400,
-      "current_tick": -65395,
-      "in_range": true,
-      "amount0": 1985.6235617403033,
-      "amount1": 0.5742375992199581,
-      "amount0_usd": 1985.6235617403033,
-      "amount1_usd": 396.0688993099817,
-      "balance_usd": 2381.692461050285,
-      "uncollected_fees0": 1.9625489637191744,
-      "uncollected_fees1": 0.002663923434228078,
-      "uncollected_fees_usd": 3.7999368740093065,
+      "current_tick": -65788,
+      "in_range": false,
+      "amount0": 2386.7214647316114,
+      "amount1": 0.0,
+      "amount0_usd": 2386.7214647316114,
+      "amount1_usd": 0.0,
+      "balance_usd": 2386.7214647316114,
+      "uncollected_fees0": 2.2558097617317205,
+      "uncollected_fees1": 0.002868643595887491,
+      "uncollected_fees_usd": 4.314319719704626,
       "price0_usd": 1.0,
-      "price1_usd": 689.73,
-      "range_width_pct": 12.392312434598763,
-      "distance_to_lower_pct": 1.931014870293279,
-      "distance_to_upper_pct": 10.461297564305484
+      "price1_usd": 717.59,
+      "range_width_pct": 12.889001496540395,
+      "distance_to_lower_pct": -1.9996310431882367,
+      "distance_to_upper_pct": 14.88863253972863
     },
     {
       "wallet": "0x17e6D71D30d260e30BB7721C63539694aB02b036",
@@ -107,7 +107,7 @@
       "liquidity": 1822310399340997920933,
       "tick_lower": 63840,
       "tick_upper": 66060,
-      "current_tick": 67038,
+      "current_tick": 67292,
       "in_range": false,
       "amount0": 0.0,
       "amount1": 5205.318947986008,
@@ -116,12 +116,12 @@
       "balance_usd": 5205.318947986008,
       "uncollected_fees0": 0.017554180081717545,
       "uncollected_fees1": 14.469732989123782,
-      "uncollected_fees_usd": 28.959479853975893,
-      "price0_usd": 825.43,
+      "uncollected_fees_usd": 29.147309580850273,
+      "price0_usd": 836.13,
       "price1_usd": 1.0,
-      "range_width_pct": 18.052879161472944,
-      "distance_to_lower_pct": 27.369410583069413,
-      "distance_to_upper_pct": -9.316531421596467
+      "range_width_pct": 17.600132885088524,
+      "distance_to_lower_pct": 29.190905570987912,
+      "distance_to_upper_pct": -11.59077268589939
     },
     {
       "wallet": "0x3c2c34B9bB0b00145142FFeE68475E1AC01C92bA",
@@ -137,21 +137,21 @@
       "liquidity": 722817921060760021592,
       "tick_lower": 51200,
       "tick_upper": 52200,
-      "current_tick": 50914,
+      "current_tick": 50929,
       "in_range": false,
       "amount0": 2.725381658154993,
       "amount1": 0.0,
-      "amount0_usd": 1879.7774910792432,
+      "amount0_usd": 1955.7066240754414,
       "amount1_usd": 0.0,
-      "balance_usd": 1879.7774910792432,
+      "balance_usd": 1955.7066240754414,
       "uncollected_fees0": 0.004093462625839129,
       "uncollected_fees1": 0.0,
-      "uncollected_fees_usd": 2.8233839769200224,
-      "price0_usd": 689.73,
-      "price1_usd": 4.25,
-      "range_width_pct": 10.821639161713236,
-      "distance_to_lower_pct": -2.9011435591012593,
-      "distance_to_upper_pct": 13.722782720814495
+      "uncollected_fees_usd": 2.9374278456759004,
+      "price0_usd": 717.59,
+      "price1_usd": 4.39,
+      "range_width_pct": 10.805419681582256,
+      "distance_to_lower_pct": -2.7469152551935934,
+      "distance_to_upper_pct": 13.55233493677585
     },
     {
       "wallet": "0x3c2c34B9bB0b00145142FFeE68475E1AC01C92bA",
@@ -167,7 +167,7 @@
       "liquidity": 1496928327447206680471,
       "tick_lower": 63960,
       "tick_upper": 65820,
-      "current_tick": 67050,
+      "current_tick": 67388,
       "in_range": false,
       "amount0": 0.0,
       "amount1": 3571.2209563587803,
@@ -176,12 +176,12 @@
       "balance_usd": 3571.2209563587803,
       "uncollected_fees0": 0.006690542219896086,
       "uncollected_fees1": 5.993163358169345,
-      "uncollected_fees_usd": 11.515737622738172,
-      "price0_usd": 825.43,
+      "uncollected_fees_usd": 11.58732642449106,
+      "price0_usd": 836.13,
       "price1_usd": 1.0,
-      "range_width_pct": 15.007698798590699,
-      "distance_to_lower_pct": 26.580788754934996,
-      "distance_to_upper_pct": -11.573089956344301
+      "range_width_pct": 14.508940020295135,
+      "distance_to_lower_pct": 29.02076816786479,
+      "distance_to_upper_pct": -14.511828147569657
     }
   ]
 }
