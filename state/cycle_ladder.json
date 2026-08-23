@@ -2,11 +2,11 @@
  "policy_version": "ladder-v1.0",
  "zone": "NEUTRAL",
  "drawdown_call": "NOT_IN_DRAWDOWN",
- "mvrv": 1.484,
+ "mvrv": 1.458,
  "dca_multiplier": 1.5,
  "fixation_fraction": 0.0,
  "re_risk": false,
- "days_above_sma200": 3,
+ "days_above_sma200": 4,
  "rationale": "Зона NEUTRAL: недельный DCA ×1.5 по лестнице, без фиксаций",
  "signal": {
   "policy_version": "ladder-v1.2",
@@ -16,6 +16,6 @@
   "trigger": "no_event",
   "rationale": "Зона NEUTRAL без события — держим план, не импровизируем"
  },
- "date_utc": "2026-08-22",
- "price": 78342.6
+ "date_utc": "2026-08-23",
+ "price": 77060.9
 }
