@@ -888,45 +888,100 @@ def _is_monday_morning() -> bool:
     return msk_now.weekday() == 0 and abs(msk_now.hour - 7) <= 1
 
 
+SEND_STATE_FILE = "state/lp_send_state.json"
+
+
 def _should_send_report(monitor_data: dict) -> tuple:
-    """Decide whether to send the report.
-    
-    Returns (should_send: bool, reason: str).
-    
-    Rules:
-    - ALWAYS send if any position is out of range by more than 0.1%
-    - Otherwise send only at scheduled MSK hours (7:00 and 19:00)
-    - FORCE_SEND env var (manual dispatch) always sends
+    """Решить, отправлять ли отчёт. Возвращает (should_send, reason).
+
+    Правила:
+    - ВСЕГДА шлём, если позиция вышла из диапазона больше чем на 0.1%
+    - Иначе — ровно один утренний и один вечерний отчёт в сутки
+    - FORCE_SEND (ручной запуск) шлёт всегда
+
+    ПОЧЕМУ НЕ ОКНО ПО ЧАСУ (было до 28.08.2026):
+    Прежняя версия слала, если час МСК попадал в 7:00 или 19:00 ±1ч, и
+    полагалась на то, что двухчасовой cron даст прогон внутри окна.
+    GitHub Actions этого не гарантирует: по факту прогоны опаздывают на
+    20-95 минут, а слоты пропускаются пачками — 27.08 между 04:01 и 15:32
+    UTC не было ни одного запуска, пять слотов подряд. 28.08 единственный
+    утренний прогон случился в 04:09 МСК, окно 7:00±1 не поймал никто, и
+    утреннее сообщение не пришло вовсе.
+
+    Теперь окна широкие, а факт отправки фиксируется в state: первый же
+    прогон после 6:00 МСК, если сегодня утренний отчёт ещё не уходил,
+    отправляет его. Пропуск слотов и джиттер cron больше не мешают.
     """
     import os
     from datetime import datetime as _dt, timedelta as _td, timezone as _tz
-    
-    # Manual trigger always sends
+
     if os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes"):
         return True, "manual/force"
-    
-    # Check for out-of-range positions beyond threshold
+
+    # Позиция вне диапазона — шлём немедленно, независимо от времени
     OUT_OF_RANGE_THRESHOLD_PCT = 0.1
-    positions = monitor_data.get("positions", [])
-    for p in positions:
+    for p in monitor_data.get("positions", []):
         if not p.get("in_range", True):
-            # Position is out of range — check how far
             if p.get("current_tick", 0) < p.get("tick_lower", 0):
                 dist = abs(p.get("distance_to_lower_pct", 0))
             else:
                 dist = abs(p.get("distance_to_upper_pct", 0))
             if dist > OUT_OF_RANGE_THRESHOLD_PCT:
                 return True, f"out-of-range alert ({dist:.2f}%)"
-    
-    # No alerts — only send at scheduled MSK hours
+
     msk_now = _dt.now(_tz.utc) + _td(hours=3)
-    SCHEDULED_HOURS = (7, 19)  # 7:00 and 19:00 MSK
-    # Allow ±1h window to tolerate GitHub Actions cron delays
-    for h in SCHEDULED_HOURS:
-        if abs(msk_now.hour - h) <= 1:
-            return True, f"scheduled ({msk_now.hour}:00 MSK)"
-    
-    return False, f"quiet hour ({msk_now.hour}:00 MSK)"
+    today = msk_now.strftime("%Y-%m-%d")
+
+    state = {}
+    try:
+        if os.path.exists(SEND_STATE_FILE):
+            with open(SEND_STATE_FILE) as f:
+                state = json.load(f)
+    except Exception as e:
+        logger.warning(f"Не читается {SEND_STATE_FILE}: {e}")
+
+    # Утро: любой прогон с 6:00 до 18:00 МСК, если сегодня ещё не слали.
+    # Окно намеренно широкое: GitHub пропускает слоты пачками, и узкое окно
+    # 6-12 могло бы не поймать ни одного прогона. Лучше отчёт в 14:00, чем
+    # молчание до вечера.
+    if 6 <= msk_now.hour < 18 and state.get("last_morning_sent") != today:
+        return True, f"утренний отчёт ({msk_now.strftime('%H:%M')} МСК)"
+
+    # Вечер: любой прогон с 18:00 до 23:59 МСК, если сегодня ещё не слали
+    if msk_now.hour >= 18 and state.get("last_evening_sent") != today:
+        return True, f"вечерний отчёт ({msk_now.strftime('%H:%M')} МСК)"
+
+    return False, f"уже отправлено или тихий час ({msk_now.strftime('%H:%M')} МСК)"
+
+
+def _mark_report_sent() -> None:
+    """Зафиксировать факт отправки, чтобы не дублировать в тот же слот."""
+    import os
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+    msk_now = _dt.now(_tz.utc) + _td(hours=3)
+    today = msk_now.strftime("%Y-%m-%d")
+
+    state = {}
+    try:
+        if os.path.exists(SEND_STATE_FILE):
+            with open(SEND_STATE_FILE) as f:
+                state = json.load(f)
+    except Exception:
+        pass
+
+    if 6 <= msk_now.hour < 18:
+        state["last_morning_sent"] = today
+    elif msk_now.hour >= 18:
+        state["last_evening_sent"] = today
+    state["last_sent_at"] = msk_now.isoformat()
+
+    try:
+        os.makedirs(os.path.dirname(SEND_STATE_FILE), exist_ok=True)
+        with open(SEND_STATE_FILE, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception as e:
+        logger.warning(f"Не сохраняется {SEND_STATE_FILE}: {e}")
 
 
 def main():
@@ -1055,6 +1110,7 @@ def main():
     # Гейт уже пройден выше — здесь просто отправляем
     logger.info(f"📤 Sending report ({reason})")
     send_telegram_message(report)
+    _mark_report_sent()
     
     logger.info("\nDone!")
     return 0
