@@ -2,12 +2,12 @@
  "policy_version": "ladder-v1.0",
  "zone": "NEUTRAL",
  "drawdown_call": "NOT_IN_DRAWDOWN",
- "mvrv": 1.475,
+ "mvrv": 1.464,
  "dca_multiplier": 1.5,
  "fixation_fraction": 0.0,
  "re_risk": true,
- "days_above_sma200": 10,
- "rationale": "10д выше SMA200 (порог 10) — объективный триггер: разворачивай резерв",
+ "days_above_sma200": 11,
+ "rationale": "11д выше SMA200 (порог 10) — объективный триггер: разворачивай резерв",
  "signal": {
   "policy_version": "ladder-v1.2",
   "action": "HOLD",
@@ -16,6 +16,6 @@
   "trigger": "no_event",
   "rationale": "Зона NEUTRAL без события — держим план, не импровизируем"
  },
- "date_utc": "2026-08-30",
- "price": 78166.5
+ "date_utc": "2026-08-31",
+ "price": 78205.7
 }
