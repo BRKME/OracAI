@@ -2,13 +2,26 @@ name: LP Intelligence System
 
 on:
   schedule:
-    # Every 2 hours. Script decides whether to actually send to Telegram:
-    # - always sends if a position is out of range by >0.1%
-    # - otherwise sends only around 7:00 and 19:00 MSK
-    # Offset by 50 min to reduce GitHub Actions cron delay impact on the
-    # scheduled-hour window check.
+    # ── Мониторинг выхода из диапазона: каждые 2 часа ────────────────
     - cron: '50 */2 * * *'
-  
+
+    # ── Попытки попасть в утренний отчёт (~7:00 МСК = 04:00 UTC) ─────
+    # GitHub Actions не гарантирует время запуска: по факту задержки
+    # 2-114 мин (медиана ~50), разрывы между прогонами до 13.4 часа.
+    # Одного слота недостаточно — 29-31.08 утренний отчёт уходил в
+    # 10:32, 08:57 и 11:58 МСК вместо 7:00.
+    # Три попытки подряд повышают шанс, что хотя бы одна ляжет близко
+    # к цели. Дублей не будет: гейт в lp_system.py помечает в
+    # state/lp_send_state.json, что утренний отчёт за сегодня отправлен.
+    - cron: '30 3 * * *'   # 06:30 МСК
+    - cron: '50 3 * * *'   # 06:50 МСК
+    - cron: '10 4 * * *'   # 07:10 МСК
+
+    # ── Попытки попасть в вечерний отчёт (~19:00 МСК = 16:00 UTC) ────
+    - cron: '30 15 * * *'  # 18:30 МСК
+    - cron: '50 15 * * *'  # 18:50 МСК
+    - cron: '10 16 * * *'  # 19:10 МСК
+
   workflow_dispatch:
 
 permissions:
