@@ -1,5 +1,5 @@
 {
- "prev_zone": "EXPANSION",
+ "prev_zone": "NEUTRAL",
  "ladder": {
   "bought_zones": [
    "NEUTRAL"
@@ -10,5 +10,5 @@
   "spent": 1.0
  },
  "below_trend_days": 0,
- "updated": "2026-09-04"
+ "updated": "2026-09-05"
 }
