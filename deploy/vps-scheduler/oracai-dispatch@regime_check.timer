@@ -1,0 +1,10 @@
+[Unit]
+Description=OracAI regime check — 07:40 MSK
+
+[Timer]
+OnCalendar=*-*-* 07:40:00 Europe/Moscow
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

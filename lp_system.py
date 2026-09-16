@@ -940,18 +940,32 @@ def _should_send_report(monitor_data: dict) -> tuple:
     except Exception as e:
         logger.warning(f"Не читается {SEND_STATE_FILE}: {e}")
 
-    # Утро: любой прогон с 6:00 до 18:00 МСК, если сегодня ещё не слали.
-    # Окно намеренно широкое: GitHub пропускает слоты пачками, и узкое окно
-    # 6-12 могло бы не поймать ни одного прогона. Лучше отчёт в 14:00, чем
-    # молчание до вечера.
-    if 6 <= msk_now.hour < 18 and state.get("last_morning_sent") != today:
-        return True, f"утренний отчёт ({msk_now.strftime('%H:%M')} МСК)"
+    # ── ВРЕМЕННЫЕ ОКНА — ТОЛЬКО СТРАХОВКА ────────────────────────────
+    # Точное время доставки обеспечивает внешний планировщик на VPS: он
+    # дёргает workflow_dispatch, а dispatch-прогоны GitHub запускает за
+    # секунды (в отличие от scheduled, где замерены задержки 2-114 мин и
+    # разрывы до 13.4ч). Диспатч приходит с FORCE_SEND=true и выходит
+    # выше по функции.
+    #
+    # Пороги ниже сдвинуты ПОЗЖЕ целевого времени намеренно: если оставить
+    # окно с 6:00, двухчасовой мониторинговый прогон в 06:10 успел бы
+    # отправить утренний отчёт РАНЬШЕ точного диспатча в 7:00, и точность
+    # бы потерялась. Теперь расписание вмешивается, только если к 9:30
+    # отчёта всё ещё нет — то есть VPS не достучался.
+    FALLBACK_MORNING_HOUR = 9   # 09:30 МСК
+    FALLBACK_EVENING_HOUR = 20  # 20:30 МСК
 
-    # Вечер: любой прогон с 18:00 до 23:59 МСК, если сегодня ещё не слали
-    if msk_now.hour >= 18 and state.get("last_evening_sent") != today:
-        return True, f"вечерний отчёт ({msk_now.strftime('%H:%M')} МСК)"
+    if (msk_now.hour > FALLBACK_MORNING_HOUR
+            or (msk_now.hour == FALLBACK_MORNING_HOUR and msk_now.minute >= 30)) \
+            and msk_now.hour < 18 and state.get("last_morning_sent") != today:
+        return True, f"утро, страховка расписанием ({msk_now.strftime('%H:%M')} МСК)"
 
-    return False, f"уже отправлено или тихий час ({msk_now.strftime('%H:%M')} МСК)"
+    if (msk_now.hour > FALLBACK_EVENING_HOUR
+            or (msk_now.hour == FALLBACK_EVENING_HOUR and msk_now.minute >= 30)) \
+            and state.get("last_evening_sent") != today:
+        return True, f"вечер, страховка расписанием ({msk_now.strftime('%H:%M')} МСК)"
+
+    return False, f"уже отправлено или ждём диспатч ({msk_now.strftime('%H:%M')} МСК)"
 
 
 def _mark_report_sent() -> None:
