@@ -350,47 +350,51 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # 1. ФАЗА РЫНКА
     # ══════════════════════════════════════════════════════
     
-    # v6 (12.07): компактный макет — «одно измерение = одна строка»,
-    # визуальный якорь (бары режимов + цикл) сохранён по решению оператора.
+    # v6.6 (17.09): аудит формата. Три правки, каждая по конкретной находке.
+    #
+    # 1. Убран буллет «Цикл: PHASE [бар] NN%». cycle_pos — это ТАБЛИЦА
+    #    СООТВЕТСТВИЙ, а не измерение: каждая фаза жёстко отображается в одно
+    #    число (TRANSITION → всегда 50, ACCUMULATION → 25 и т.д.). Процент и
+    #    бар полностью определялись словом фазы и информации не несли.
+    # 2. «Цикл: TRANSITION 50%» стояло рядом с «TRANS 55%» из блока режима.
+    #    Разные сущности (фаза Вайкоффа и вероятность режима) выглядели как
+    #    одно и то же с расхождением в цифрах. Теперь фаза названа словом,
+    #    а проценты остались только у вероятностей.
+    # 3. Три вывода подряд (риск / позиция в цикле / действие) слиты в один
+    #    абзац под действием — согласовывать их больше не нужно читателю.
+    #
+    # Блок вероятностей режима сохранён по решению оператора, но перенесён
+    # ВНИЗ: это справка, а не то, с чего начинают чтение.
     from datetime import datetime as _dt
     _dq = int(meta.get("data_completeness", 1.0) * 100)
-    lines.append(f"🧭 OracAI · {_dt.now().strftime('%d.%m')} · data {_dq}%")
-    # v6.2: слот под TL;DR-буллеты. Действие считается ниже (~строка 610),
-    # поэтому резервируем позицию и заполняем её после расчёта target_pos.
-    _tldr_slot = len(lines)
-    lines.append("")  # placeholder, заменяется на 3 буллета
+    _hdr = f"🧭 OracAI · {_dt.now().strftime('%d.%m')}"
+    if _dq < 100:
+        _hdr += f" · data {_dq}%"   # показываем только при просадке качества
+    lines.append(_hdr)
     lines.append("")
+
+    # Слот под блок действия: target_pos считается ниже, поэтому резервируем
+    # позицию и заполняем после расчёта.
+    _action_slot = len(lines)
+    lines.append("")  # placeholder
+
+    lines.append("")
+    _phase_slot = len(lines)
+    lines.append("")  # placeholder — phase считается ниже
     summary = []
     if rsi_1d is not None or rsi_2h is not None:
         _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
         rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
         rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
-        summary.append(f"RSI: 1D {rsi_1d_str} · 2H {rsi_2h_str}")
-    # FG вынесен в TL;DR — здесь не дублируем
-    dir_arrow = "↓" if risk_level < 0 else "↑"
-    _dir = f"{dir_arrow}{abs(risk_level):.2f}"
-    summary.append(f"структура BREAK {_dir}" if struct_break else f"давление {_dir}")
+        summary.append(f"RSI {rsi_1d_str} · 2H {rsi_2h_str}")
+    if fg_value is not None:
+        summary.append(f"FG {fg_value} {fg_class or ''}".strip())
+    dir_word = "давление вниз" if risk_level < 0 else "давление вверх"
+    summary.append(f"слом структуры, {dir_word} {abs(risk_level):.2f}"
+                   if struct_break else f"{dir_word} {abs(risk_level):.2f}")
     lines.append(" · ".join(summary))
     lines.append("")
-    
-    # ══════════════════════════════════════════════════════
-    # РЕЖИМ РЫНКА (Probabilities) - aligned bars
-    # ══════════════════════════════════════════════════════
-    
-    lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
-    
-    def make_prob_bar(value, width=10):
-        filled = int(value * width)
-        return "[" + "#" * filled + "." * (width - filled) + "]"
-    
-    # Compact format without alignment dependency
-    lines.append(f"BULL  {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
-    lines.append(f"BEAR  {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
-    lines.append(f"RANGE {make_prob_bar(prob_range)} {int(prob_range*100)}%")
-    lines.append(f"TRANS {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
-    
-    lines.append("")
-    
+
     # ══════════════════════════════════════════════════════
     # ЦИКЛ РЫНКА (moved here, before Вывод)
     # ══════════════════════════════════════════════════════
@@ -433,6 +437,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     
     cycle_filled = int(cycle_pos / 10)
     cycle_bar = "#" * cycle_filled + "." * (10 - cycle_filled)
+    # v6.6: фаза называется словом; cycle_pos/cycle_bar больше не печатаются —
+    # это константы на фазу, информации не несли (см. комментарий в шапке).
+    lines[_phase_slot] = f"Фаза: {phase}"
     # v6.2: строка «Цикл: ...» переехала в TL;DR-буллет вместе с баром
     
     # ══════════════════════════════════════════════════════
@@ -648,15 +655,6 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
                                      dd_from_high, bear_confirmation,
                                      bottom_prox=bottom_prox)
     
-    # v6.2: TL;DR — три главных буллета в шапке, для беглого чтения.
-    # Заполняем зарезервированный слот (_tldr_slot), т.к. action считается здесь.
-    _tldr = [
-        f"• Цикл: {phase} [{cycle_bar}] {cycle_pos}%",
-        f"• FG: {fg_value} {fg_class or '?'}" if fg_value is not None else "• FG: н/д",
-        f"• Действие: {action} · {int(target_pos * 100)}%",
-    ]
-    lines[_tldr_slot:_tldr_slot + 1] = _tldr
-    
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
     # относительного перекоса: bottom 32% против top 17% — это не дно, а просто
@@ -696,14 +694,34 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     else:
         cycle_pos_line = (f"📍 По циклу: середина (top {_t}% / bottom {_b}%) "
                           "→ без перекоса, по плану")
+    # v6.6: три вывода (риск / позиция в цикле / действие) сливаем в один
+    # абзац под меткой действия. Раньше шли тремя строками с разными стойками,
+    # и согласовывать их приходилось читателю.
+    _b, _t = int(bottom_prox * 100), int(top_prox * 100)
+    if _b - _t >= 10:
+        _cycle = f"Цикл ближе к дну ({_b}% против {_t}%)"
+    elif _t - _b >= 10:
+        _cycle = f"Цикл ближе к вершине ({_t}% против {_b}%)"
+    else:
+        _cycle = f"Цикл в середине (дно {_b}% / верх {_t}%)"
+
+    _risk_short = {
+        "ELEVATED": "рынок дёргается сильнее обычного",
+        "TAIL": "активен хвостовой риск",
+        "CRISIS": "кризисный режим",
+    }.get(risk_state)
+
+    _first = f"{_cycle}, но {_risk_short}." if _risk_short else f"{_cycle}."
+    # Подсказка про лестницу нужна только когда реально набираем в турбулентность
+    if _risk_short and target_pos >= 0.95:
+        _first = _first[:-1] + " — добирать ступенями, не на резких свечах."
+
+    _block = [f"{action} · {int(target_pos * 100)}%", _first, action_note]
+    if recovery_note:
+        _block.append(recovery_note)
     if conflict_note:
-        lines.append(conflict_note)
-    if risk_line_v6:
-        lines.append(risk_line_v6)
-    lines.append(cycle_pos_line)
-    # v6.2: сама метка действия и % уже в TL;DR — здесь только обоснование
-    lines.append(f"→ {action_note}")
-    lines.append("")
+        _block.append(conflict_note)
+    lines[_action_slot] = "\n".join(_block)
     
     # ══════════════════════════════════════════════════════
     # 7. LP POLICY
@@ -728,7 +746,25 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         lp_parts.append(hedge_ru)
         lines.append(" · ".join(lp_parts))
         lines.append("")
-    
+
+    # ══════════════════════════════════════════════════════
+    # РЕЖИМ РЫНКА — справка в конце
+    # v6.6: перенесён из шапки вниз. На действие влияют только лидирующий
+    # режим и уверенность (они в блоке действия), остальные вероятности —
+    # контекст. По решению оператора раскладка сохранена полностью.
+    # ══════════════════════════════════════════════════════
+
+    def make_prob_bar(value, width=10):
+        filled = int(value * width)
+        return "[" + "#" * filled + "." * (width - filled) + "]"
+
+    lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
+    lines.append(f"BULL  {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
+    lines.append(f"BEAR  {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
+    lines.append(f"RANGE {make_prob_bar(prob_range)} {int(prob_range*100)}%")
+    lines.append(f"TRANS {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
+    lines.append("")
+
     # ══════════════════════════════════════════════════════
     # 7. DATA STATUS
     # ══════════════════════════════════════════════════════
