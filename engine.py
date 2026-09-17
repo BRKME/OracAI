@@ -32,6 +32,19 @@ STATE_FILE = STATE_DIR / "engine_state.json"
 # HELPERS (v3.4 Phase 4)
 # ============================================================
 
+
+def _fetch_mvrv_safe():
+    """MVRV из CoinMetrics. Никогда не роняет движок — при сбое возвращает None,
+    и bottom_prox просто пересчитает веса на оставшиеся слагаемые."""
+    try:
+        from mvrv_fetcher import fetch_mvrv_snapshot
+        snap = fetch_mvrv_snapshot("btc")
+        return round(float(snap["mvrv"]), 4) if snap and snap.get("mvrv") else None
+    except Exception as e:
+        logger.warning(f"MVRV недоступен: {e}")
+        return None
+
+
 def _count_days_above_sma200(close: np.ndarray, max_lookback: int = 60) -> int:
     """Count consecutive trailing days where close > SMA-200.
     Returns 0 if most recent day is NOT above SMA200. Otherwise counts
@@ -890,6 +903,15 @@ class RegimeEngine:
                 "drawdown_from_high_90d": round(
                     (close[-1] / max(close[-90:]) - 1) * 100, 2
                 ) if len(close) >= 90 else 0.0,
+                # v6.5: просадка от МАКСИМУМА ВСЕЙ доступной истории и MVRV.
+                # Единственные два слагаемых bottom_prox, у которых знак
+                # эффекта устойчив по всем эпохам (см. комментарий в
+                # telegram_bot.py). drawdown_from_high_90d выше — про защиту
+                # позиции, здесь нужен именно ATH-масштаб.
+                "drawdown_from_ath": round(
+                    (close[-1] / np.maximum.accumulate(close)[-1] - 1) * 100, 2
+                ) if len(close) > 0 else 0.0,
+                "mvrv": _fetch_mvrv_safe(),
                 # v3.4 (Phase 4): SMA200 status for recovery override
                 # Action logic uses these to force higher exposure during
                 # sustained uptrends, fixing the asymmetric re-engagement

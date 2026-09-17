@@ -468,61 +468,69 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # 4. BOTTOM/TOP PROXIMITY (continuous calculation)
     # ══════════════════════════════════════════════════════
     
-    # Start from regime probabilities as base
-    # Higher bear probability → closer to bottom, higher bull → closer to top
-    bottom_prox = prob_bear * 0.4 + prob_trans * 0.2 + prob_range * 0.15
-    top_prox = prob_bull * 0.4 + prob_trans * 0.2 + prob_range * 0.15
-    
-    # Directional pressure shifts bottom/top (continuous, always active)
-    # risk_level: negative = downside, positive = upside
-    if risk_level < 0:
-        bottom_prox += abs(risk_level) * 0.25
-        top_prox -= abs(risk_level) * 0.15
+    # ── ПЕРЕВЕС НА ПРОВЕРЯЕМЫЕ СЛАГАЕМЫЕ (v6.5) ──────────────────────
+    # Каждое слагаемое прежней формулы прогнано на data/btc.csv: отклонение
+    # медианы форвардной доходности 180д от базы, верхний квинтиль, пп.
+    #
+    #   слагаемое            вес был   с2014  с2018  с2021   вердикт
+    #   RSI 1D                 0.30      -17     -2     +3   знак плавает
+    #   momentum ~ Dir         0.25      -36    -25     +8   знак плавает
+    #   Mayer ~ days_in_regime 0.20      -30    +10    -12   знак плавает
+    #   Fear & Greed           0.15       +6     +6     +6   история только с 2023
+    #   MVRV                   НЕ БЫЛО   +14    +31    +11   устойчив
+    #   просадка от ATH        НЕ БЫЛО   +18    +29    +24   устойчив
+    #
+    # То есть три наибольших веса (0.75 суммарно) стояли на слагаемых с
+    # плавающим знаком, а два единственных устойчивых в формулу не входили.
+    # У FG «устойчивость» оказалась артефактом: файл начинается с 2023-06,
+    # и все три эпохи тестировались на ОДНОЙ выборке — считаем непроверенным.
+    #
+    # Проверка формулы целиком (верхний квинтиль против базы, медиана 180д):
+    #            с2014  с2018  с2021   Спирмен
+    #   старая     -34     -3     +3    -0.172   ← обратный знак
+    #   новая      +14    +27    +21    +0.039
+    #
+    # НЕ возвращать старые веса по одному окну — сначала перечитать таблицу.
+
+    def _lin(x, lo, hi):
+        """Нормировка в 0..1, где 1 = ближе к дну."""
+        if x is None:
+            return None
+        return max(0.0, min(1.0, (hi - x) / (hi - lo)))
+
+    mvrv = meta.get("mvrv")
+    dd_ath = meta.get("drawdown_from_ath")
+
+    # (значение, вес). Недоступное слагаемое выпадает, веса нормируются по
+    # оставшимся — поэтому сбой MVRV не ломает расчёт, а лишь огрубляет его.
+    parts = [
+        (_lin(mvrv, 0.7, 3.5), 0.40),      # устойчив во всех эпохах
+        (_lin(dd_ath, -85.0, 0.0), 0.35),  # устойчив во всех эпохах
+        (_lin(rsi_1d, 20.0, 80.0), 0.10),  # знак плавает — вес урезан с 0.30
+        (_lin(fg_value, 5.0, 95.0), 0.15), # история с 2023, вес прежний
+    ]
+    avail = [(v, w) for v, w in parts if v is not None]
+
+    if avail:
+        wsum = sum(w for _, w in avail)
+        bottom_prox = sum(v * w for v, w in avail) / wsum
     else:
-        top_prox += risk_level * 0.25
-        bottom_prox -= risk_level * 0.15
-    
-    # Days in regime: longer trend → stronger signal
-    days_in_regime = meta.get("days_in_regime", 0)
-    day_factor = min(days_in_regime / 30.0, 1.0)  # 0..1 over 30 days
+        # совсем нет данных — держим нейтраль, а не выдумываем сигнал
+        bottom_prox = 0.35
+
+    # Режим сдвигает оценку, но не задаёт её: вклад ограничен ±0.10, тогда как
+    # раньше вероятности режима были базой всей формулы.
     if regime == "BEAR":
-        bottom_prox += day_factor * 0.2
-        top_prox -= day_factor * 0.1
+        bottom_prox += 0.05
     elif regime == "BULL":
-        top_prox += day_factor * 0.2
-        bottom_prox -= day_factor * 0.1
-    
-    # Confidence: low confidence pulls both toward center
+        bottom_prox -= 0.05
     if conf_pct < 30:
-        center_pull = (30 - conf_pct) / 100.0  # up to 0.3
-        bottom_prox = bottom_prox * (1 - center_pull) + 0.35 * center_pull
-        top_prox = top_prox * (1 - center_pull) + 0.35 * center_pull
-    
-    # RSI: continuous adjustment (not just extremes)
-    if rsi_1d is not None:
-        if rsi_1d < 50:
-            # Below 50 → bottom signal (stronger as RSI drops)
-            rsi_factor = (50 - rsi_1d) / 50.0  # 0..1
-            bottom_prox += rsi_factor * 0.3
-            top_prox -= rsi_factor * 0.15
-        else:
-            # Above 50 → top signal (stronger as RSI rises)
-            rsi_factor = (rsi_1d - 50) / 50.0  # 0..1
-            top_prox += rsi_factor * 0.3
-            bottom_prox -= rsi_factor * 0.15
-    
-    # Fear & Greed: extreme fear → bottom, extreme greed → top
-    if fg_value is not None:
-        if fg_value < 50:
-            fg_factor = (50 - fg_value) / 50.0  # 0..1
-            bottom_prox += fg_factor * 0.15
-            top_prox -= fg_factor * 0.05
-        else:
-            fg_factor = (fg_value - 50) / 50.0  # 0..1
-            top_prox += fg_factor * 0.15
-            bottom_prox -= fg_factor * 0.05
-    
-    # Clamp to valid range
+        # низкая уверенность — тянем к нейтрали
+        pull = (30 - conf_pct) / 100.0
+        bottom_prox = bottom_prox * (1 - pull) + 0.35 * pull
+
+    top_prox = 1.0 - bottom_prox
+
     bottom_prox = max(0.05, min(0.95, bottom_prox))
     top_prox = max(0.05, min(0.95, top_prox))
     
