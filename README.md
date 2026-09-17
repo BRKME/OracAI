@@ -7,7 +7,7 @@ Probabilistic crypto market regime detection with integrated action logic.
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Market Regime Engine** | **v5.8** | **Production** |
-| Signal Policy | v5.6 Integrated | Production |
+| Signal Policy | v6.5 Position sizing | Production |
 | Charts | EMA50/200 + RSI | Production |
 | LP Intelligence | v2.0.2 | Production |
 | Twitter Publisher | v2.0 | Production |
