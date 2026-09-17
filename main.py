@@ -9,9 +9,11 @@ Usage:
   python main.py --no-aa      # Skip Asset Allocation computation
 """
 
+import os
 import sys
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Load .env if exists (local dev)
@@ -22,7 +24,7 @@ except ImportError:
     pass
 
 from data_pipeline import fetch_all_data
-from engine import RegimeEngine, default_state, save_state, STATE_FILE
+from engine import RegimeEngine, default_state, save_state, STATE_FILE, STATE_DIR
 from telegram_bot import send_telegram_with_chart, format_output
 from lp_policy_engine import compute_lp_policy
 from asset_allocation import compute_btc_eth_allocation
@@ -171,10 +173,36 @@ def main():
     logger.info(f"Full output saved to {output_file}")
 
     # ── 6. Send Telegram ──────────────────────────────────
+    # Отметка «за сегодня уже отправлено» защищает от дубля: точное время
+    # даёт таймер на VPS (07:40 МСК), а страховочный крон GitHub в 11:00
+    # нужен только на случай, если VPS не достучался. Без этой проверки
+    # 17.09 сообщение пришло дважды — крон и диспатч совпали.
+    # FORCE_SEND (ручной запуск с force) отметку игнорирует.
+    SEND_STATE_FILE = STATE_DIR / "regime_send_state.json"
+    msk_today = (datetime.now(timezone.utc) + timedelta(hours=3)).strftime("%Y-%m-%d")
+    forced = os.getenv("FORCE_SEND", "").lower() in ("1", "true", "yes")
+
+    already_sent = False
+    try:
+        if SEND_STATE_FILE.exists():
+            with open(SEND_STATE_FILE) as f:
+                already_sent = json.load(f).get("last_sent") == msk_today
+    except Exception as e:
+        logger.warning(f"Не читается {SEND_STATE_FILE}: {e}")
+
     if dry_run:
         logger.info("Dry run — skipping Telegram")
+    elif already_sent and not forced:
+        logger.info(f"Сообщение за {msk_today} уже отправлено — пропускаем")
     else:
         send_telegram_with_chart(output, lp_policy, allocation)
+        try:
+            with open(SEND_STATE_FILE, "w") as f:
+                json.dump({"last_sent": msk_today,
+                           "last_sent_at": datetime.now(timezone.utc).isoformat()},
+                          f, indent=2)
+        except Exception as e:
+            logger.warning(f"Не сохраняется {SEND_STATE_FILE}: {e}")
 
     # ── 7. Summary ────────────────────────────────────────
     regime = output["regime"]

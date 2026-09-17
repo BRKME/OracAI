@@ -1,0 +1,10 @@
+[Unit]
+# Плановые отчёты: шлём принудительно, не глядя на пороги страховки.
+Description=OracAI dispatch %i (force — плановый отчёт)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/oracai-dispatch/dispatch.sh %i.yml true
+User=root

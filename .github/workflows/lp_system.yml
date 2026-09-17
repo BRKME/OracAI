@@ -22,6 +22,13 @@ on:
   #   07:30-23:30 ежечас — мониторинг выхода из диапазона (молчит, если всё
   #                        в диапазоне; ночью не будит)
   workflow_dispatch:
+    inputs:
+      force:
+        description: 'Отправить отчёт принудительно, не глядя на расписание'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 permissions:
   contents: write
@@ -50,7 +57,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          FORCE_SEND: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
+          # Только по явному inputs.force. Раньше здесь стоял
+          # github.event_name == 'workflow_dispatch', из-за чего ЛЮБОЙ диспатч
+          # слал отчёт — включая ежечасный мониторинг, то есть 17 отчётов
+          # в сутки. Теперь мониторинг ходит без force и молчит, пока все
+          # позиции в диапазоне.
+          FORCE_SEND: ${{ github.event.inputs.force == 'true' && 'true' || '' }}
         run: python lp_system.py
       
       - name: Commit state

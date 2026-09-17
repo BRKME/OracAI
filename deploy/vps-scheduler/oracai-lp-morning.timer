@@ -5,7 +5,7 @@ Description=OracAI LP report — 07:00 MSK
 OnCalendar=*-*-* 07:00:00 Europe/Moscow
 Persistent=true
 AccuracySec=1s
-Unit=oracai-dispatch@lp_system.service
+Unit=oracai-dispatch-force@lp_system.service
 
 [Install]
 WantedBy=timers.target

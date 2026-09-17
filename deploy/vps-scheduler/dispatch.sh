@@ -6,13 +6,15 @@
 # через workflow_dispatch, стартуют за секунды и под эту раздачу не попадают.
 # Поэтому время задаёт VPS, а GitHub только выполняет.
 #
-# Использование: dispatch.sh <файл-воркфлоу>
-#   dispatch.sh lp_system.yml
-#   dispatch.sh regime_check.yml
+# Использование: dispatch.sh <файл-воркфлоу> [force]
+#   dispatch.sh lp_system.yml true    — отчёт по расписанию (шлём принудительно)
+#   dispatch.sh lp_system.yml         — проверка диапазона (молчит, если всё ок)
+#   dispatch.sh regime_check.yml      — воркфлоу без входного параметра force
 
 set -euo pipefail
 
 WORKFLOW="${1:?укажи файл воркфлоу, например lp_system.yml}"
+FORCE="${2:-false}"
 REPO="${GH_REPO:-BRKME/OracAI}"
 REF="${GH_REF:-main}"
 ENV_FILE="/etc/oracai-dispatch.env"
@@ -22,7 +24,15 @@ ENV_FILE="/etc/oracai-dispatch.env"
 
 : "${GH_TOKEN:?GH_TOKEN не задан — проверь $ENV_FILE}"
 
-log() { echo "$(date '+%Y-%m-%d %H:%M:%S %Z') [$WORKFLOW] $*"; }
+# inputs передаём ТОЛЬКО когда просят force: воркфлоу, который не объявил
+# такой параметр (regime_check.yml), ответит 422 на лишний ключ.
+if [[ "$FORCE" == "true" ]]; then
+    PAYLOAD="{\"ref\":\"${REF}\",\"inputs\":{\"force\":\"true\"}}"
+else
+    PAYLOAD="{\"ref\":\"${REF}\"}"
+fi
+
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S %Z') [$WORKFLOW force=$FORCE] $*"; }
 
 # GitHub изредка отдаёт 5xx — три попытки с паузой
 for attempt in 1 2 3; do
@@ -32,7 +42,7 @@ for attempt in 1 2 3; do
         -H "Authorization: Bearer ${GH_TOKEN}" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         "https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches" \
-        -d "{\"ref\":\"${REF}\"}" || echo 000)
+        -d "$PAYLOAD" || echo 000)
 
     if [[ "$code" == "204" ]]; then
         log "запущен (попытка $attempt)"

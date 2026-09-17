@@ -1,5 +1,5 @@
 [Unit]
-Description=OracAI dispatch %i
+Description=OracAI dispatch %i (без force — молчит, если нет алерта)
 After=network-online.target
 Wants=network-online.target
 
