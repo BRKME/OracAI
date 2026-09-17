@@ -215,7 +215,7 @@ Hedge: REQUIRED
 
 ## Documentation
 
-- `docs/SPOT_SIGNAL_POLICY_v5.6.md` — Signal Policy
+- `docs/SPOT_SIGNAL_POLICY_v6.5.md` — Signal Policy (v5.6 — устарела, оставлена как история)
 - `docs/BACKTEST_RESULTS_v5.4.md` — Backtest analysis
 - `docs/LP_INTELLIGENCE_SYSTEM_v2.0.2.md` — LP policy
 
