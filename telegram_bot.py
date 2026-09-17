@@ -212,7 +212,8 @@ def generate_market_analysis(
 
 def action_for(target_pos: float, risk_state: str,
                dd_from_high: float, bear_confirmation: bool,
-               bottom_prox: float = None) -> tuple:
+               bottom_prox: float = None,
+               bottom_signal: str = None) -> tuple:
     """Метка действия + примечание из целевой позиции и риск-состояния.
 
     Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
@@ -233,12 +234,17 @@ def action_for(target_pos: float, risk_state: str,
     if risk_state == "CRISIS":
         return "⚫ ЗАЩИТА", "Кризисный режим — уходим в защиту."
     if target_pos >= 0.95:
-        # v6.4: 0.95 без подтверждения циклом — это одиночный RSI-экстремум,
-        # у которого нет устойчивого преимущества (см. таблицу в блоке выше).
-        # Не называем это «сильным сигналом дна».
-        unconfirmed = (bottom_prox is not None and bottom_prox <= 0.45
-                       and target_pos < 1.00)
-        if unconfirmed:
+        # v6.7: ярлык определяется ИСТОЧНИКОМ сигнала, а не уровнем доли.
+        # На 0.95 могут привести три разные причины — сигнал дна по циклу,
+        # одиночный RSI-экстремум и блок восстановления по SMA200. Раньше
+        # текст всегда говорил «сильный сигнал дна», и при RSI 80 с
+        # bottom_prox 52% это была прямая неправда.
+        if bottom_signal is None:
+            # доля поднята удержанием тренда, дна тут нет
+            return ("⚪ ДЕРЖАТЬ", (
+                "Цикл на дно не указывает — удерживаем позицию по тренду, "
+                "без добора."))
+        if bottom_signal == "rsi_only":
             return ("🟢 ДОКУПИТЬ", (
                 "Перепроданность по RSI, но цикл ещё не подтвердил дно — "
                 "добор малой ступенью, основной набор по сигналам цикла."))
@@ -550,12 +556,43 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Default: 90% — BTC long-term uptrend, stay invested
     target_pos = 0.90
     
-    # Strong top signals — only reduce on combined extreme indicators
     rsi_for_check = rsi_1d if rsi_1d is not None else 50
-    if rsi_for_check > 78 and top_prox > 0.70 and conf_pct > 20:
-        target_pos = 0.50
-    elif rsi_for_check > 82 and top_prox > 0.75:
-        target_pos = 0.40
+
+    # v6.7: сигнал вершины по RSI НЕ срабатывает в устойчивом аптренде.
+    #
+    # Было: правило резало до 50%, а блок восстановления ниже поднимал обратно
+    # до 95% — то есть сигнал вершины срабатывал и тихо отменялся. На вершине
+    # цена почти всегда выше SMA200, так что отмена была не исключением, а
+    # нормой: правило не могло сработать ровно тогда, когда нужно. Плюс ярлык
+    # врал — 95% приходили от восстановления, а текст говорил про RSI.
+    #
+    # Проверка на data/btc.csv (медиана форвардной доходности, пп к базе):
+    #   выборка   RSI>78 и 10+ дней выше SMA200
+    #   с 2014    90д +13.8    180д  +9.8
+    #   с 2018    90д +17.3    180д  +1.6
+    #   с 2021    90д  +6.4    180д  -2.9
+    # На 90 днях выше базы во всех эпохах. Перегрев по RSI в подтверждённом
+    # аптренде — НЕ вершина, резать там значит выходить из работающего тренда.
+    #
+    # Поэтому правило теперь гасится аптрендом, а не отменяется постфактум.
+    # В аптренде остаётся путь через top_prox: он построен на MVRV и просадке
+    # от ATH, у которых знак устойчив (см. блок про bottom_prox).
+    in_uptrend = (sma200_ratio is not None and sma200_ratio > 1.0
+                  and days_above_sma200 >= 10)
+
+    top_signal_fired = False
+    if not in_uptrend:
+        if rsi_for_check > 78 and top_prox > 0.70 and conf_pct > 20:
+            target_pos = 0.50
+            top_signal_fired = True
+        elif rsi_for_check > 82 and top_prox > 0.75:
+            target_pos = 0.40
+            top_signal_fired = True
+    elif top_prox > 0.85:
+        # Аптренд, но оценка по MVRV/просадке уже на экстремуме вершины —
+        # это подтверждённый сигнал, а не одиночный RSI.
+        target_pos = 0.55
+        top_signal_fired = True
     
     # Confident bear regime
     if regime == "BEAR" and conf_pct > 30 and rsi_for_check > 40:
@@ -579,10 +616,17 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # одиночный RSI даёт шаг в пределах шума.
     #
     # НЕ «чинить» обратно по одному окну — сначала перечитать таблицу выше.
+    # bottom_signal фиксирует ИСТОЧНИК, а не уровень: на 0.95-1.00 могут
+    # привести сигнал дна по циклу, одиночный RSI и блок восстановления.
+    # Выводить причину из величины доли нельзя — пороги подтверждения у цели
+    # (0.45) и у формулировок (0.65) не совпадают, и ярлык начинал врать.
+    bottom_signal = None
     if bottom_prox > 0.65 or (rsi_for_check < 28 and bottom_prox > 0.45):
         target_pos = 1.00
+        bottom_signal = "confirmed"
     elif rsi_for_check < 28:
         target_pos = max(target_pos, 0.95)
+        bottom_signal = "rsi_only"
     
     # Risk overrides
     if risk_state == "CRISIS":
@@ -626,11 +670,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # engine uncertainty. Walk-forward test showed +16% alpha in 2026
     # correction and break-even vs HODL on full 5y.
     # ───────────────────────────────────────────────────────────────────
+    # v6.7: восстановление НЕ поднимает долю, если сработал сигнал вершины.
+    # Раньше оно перебивало его постфактум (в т.ч. подтверждённый по
+    # MVRV/просадке), и сигнал вершины не мог сработать в аптренде вообще.
     recovery_note = None
     if (sma200_ratio is not None
             and sma200_ratio > 1.0
             and days_above_sma200 >= 10
-            and not bear_confirmation):
+            and not bear_confirmation
+            and not top_signal_fired):
         if target_pos < 0.95:
             target_pos = 0.95
             recovery_note = f"📈 Устойчивый аптренд: {days_above_sma200}д выше SMA200. Удерживаем позицию."
@@ -653,7 +701,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Метка действия + примечание (TAIL гасит «100% сразу»; у дна не продаём)
     action, action_note = action_for(target_pos, risk_state,
                                      dd_from_high, bear_confirmation,
-                                     bottom_prox=bottom_prox)
+                                     bottom_prox=bottom_prox,
+                                     bottom_signal=bottom_signal)
     
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
@@ -713,7 +762,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
 
     _first = f"{_cycle}, но {_risk_short}." if _risk_short else f"{_cycle}."
     # Подсказка про лестницу нужна только когда реально набираем в турбулентность
-    if _risk_short and target_pos >= 0.95:
+    # v6.7: подсказка про лестницу — только когда ярлык реально о покупке.
+    # Привязка к target_pos давала «добирать ступенями» рядом с «без добора».
+    if _risk_short and any(w in action for w in ("ПОКУПАТЬ", "ДОКУПИТЬ")):
         _first = _first[:-1] + " — добирать ступенями, не на резких свечах."
 
     _block = [f"{action} · {int(target_pos * 100)}%", _first, action_note]
