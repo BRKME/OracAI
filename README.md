@@ -7,7 +7,7 @@ Probabilistic crypto market regime detection with integrated action logic.
 | Component | Version | Status |
 |-----------|---------|--------|
 | **Market Regime Engine** | **v5.8** | **Production** |
-| Signal Policy | v6.5 Position sizing | Production |
+| Signal Policy | v6.7 Position sizing | Production |
 | Charts | EMA50/200 + RSI | Production |
 | LP Intelligence | v2.0.2 | Production |
 | Twitter Publisher | v2.0 | Production |
@@ -215,7 +215,7 @@ Hedge: REQUIRED
 
 ## Documentation
 
-- `docs/SPOT_SIGNAL_POLICY_v6.5.md` — Signal Policy (v5.6 — устарела, оставлена как история)
+- `docs/SPOT_SIGNAL_POLICY_v6.7.md` — Signal Policy (v5.6 — устарела, оставлена как история)
 - `docs/BACKTEST_RESULTS_v5.4.md` — Backtest analysis
 - `docs/LP_INTELLIGENCE_SYSTEM_v2.0.2.md` — LP policy
 
