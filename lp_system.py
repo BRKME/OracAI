@@ -649,6 +649,76 @@ Maximum 3-4 lines total. No extra text."""
         logger.error(f"Hack check exception: {e}")
         return ""
 
+
+WEEK_STATE_FILE = "state/lp_fees_week.json"
+
+
+def _week_to_date_fees(cum_fees: float, history: list):
+    """Комиссии с начала календарной недели (понедельник 00:00 МСК).
+
+    Возвращает сумму, накопленную за текущую неделю, или None.
+
+    Зачем базис в файле, а не окно «7 дней назад»: скользящее окно никогда не
+    обнуляется и в понедельник утром показывает хвост прошлой недели. Здесь
+    фиксируется накопленное на старте недели, и дальше печатается разница —
+    виртуальный ноль.
+    """
+    import os
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+    now_msk = _dt.now(_tz.utc) + _td(hours=3)
+    week_start_msk = (now_msk - _td(days=now_msk.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+    week_id = week_start_msk.strftime("%Y-%m-%d")
+
+    state = {}
+    try:
+        if os.path.exists(WEEK_STATE_FILE):
+            with open(WEEK_STATE_FILE) as f:
+                state = json.load(f)
+    except Exception as e:
+        logger.warning(f"Не читается {WEEK_STATE_FILE}: {e}")
+
+    if state.get("week_start") != week_id:
+        # Новая неделя — ставим базис. Если в истории есть снимок на момент
+        # старта недели, берём его: тогда первая неделя после выката не
+        # потеряет уже набранное. Иначе базис = текущее накопленное.
+        baseline = cum_fees
+        target_utc = week_start_msk - _td(hours=3)
+        best, best_diff = None, None
+        for snap in (history or []):
+            ts_str = snap.get("timestamp")
+            if not ts_str:
+                continue
+            try:
+                ts = _dt.fromisoformat(str(ts_str).replace("Z", "+00:00"))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=_tz.utc)
+            except Exception:
+                continue
+            diff = abs((ts - target_utc.replace(tzinfo=_tz.utc)).total_seconds())
+            # снимок годится, только если он не дальше 2 суток от границы
+            if diff <= 2 * 86400 and (best_diff is None or diff < best_diff):
+                best_diff, best = diff, snap
+        if best is not None:
+            baseline = best.get("fees_cumulative", cum_fees)
+
+        state = {"week_start": week_id, "baseline": baseline,
+                 "set_at": now_msk.isoformat()}
+        try:
+            os.makedirs(os.path.dirname(WEEK_STATE_FILE), exist_ok=True)
+            with open(WEEK_STATE_FILE, "w") as f:
+                json.dump(state, f, indent=2)
+            logger.info(f"Новая неделя {week_id}: базис комиссий ${baseline:,.2f}")
+        except Exception as e:
+            logger.warning(f"Не сохраняется {WEEK_STATE_FILE}: {e}")
+
+    baseline = state.get("baseline")
+    if baseline is None:
+        return None
+    return max(0.0, cum_fees - baseline)
+
+
 def format_unified_report(
     monitor_data: dict,
     opportunities_data: Optional[dict],
@@ -736,7 +806,13 @@ def format_unified_report(
                 return None
             return cum_fees - snap.get("fees_cumulative", 0)
         
-        fees_week_delta = _delta(7)
+        # ── Недельные fees: виртуальный ноль на границе недели ──────────
+        # Блокчейн знает только НАКОПЛЕННУЮ сумму и сам не обнуляется, поэтому
+        # запоминаем её на старте недели и вычитаем. Неделя начинается в
+        # понедельник 00:00 МСК (то есть счётчик обнуляется в ночь с
+        # воскресенья). Базис лежит в state/lp_fees_week.json и коммитится
+        # воркфлоу вместе с остальным state/.
+        fees_week_delta = _week_to_date_fees(cum_fees, history)
         fees_month_delta = _delta(30)
         
         fees_line_parts = []
@@ -754,7 +830,9 @@ def format_unified_report(
         
         # Динамика fees: неделя / месяц
         dyn_parts = []
-        if fees_week_delta is not None and fees_week_delta > 0:
+        # >= 0, а не > 0: в понедельник утром счётчик законно равен нулю,
+        # и «нед: +$0» подтверждает, что обнуление сработало.
+        if fees_week_delta is not None and fees_week_delta >= 0:
             dyn_parts.append(f"нед: +${fees_week_delta:,.0f}")
         if fees_month_delta is not None and fees_month_delta > 0:
             dyn_parts.append(f"мес: +${fees_month_delta:,.0f}")
