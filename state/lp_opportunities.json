@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-26T19:38:43.741637+00:00",
+  "timestamp": "2026-09-26T20:11:10.448210+00:00",
   "summary": {
-    "timestamp": "2026-09-26T19:38:43.741637+00:00",
-    "regime": "BULL",
-    "regime_penalty": 0.45,
+    "timestamp": "2026-09-26T20:11:10.448210+00:00",
+    "regime": "BEAR",
+    "regime_penalty": 0.55,
     "lp_score": null,
     "total_pools_scanned": 17066,
     "pools_after_filter": 35,
@@ -28,7 +28,7 @@
         "apy_total": 206.08455,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 178.26313575,
+        "risk_adjusted_apy": 172.08059925,
         "efficiency": 11.29229261427022,
         "token0_type": "major",
         "token1_type": "stable"
@@ -49,7 +49,7 @@
         "apy_total": 101.06052,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 78.321903,
+        "risk_adjusted_apy": 73.26887699999999,
         "efficiency": 0.9229268502512336,
         "token0_type": "major",
         "token1_type": "major"
@@ -70,7 +70,7 @@
         "apy_total": 80.39525,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 69.54189125,
+        "risk_adjusted_apy": 67.13003375,
         "efficiency": 4.40520229434781,
         "token0_type": "major",
         "token1_type": "stable"
@@ -91,7 +91,7 @@
         "apy_total": 77.93992,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 60.403438,
+        "risk_adjusted_apy": 56.506442,
         "efficiency": 0.711779616939578,
         "token0_type": "major",
         "token1_type": "major"
@@ -112,7 +112,7 @@
         "apy_total": 67.31915,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 58.231064749999994,
+        "risk_adjusted_apy": 56.21149024999999,
         "efficiency": 18.4436059580015,
         "token0_type": "stable",
         "token1_type": "major"
@@ -133,7 +133,7 @@
         "apy_total": 63.01465,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 54.50767225,
+        "risk_adjusted_apy": 52.61723275,
         "efficiency": 0.5754776182325972,
         "token0_type": "stable",
         "token1_type": "major"
@@ -154,7 +154,7 @@
         "apy_total": 52.85888,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 45.7229312,
+        "risk_adjusted_apy": 44.1371648,
         "efficiency": 0.4827275659041865,
         "token0_type": "stable",
         "token1_type": "major"
@@ -175,7 +175,7 @@
         "apy_total": 58.06722,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 45.0020955,
+        "risk_adjusted_apy": 42.0987345,
         "efficiency": 0.5302950005796152,
         "token0_type": "major",
         "token1_type": "major"
@@ -196,7 +196,7 @@
         "apy_total": 50.27808,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 38.965512000000004,
+        "risk_adjusted_apy": 36.451608,
         "efficiency": 0.4591604567265652,
         "token0_type": "major",
         "token1_type": "major"
@@ -217,7 +217,7 @@
         "apy_total": 42.72863,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 36.96026495,
+        "risk_adjusted_apy": 35.67840605,
         "efficiency": 0.3902157290257805,
         "token0_type": "major",
         "token1_type": "stable"
@@ -240,7 +240,7 @@
         "apy_total": 206.08455,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 178.26313575,
+        "risk_adjusted_apy": 172.08059925,
         "efficiency": 11.29229261427022,
         "token0_type": "major",
         "token1_type": "stable"
@@ -261,7 +261,7 @@
         "apy_total": 101.06052,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 78.321903,
+        "risk_adjusted_apy": 73.26887699999999,
         "efficiency": 0.9229268502512336,
         "token0_type": "major",
         "token1_type": "major"
@@ -282,7 +282,7 @@
         "apy_total": 80.39525,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 69.54189125,
+        "risk_adjusted_apy": 67.13003375,
         "efficiency": 4.40520229434781,
         "token0_type": "major",
         "token1_type": "stable"
@@ -303,7 +303,7 @@
         "apy_total": 77.93992,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 60.403438,
+        "risk_adjusted_apy": 56.506442,
         "efficiency": 0.711779616939578,
         "token0_type": "major",
         "token1_type": "major"
@@ -324,7 +324,7 @@
         "apy_total": 67.31915,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 58.231064749999994,
+        "risk_adjusted_apy": 56.21149024999999,
         "efficiency": 18.4436059580015,
         "token0_type": "stable",
         "token1_type": "major"
@@ -345,7 +345,7 @@
         "apy_total": 63.01465,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 54.50767225,
+        "risk_adjusted_apy": 52.61723275,
         "efficiency": 0.5754776182325972,
         "token0_type": "stable",
         "token1_type": "major"
@@ -366,7 +366,7 @@
         "apy_total": 58.06722,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 45.0020955,
+        "risk_adjusted_apy": 42.0987345,
         "efficiency": 0.5302950005796152,
         "token0_type": "major",
         "token1_type": "major"
@@ -387,7 +387,7 @@
         "apy_total": 52.85888,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 45.7229312,
+        "risk_adjusted_apy": 44.1371648,
         "efficiency": 0.4827275659041865,
         "token0_type": "stable",
         "token1_type": "major"
@@ -408,7 +408,7 @@
         "apy_total": 50.27808,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 38.965512000000004,
+        "risk_adjusted_apy": 36.451608,
         "efficiency": 0.4591604567265652,
         "token0_type": "major",
         "token1_type": "major"
@@ -429,7 +429,7 @@
         "apy_total": 42.72863,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 36.96026495,
+        "risk_adjusted_apy": 35.67840605,
         "efficiency": 0.3902157290257805,
         "token0_type": "major",
         "token1_type": "stable"
@@ -452,7 +452,7 @@
         "apy_total": 1.93046,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 1.4961065,
+        "risk_adjusted_apy": 1.3995835,
         "efficiency": 0.10577855414001062,
         "token0_type": "major",
         "token1_type": "major"
@@ -473,7 +473,7 @@
         "apy_total": 5.59126,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 4.8364399,
+        "risk_adjusted_apy": 4.6687021,
         "efficiency": 0.306370356960889,
         "token0_type": "major",
         "token1_type": "stable"
@@ -494,7 +494,7 @@
         "apy_total": 4.69245,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 4.05896925,
+        "risk_adjusted_apy": 3.9181957499999998,
         "efficiency": 0.25712045927014937,
         "token0_type": "major",
         "token1_type": "stable"
@@ -515,7 +515,7 @@
         "apy_total": 1.983,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 1.536825,
+        "risk_adjusted_apy": 1.437675,
         "efficiency": 0.10865778225108286,
         "token0_type": "major",
         "token1_type": "major"
@@ -536,7 +536,7 @@
         "apy_total": 3.01286,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 2.6061239,
+        "risk_adjusted_apy": 2.5157380999999996,
         "efficiency": 0.1650884109876374,
         "token0_type": "major",
         "token1_type": "stable"
@@ -557,7 +557,7 @@
         "apy_total": 1.55008,
         "il_risk": 0.5,
         "il_risk_label": "Medium",
-        "risk_adjusted_apy": 1.201312,
+        "risk_adjusted_apy": 1.123808,
         "efficiency": 0.08493607989292656,
         "token0_type": "major",
         "token1_type": "major"
@@ -578,7 +578,7 @@
         "apy_total": 21.35441,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 18.47156465,
+        "risk_adjusted_apy": 17.83093235,
         "efficiency": 0.1950174458045189,
         "token0_type": "major",
         "token1_type": "stable"
@@ -599,7 +599,7 @@
         "apy_total": 1.11219,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 0.96204435,
+        "risk_adjusted_apy": 0.9286786499999999,
         "efficiency": 0.01015698126320983,
         "token0_type": "major",
         "token1_type": "stable"
@@ -620,7 +620,7 @@
         "apy_total": 8.63707,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 7.47106555,
+        "risk_adjusted_apy": 7.211953449999999,
         "efficiency": 0.47326400372619404,
         "token0_type": "stable",
         "token1_type": "major"
@@ -641,7 +641,7 @@
         "apy_total": 2.75262,
         "il_risk": 0.3,
         "il_risk_label": "Low",
-        "risk_adjusted_apy": 2.3810162999999998,
+        "risk_adjusted_apy": 2.2984376999999996,
         "efficiency": 0.15082831203253255,
         "token0_type": "major",
         "token1_type": "stable"
@@ -665,7 +665,7 @@
       "apy_total": 1.93046,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 1.4961065,
+      "risk_adjusted_apy": 1.3995835,
       "efficiency": 0.10577855414001062,
       "token0_type": "major",
       "token1_type": "major"
@@ -686,7 +686,7 @@
       "apy_total": 5.59126,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 4.8364399,
+      "risk_adjusted_apy": 4.6687021,
       "efficiency": 0.306370356960889,
       "token0_type": "major",
       "token1_type": "stable"
@@ -707,7 +707,7 @@
       "apy_total": 4.69245,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 4.05896925,
+      "risk_adjusted_apy": 3.9181957499999998,
       "efficiency": 0.25712045927014937,
       "token0_type": "major",
       "token1_type": "stable"
@@ -728,7 +728,7 @@
       "apy_total": 1.983,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 1.536825,
+      "risk_adjusted_apy": 1.437675,
       "efficiency": 0.10865778225108286,
       "token0_type": "major",
       "token1_type": "major"
@@ -749,7 +749,7 @@
       "apy_total": 3.01286,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 2.6061239,
+      "risk_adjusted_apy": 2.5157380999999996,
       "efficiency": 0.1650884109876374,
       "token0_type": "major",
       "token1_type": "stable"
@@ -770,7 +770,7 @@
       "apy_total": 1.55008,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 1.201312,
+      "risk_adjusted_apy": 1.123808,
       "efficiency": 0.08493607989292656,
       "token0_type": "major",
       "token1_type": "major"
@@ -791,7 +791,7 @@
       "apy_total": 21.35441,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 18.47156465,
+      "risk_adjusted_apy": 17.83093235,
       "efficiency": 0.1950174458045189,
       "token0_type": "major",
       "token1_type": "stable"
@@ -812,7 +812,7 @@
       "apy_total": 1.11219,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 0.96204435,
+      "risk_adjusted_apy": 0.9286786499999999,
       "efficiency": 0.01015698126320983,
       "token0_type": "major",
       "token1_type": "stable"
@@ -833,7 +833,7 @@
       "apy_total": 8.63707,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 7.47106555,
+      "risk_adjusted_apy": 7.211953449999999,
       "efficiency": 0.47326400372619404,
       "token0_type": "stable",
       "token1_type": "major"
@@ -854,7 +854,7 @@
       "apy_total": 2.75262,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 2.3810162999999998,
+      "risk_adjusted_apy": 2.2984376999999996,
       "efficiency": 0.15082831203253255,
       "token0_type": "major",
       "token1_type": "stable"
@@ -875,7 +875,7 @@
       "apy_total": 5.99267,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 5.183659550000001,
+      "risk_adjusted_apy": 5.00387945,
       "efficiency": 0.32836577199061345,
       "token0_type": "stable",
       "token1_type": "major"
@@ -896,7 +896,7 @@
       "apy_total": 29.597,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 22.937675000000002,
+      "risk_adjusted_apy": 21.457825,
       "efficiency": 0.2702921494672599,
       "token0_type": "major",
       "token1_type": "major"
@@ -917,7 +917,7 @@
       "apy_total": 31.64555,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 24.525301250000002,
+      "risk_adjusted_apy": 22.94302375,
       "efficiency": 0.2890003904907913,
       "token0_type": "major",
       "token1_type": "major"
@@ -938,7 +938,7 @@
       "apy_total": 1.0099,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 0.8735635,
+      "risk_adjusted_apy": 0.8432665,
       "efficiency": 0.05533701353794921,
       "token0_type": "major",
       "token1_type": "stable"
@@ -959,7 +959,7 @@
       "apy_total": 42.72863,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 36.96026495,
+      "risk_adjusted_apy": 35.67840605,
       "efficiency": 0.3902157290257805,
       "token0_type": "major",
       "token1_type": "stable"
@@ -980,7 +980,7 @@
       "apy_total": 67.31915,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 58.231064749999994,
+      "risk_adjusted_apy": 56.21149024999999,
       "efficiency": 18.4436059580015,
       "token0_type": "stable",
       "token1_type": "major"
@@ -1001,7 +1001,7 @@
       "apy_total": 41.61536,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 35.9972864,
+      "risk_adjusted_apy": 34.7488256,
       "efficiency": 0.3800489136077769,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1022,7 +1022,7 @@
       "apy_total": 29.50443,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 22.86593325,
+      "risk_adjusted_apy": 21.390711749999998,
       "efficiency": 0.2694466450914655,
       "token0_type": "major",
       "token1_type": "major"
@@ -1043,7 +1043,7 @@
       "apy_total": 23.35082,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 18.0968855,
+      "risk_adjusted_apy": 16.9293445,
       "efficiency": 0.21324947726086926,
       "token0_type": "major",
       "token1_type": "major"
@@ -1064,7 +1064,7 @@
       "apy_total": 17.80175,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 13.796356249999999,
+      "risk_adjusted_apy": 12.906268749999999,
       "efficiency": 0.1625730305136431,
       "token0_type": "major",
       "token1_type": "major"
@@ -1085,7 +1085,7 @@
       "apy_total": 20.74939,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 17.948222349999998,
+      "risk_adjusted_apy": 17.325740649999997,
       "efficiency": 0.18949238578422734,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1106,7 +1106,7 @@
       "apy_total": 206.08455,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 178.26313575,
+      "risk_adjusted_apy": 172.08059925,
       "efficiency": 11.29229261427022,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1127,7 +1127,7 @@
       "apy_total": 30.12419,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 23.34624725,
+      "risk_adjusted_apy": 21.840037749999997,
       "efficiency": 1.6506383232463906,
       "token0_type": "major",
       "token1_type": "major"
@@ -1148,7 +1148,7 @@
       "apy_total": 101.06052,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 78.321903,
+      "risk_adjusted_apy": 73.26887699999999,
       "efficiency": 0.9229268502512336,
       "token0_type": "major",
       "token1_type": "major"
@@ -1169,7 +1169,7 @@
       "apy_total": 32.70749,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 28.29197885,
+      "risk_adjusted_apy": 27.310754149999998,
       "efficiency": 0.2986986165528175,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1190,7 +1190,7 @@
       "apy_total": 1.0583,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 0.8201825,
+      "risk_adjusted_apy": 0.7672675,
       "efficiency": 0.2899454697230424,
       "token0_type": "major",
       "token1_type": "major"
@@ -1211,7 +1211,7 @@
       "apy_total": 23.71801,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 20.51607865,
+      "risk_adjusted_apy": 19.804538349999998,
       "efficiency": 0.21660251304493486,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1232,7 +1232,7 @@
       "apy_total": 77.93992,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 60.403438,
+      "risk_adjusted_apy": 56.506442,
       "efficiency": 0.711779616939578,
       "token0_type": "major",
       "token1_type": "major"
@@ -1253,7 +1253,7 @@
       "apy_total": 12.03297,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 9.32555175,
+      "risk_adjusted_apy": 8.72390325,
       "efficiency": 0.6593414811747657,
       "token0_type": "major",
       "token1_type": "major"
@@ -1274,7 +1274,7 @@
       "apy_total": 50.27808,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 38.965512000000004,
+      "risk_adjusted_apy": 36.451608,
       "efficiency": 0.4591604567265652,
       "token0_type": "major",
       "token1_type": "major"
@@ -1295,7 +1295,7 @@
       "apy_total": 6.16926,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 5.3364099000000005,
+      "risk_adjusted_apy": 5.1513321,
       "efficiency": 1.6902119944149283,
       "token0_type": "major",
       "token1_type": "stable"
@@ -1316,7 +1316,7 @@
       "apy_total": 63.01465,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 54.50767225,
+      "risk_adjusted_apy": 52.61723275,
       "efficiency": 0.5754776182325972,
       "token0_type": "stable",
       "token1_type": "major"
@@ -1337,7 +1337,7 @@
       "apy_total": 58.06722,
       "il_risk": 0.5,
       "il_risk_label": "Medium",
-      "risk_adjusted_apy": 45.0020955,
+      "risk_adjusted_apy": 42.0987345,
       "efficiency": 0.5302950005796152,
       "token0_type": "major",
       "token1_type": "major"
@@ -1358,7 +1358,7 @@
       "apy_total": 52.85888,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 45.7229312,
+      "risk_adjusted_apy": 44.1371648,
       "efficiency": 0.4827275659041865,
       "token0_type": "stable",
       "token1_type": "major"
@@ -1379,7 +1379,7 @@
       "apy_total": 80.39525,
       "il_risk": 0.3,
       "il_risk_label": "Low",
-      "risk_adjusted_apy": 69.54189125,
+      "risk_adjusted_apy": 67.13003375,
       "efficiency": 4.40520229434781,
       "token0_type": "major",
       "token1_type": "stable"
