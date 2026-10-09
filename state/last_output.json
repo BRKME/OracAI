@@ -1,6 +1,6 @@
 {
   "risk": {
-    "risk_level": -0.4176,
+    "risk_level": -0.4587,
     "risk_state": "RISK_OFF",
     "strength": "moderate",
     "risk_exposure_cap": 0.35,
@@ -11,75 +11,75 @@
   },
   "regime": "BEAR",
   "probabilities": {
-    "BULL": 0.1265,
-    "BEAR": 0.6131,
-    "RANGE": 0.1418,
-    "TRANSITION": 0.1185
+    "BULL": 0.1075,
+    "BEAR": 0.6353,
+    "RANGE": 0.1309,
+    "TRANSITION": 0.1263
   },
   "confidence": {
-    "base": 0.707,
-    "quality_adjusted": 0.5431,
+    "base": 0.7567,
+    "quality_adjusted": 0.5801,
     "churn_penalty": 1.0,
     "switches_30d": 2
   },
   "buckets": {
-    "Momentum": -0.6082,
-    "Stability": 1.0,
-    "Rotation": 0.6678,
-    "Sentiment": -0.2936,
-    "Macro": -0.6899
+    "Momentum": -0.601,
+    "Stability": 0.869,
+    "Rotation": 0.937,
+    "Sentiment": -0.2615,
+    "Macro": -0.75
   },
   "bucket_details": {
     "momentum": {
-      "roc_blend_z": -2.272820831162813,
-      "trend_strength_z": -1.378121238637997,
+      "roc_blend_z": -1.5969191919130188,
+      "trend_strength_z": -2.9140862540645185,
       "alignment": 1.0,
-      "dtmc_z": -0.8743518624171129,
-      "absolute_momentum": 0.5673217049041006
+      "dtmc_z": -0.7749008810242465,
+      "absolute_momentum": 0.5961623598975812
     },
     "stability": {
-      "neg_vol_z": 1.164980524214054,
-      "liquidity_z": 1.1500724296896454,
-      "depth_z": 1.4624523936576748
+      "neg_vol_z": 0.943590639386231,
+      "liquidity_z": 0.7188481676813977,
+      "depth_z": 0.9598243433885205
     },
     "rotation": {
-      "velocity_z": 0.8144412551811613,
-      "accel_z": 0.4479019550718517
+      "velocity_z": 1.291310290969303,
+      "accel_z": 0.4054613692658117
     },
     "sentiment": {
       "fg_score": 0.5,
-      "funding_score": -0.9151323420618449,
-      "oi_score": -0.4100155888021522,
+      "funding_score": -0.9186228128326066,
+      "oi_score": -0.2762705594640296,
       "fg_raw": 59
     },
     "macro": {
-      "dollar_signal": -1.336039959106171,
+      "dollar_signal": -1.5364467317206165,
       "rate_signal": -1.3702161810755675,
       "yc_z": 1.775703281146018,
       "m2_z": -1.2065457951008225
     }
   },
   "cross_asset": {
-    "corr_BTC_SPX": 0.062,
-    "corr_BTC_Gold": 0.049,
+    "corr_BTC_SPX": -0.097,
+    "corr_BTC_Gold": 0.116,
     "macro_weight_boost": 1.0
   },
   "bucket_health": {
     "effective_dimensionality": 4,
     "pairwise_correlations": {
-      "Momentum/Stability": -0.115,
-      "Momentum/Rotation": -0.02,
-      "Momentum/Sentiment": 0.393,
-      "Momentum/Macro": -0.599,
-      "Stability/Rotation": 0.145,
-      "Stability/Sentiment": -0.121,
-      "Stability/Macro": 0.028,
-      "Rotation/Sentiment": -0.075,
-      "Rotation/Macro": 0.272,
-      "Sentiment/Macro": -0.185
+      "Momentum/Stability": -0.145,
+      "Momentum/Rotation": -0.086,
+      "Momentum/Sentiment": 0.345,
+      "Momentum/Macro": -0.634,
+      "Stability/Rotation": 0.174,
+      "Stability/Sentiment": -0.104,
+      "Stability/Macro": 0.088,
+      "Rotation/Sentiment": -0.043,
+      "Rotation/Macro": 0.355,
+      "Sentiment/Macro": -0.099
     },
     "flags": [
-      "ANOMALOUS_CORR_Momentum_Macro: -0.60"
+      "ANOMALOUS_CORR_Momentum_Macro: -0.63"
     ]
   },
   "regime_dynamics": {
@@ -91,8 +91,8 @@
         "TRANSITION": 0.0
       },
       "from_BEAR": {
-        "BULL": 0.024,
-        "BEAR": 0.976,
+        "BULL": 0.023,
+        "BEAR": 0.977,
         "RANGE": 0.0,
         "TRANSITION": 0.0
       },
@@ -118,7 +118,7 @@
   },
   "exposure_cap": 0.35,
   "risk_flags": [
-    "ANOMALOUS_CORR_Momentum_Macro: -0.60",
+    "ANOMALOUS_CORR_Momentum_Macro: -0.63",
     "TRANSITION_STICKY: self-transition=0.98"
   ],
   "normalization": {
@@ -131,35 +131,35 @@
     "days_in_regime": 1,
     "temperature": 0.8,
     "smoothing_alpha": 0.2,
-    "vol_z": -1.165,
+    "vol_z": -0.9436,
     "data_completeness": 1.0,
     "failed_sources": [],
-    "timestamp": "2026-10-09T04:40:39.295065",
-    "btc_price": 82317.5,
+    "timestamp": "2026-10-09T15:07:58.608976",
+    "btc_price": 82820.2109375,
     "eth_price": null,
-    "returns_30d": 0.0519,
-    "drawdown_from_high_90d": -4.95,
-    "drawdown_from_ath": -32.36,
+    "returns_30d": 0.0817,
+    "drawdown_from_high_90d": -4.37,
+    "drawdown_from_ath": -31.95,
     "mvrv": 1.5192,
-    "sma200_ratio": 1.1465,
-    "days_above_sma200": 51,
+    "sma200_ratio": 1.1526,
+    "days_above_sma200": 52,
     "rsi": {
-      "rsi_1d": 43.93,
-      "rsi_2h": 42.87,
-      "rsi_1d_7": 30.0,
+      "rsi_1d": 46.29,
+      "rsi_2h": 53.63,
+      "rsi_1d_7": 34.56,
       "source": "none"
     }
   },
   "lp_policy": {
     "lp_regime": "BREAKOUT",
-    "risk_lp": -0.08,
+    "risk_lp": -0.07,
     "risk_quadrant": "Q4",
     "fee_variance_ratio": 5.0,
-    "uncertainty_value": 0.41,
-    "trend_persistence": 0.783,
+    "uncertainty_value": 0.39,
+    "trend_persistence": 0.754,
     "vol_structure": "LOW_VOL",
     "max_exposure": 0.2,
-    "effective_exposure": 0.06,
+    "effective_exposure": 0.05,
     "range_width": "wide",
     "rebalance": "cautious",
     "hedge_recommended": false,
@@ -174,7 +174,7 @@
     "btc": {
       "action": "STRONG_SELL",
       "size_pct": -0.3,
-      "confidence": 0.5431,
+      "confidence": 0.5801,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
@@ -185,7 +185,7 @@
     "eth": {
       "action": "STRONG_SELL",
       "size_pct": -0.5,
-      "confidence": 0.5431,
+      "confidence": 0.5801,
       "stance": "RISK_OFF",
       "blocked_by": null,
       "reasoning": [
@@ -203,15 +203,15 @@
   "cycle": {
     "phase": "EARLY_BULL",
     "phase_confidence": 0.6,
-    "cycle_position": 48.1,
+    "cycle_position": 49.2,
     "bottom_proximity": 0.08,
     "top_proximity": 0.07,
     "bottom_top_signal": "NO_SIGNAL",
     "signal_strength": 0.0,
     "action": "BUY",
     "action_confidence": 0.6,
-    "rsi_d1": 41.87,
-    "vs_200ma_pct": 0.1462,
-    "vs_ath_pct": -0.3235
+    "rsi_d1": 44.62,
+    "vs_200ma_pct": 0.1535,
+    "vs_ath_pct": -0.3191
   }
 }
