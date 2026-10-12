@@ -57,3 +57,22 @@ class TestLpFeePhrase:
     def test_comfortable(self):
         s = lp_fee_phrase(2.4)
         assert "с запасом" in s and "2.4x" in s and "✓" in s
+
+
+class TestRegimePercents:
+    """12.10: 5+76+4+12 = 97% — каждый процент обрезался int() вниз."""
+
+    def test_sums_to_100_when_probs_sum_to_one(self):
+        from telegram_bot import regime_percents
+        p = regime_percents([0.0599, 0.7699, 0.0499, 0.1203])
+        assert sum(p) == 100
+        assert p == [6, 77, 5, 12]
+
+    def test_does_not_invent_mass(self):
+        from telegram_bot import regime_percents
+        # вероятности сами в сумме 0.90 — 100% не рисуем
+        assert sum(regime_percents([0.30, 0.30, 0.30, 0.0])) == 90
+
+    def test_exact_values_unchanged(self):
+        from telegram_bot import regime_percents
+        assert regime_percents([0.25, 0.25, 0.25, 0.25]) == [25, 25, 25, 25]

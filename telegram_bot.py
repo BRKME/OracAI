@@ -294,6 +294,22 @@ def action_for(target_pos: float, risk_state: str,
     return ("🔴 ПРОДАВАТЬ", "Экстремальная вершина.")
 
 
+def regime_percents(probs: list) -> list:
+    """Целые проценты, сумма которых совпадает с округлённой суммой вероятностей.
+
+    int() по каждой давал 97% в сумме (12.10). Метод наибольших остатков:
+    обрезаем вниз, недостающие пункты отдаём самым большим дробным частям.
+    Если вероятности сами не дают 1, сумму до 100 не дотягиваем.
+    """
+    raw = [max(0.0, v) * 100 for v in probs]
+    floors = [int(r) for r in raw]
+    missing = round(sum(raw)) - sum(floors)
+    order = sorted(range(len(raw)), key=lambda i: raw[i] - floors[i], reverse=True)
+    for i in order[:max(0, missing)]:
+        floors[i] += 1
+    return floors
+
+
 def lp_fee_phrase(fv: float) -> str:
     """Строка о соотношении комиссий к IL. «С запасом» — только когда запас есть.
 
@@ -838,15 +854,16 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # контекст. По решению оператора раскладка сохранена полностью.
     # ══════════════════════════════════════════════════════
 
-    def make_prob_bar(value, width=10):
-        filled = int(value * width)
+    def make_prob_bar(pct, width=10):
+        filled = min(width, pct * width // 100)
         return "[" + "#" * filled + "." * (width - filled) + "]"
 
     lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
-    lines.append(f"BULL  {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
-    lines.append(f"BEAR  {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
-    lines.append(f"RANGE {make_prob_bar(prob_range)} {int(prob_range*100)}%")
-    lines.append(f"TRANS {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
+    _pb, _pr, _pg, _pt = regime_percents([prob_bull, prob_bear, prob_range, prob_trans])
+    lines.append(f"BULL  {make_prob_bar(_pb)} {_pb}%")
+    lines.append(f"BEAR  {make_prob_bar(_pr)} {_pr}%")
+    lines.append(f"RANGE {make_prob_bar(_pg)} {_pg}%")
+    lines.append(f"TRANS {make_prob_bar(_pt)} {_pt}%")
     lines.append("")
 
     # ══════════════════════════════════════════════════════
