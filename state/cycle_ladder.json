@@ -2,12 +2,12 @@
  "policy_version": "ladder-v1.0",
  "zone": "EXPANSION",
  "drawdown_call": "NOT_IN_DRAWDOWN",
- "mvrv": 1.541,
+ "mvrv": 1.553,
  "dca_multiplier": 1.0,
  "fixation_fraction": 0.0,
  "re_risk": true,
- "days_above_sma200": 53,
- "rationale": "53д выше SMA200 (порог 10) — объективный триггер: разворачивай резерв",
+ "days_above_sma200": 54,
+ "rationale": "54д выше SMA200 (порог 10) — объективный триггер: разворачивай резерв",
  "signal": {
   "policy_version": "ladder-v1.2",
   "action": "HOLD",
@@ -16,6 +16,6 @@
   "trigger": "no_event",
   "rationale": "Зона EXPANSION без события — держим план, не импровизируем"
  },
- "date_utc": "2026-10-11",
- "price": 82958.7
+ "date_utc": "2026-10-12",
+ "price": 83505.5
 }
