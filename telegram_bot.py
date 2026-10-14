@@ -213,7 +213,10 @@ def generate_market_analysis(
 def action_for(target_pos: float, risk_state: str,
                dd_from_high: float, bear_confirmation: bool,
                bottom_prox: float = None,
-               bottom_signal: str = None) -> tuple:
+               bottom_signal: str = None,
+               top_signal: bool = None,
+               bear_regime: bool = None,
+               tail_cut: bool = None) -> tuple:
     """Метка действия + примечание из целевой позиции и риск-состояния.
 
     Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
@@ -268,11 +271,59 @@ def action_for(target_pos: float, risk_state: str,
         if dd_from_high < -15 and bear_confirmation:
             return ("🟠 ФИКСИРОВАТЬ",
                     f"Просадка {abs(dd_from_high):.0f}% + медвежье подтверждение.")
-        return ("🟠 ФИКСИРОВАТЬ", "Сигнал вершины или TAIL риск.")
+        # v6.8: называем причину, которую код знает, а не «вершина или TAIL».
+        # 12.10 при top 47% текст говорил о вершине, хотя долю срезали TAIL и
+        # уверенный BEAR. top_signal=None — вызов без контекста, старый текст.
+        if top_signal is None:
+            return ("🟠 ФИКСИРОВАТЬ", "Сигнал вершины или TAIL риск.")
+        if top_signal:
+            return ("🟠 ФИКСИРОВАТЬ", "Сигнал вершины по циклу (MVRV/просадка от ATH).")
+        causes = []
+        # TAIL режет долю только при RSI > 50; активный TAIL без среза
+        # причиной не называем (14.10: RSI 49, 60% дал один BEAR).
+        if tail_cut if tail_cut is not None else risk_state == "TAIL":
+            causes.append("хвостовой риск")
+        if bear_regime:
+            causes.append("уверенный BEAR-режим")
+        if not causes:
+            return ("🟠 ФИКСИРОВАТЬ", "Медвежье подтверждение — сокращаем долю.")
+        why = " и ".join(causes)
+        return ("🟠 ФИКСИРОВАТЬ", (
+            f"Долю режет {why}, не вершина цикла — фиксируем часть, "
+            "база остаётся."))
     if dd_from_high < -25 and bear_confirmation:
         return ("🔴 ПРОДАВАТЬ",
                 f"Глубокая просадка {abs(dd_from_high):.0f}% + подтверждение BEAR.")
     return ("🔴 ПРОДАВАТЬ", "Экстремальная вершина.")
+
+
+def regime_percents(probs: list) -> list:
+    """Целые проценты, сумма которых совпадает с округлённой суммой вероятностей.
+
+    int() по каждой давал 97% в сумме (12.10). Метод наибольших остатков:
+    обрезаем вниз, недостающие пункты отдаём самым большим дробным частям.
+    Если вероятности сами не дают 1, сумму до 100 не дотягиваем.
+    """
+    raw = [max(0.0, v) * 100 for v in probs]
+    floors = [int(r) for r in raw]
+    missing = round(sum(raw)) - sum(floors)
+    order = sorted(range(len(raw)), key=lambda i: raw[i] - floors[i], reverse=True)
+    for i in order[:max(0, missing)]:
+        floors[i] += 1
+    return floors
+
+
+def lp_fee_phrase(fv: float) -> str:
+    """Строка о соотношении комиссий к IL. «С запасом» — только когда запас есть.
+
+    fee_variance_ratio клипуется в [0.1, 5.0]; 0.1 — нижний клип, т.е.
+    «не более 0.1x». Пороги значков — прежние (1.0 / 1.5).
+    """
+    if fv > 1.5:
+        return f"комиссии кроют IL с запасом {fv:.1f}x ✓"
+    if fv > 1.0:
+        return f"комиссии кроют IL впритык {fv:.1f}x ⚠️"
+    return f"комиссии НЕ кроют IL ({fv:.1f}x) ✗"
 
 
 def format_output(output: dict, lp_policy=None, allocation=None) -> str:
@@ -702,7 +753,12 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     action, action_note = action_for(target_pos, risk_state,
                                      dd_from_high, bear_confirmation,
                                      bottom_prox=bottom_prox,
-                                     bottom_signal=bottom_signal)
+                                     bottom_signal=bottom_signal,
+                                     top_signal=top_signal_fired,
+                                     bear_regime=(regime == "BEAR" and conf_pct > 30
+                                                  and rsi_for_check > 40),
+                                     tail_cut=(risk_state == "TAIL"
+                                               and rsi_for_check > 50))
     
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
@@ -784,8 +840,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         lp_parts = [f"LP: диапазоны {_rw_ru}"]
         if hasattr(lp_policy, 'fee_variance_ratio'):
             fv = lp_policy.fee_variance_ratio
-            fv_status = "✓" if fv > 1.5 else "⚠️" if fv > 1.0 else "✗"
-            lp_parts.append(f"комиссии кроют IL с запасом {fv:.1f}x {fv_status}")
+            lp_parts.append(lp_fee_phrase(fv))
         hedge_required = (
             lp_policy.hedge_recommended or
             risk_state in ("TAIL", "CRISIS") or
@@ -805,15 +860,16 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # контекст. По решению оператора раскладка сохранена полностью.
     # ══════════════════════════════════════════════════════
 
-    def make_prob_bar(value, width=10):
-        filled = int(value * width)
+    def make_prob_bar(pct, width=10):
+        filled = min(width, pct * width // 100)
         return "[" + "#" * filled + "." * (width - filled) + "]"
 
     lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
-    lines.append(f"BULL  {make_prob_bar(prob_bull)} {int(prob_bull*100)}%")
-    lines.append(f"BEAR  {make_prob_bar(prob_bear)} {int(prob_bear*100)}%")
-    lines.append(f"RANGE {make_prob_bar(prob_range)} {int(prob_range*100)}%")
-    lines.append(f"TRANS {make_prob_bar(prob_trans)} {int(prob_trans*100)}%")
+    _pb, _pr, _pg, _pt = regime_percents([prob_bull, prob_bear, prob_range, prob_trans])
+    lines.append(f"BULL  {make_prob_bar(_pb)} {_pb}%")
+    lines.append(f"BEAR  {make_prob_bar(_pr)} {_pr}%")
+    lines.append(f"RANGE {make_prob_bar(_pg)} {_pg}%")
+    lines.append(f"TRANS {make_prob_bar(_pt)} {_pt}%")
     lines.append("")
 
     # ══════════════════════════════════════════════════════
