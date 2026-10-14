@@ -76,3 +76,16 @@ class TestRegimePercents:
     def test_exact_values_unchanged(self):
         from telegram_bot import regime_percents
         assert regime_percents([0.25, 0.25, 0.25, 0.25]) == [25, 25, 25, 25]
+
+
+class TestCase1410:
+    """14.10: TAIL активен, но RSI 49 — потолок TAIL (RSI>50) НЕ сработал.
+    60% дал только уверенный BEAR. Нельзя писать «долю режет хвостовой риск»."""
+
+    def test_tail_active_but_not_cutting(self):
+        _, note = action_for(target_pos=0.60, risk_state="TAIL",
+                             dd_from_high=-8, bear_confirmation=True,
+                             bottom_prox=0.54, top_signal=False,
+                             bear_regime=True, tail_cut=False)
+        assert "хвост" not in note.lower()
+        assert "bear" in note.lower()

@@ -215,7 +215,8 @@ def action_for(target_pos: float, risk_state: str,
                bottom_prox: float = None,
                bottom_signal: str = None,
                top_signal: bool = None,
-               bear_regime: bool = None) -> tuple:
+               bear_regime: bool = None,
+               tail_cut: bool = None) -> tuple:
     """Метка действия + примечание из целевой позиции и риск-состояния.
 
     Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
@@ -278,7 +279,9 @@ def action_for(target_pos: float, risk_state: str,
         if top_signal:
             return ("🟠 ФИКСИРОВАТЬ", "Сигнал вершины по циклу (MVRV/просадка от ATH).")
         causes = []
-        if risk_state == "TAIL":
+        # TAIL режет долю только при RSI > 50; активный TAIL без среза
+        # причиной не называем (14.10: RSI 49, 60% дал один BEAR).
+        if tail_cut if tail_cut is not None else risk_state == "TAIL":
             causes.append("хвостовой риск")
         if bear_regime:
             causes.append("уверенный BEAR-режим")
@@ -752,7 +755,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
                                      bottom_prox=bottom_prox,
                                      bottom_signal=bottom_signal,
                                      top_signal=top_signal_fired,
-                                     bear_regime=(regime == "BEAR" and conf_pct > 30))
+                                     bear_regime=(regime == "BEAR" and conf_pct > 30
+                                                  and rsi_for_check > 40),
+                                     tail_cut=(risk_state == "TAIL"
+                                               and rsi_for_check > 50))
     
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
