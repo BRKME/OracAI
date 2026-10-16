@@ -297,6 +297,9 @@ def action_for(target_pos: float, risk_state: str,
     return ("🔴 ПРОДАВАТЬ", "Экстремальная вершина.")
 
 
+REGIME_EMOJI = {"BULL": "🐂", "BEAR": "🐻", "RANGE": "↔️", "TRANSITION": "🔄"}
+
+
 def regime_percents(probs: list) -> list:
     """Целые проценты, сумма которых совпадает с округлённой суммой вероятностей.
 
@@ -427,7 +430,22 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     _hdr = f"🧭 OracAI · {_dt.now().strftime('%d.%m')}"
     if _dq < 100:
         _hdr += f" · data {_dq}%"   # показываем только при просадке качества
+    # v6.9: режим — в шапке. 16.10 смена BEAR → BULL была видна только в
+    # справке в самом конце сообщения.
+    _hdr += f" · {REGIME_EMOJI.get(regime, '')} {regime}".replace("  ", " ")
     lines.append(_hdr)
+    _prev = meta.get("previous_regime")
+    if _prev and _prev != regime and days <= 3:
+        _start = meta.get("regime_start_date")
+        try:
+            _since = f" с {_dt.strptime(_start, '%Y-%m-%d').strftime('%d.%m')}"
+        except (TypeError, ValueError):
+            _since = ""
+        _cp = int(conf.get("quality_adjusted", 0) * 100)
+        _low = " (низкая — смена может откатиться)" if _cp < 30 else ""
+        lines.append(f"🔄 Смена режима: {REGIME_EMOJI.get(_prev, '')} {_prev} → "
+                     f"{REGIME_EMOJI.get(regime, '')} {regime}{_since} · "
+                     f"уверенность {_cp}%{_low}")
     lines.append("")
 
     # Слот под блок действия: target_pos считается ниже, поэтому резервируем
@@ -866,10 +884,12 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
 
     lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
     _pb, _pr, _pg, _pt = regime_percents([prob_bull, prob_bear, prob_range, prob_trans])
-    lines.append(f"BULL  {make_prob_bar(_pb)} {_pb}%")
-    lines.append(f"BEAR  {make_prob_bar(_pr)} {_pr}%")
-    lines.append(f"RANGE {make_prob_bar(_pg)} {_pg}%")
-    lines.append(f"TRANS {make_prob_bar(_pt)} {_pt}%")
+    def _lead(name):
+        return " ◀" if regime == name else ""
+    lines.append(f"BULL  {make_prob_bar(_pb)} {_pb}%{_lead('BULL')}")
+    lines.append(f"BEAR  {make_prob_bar(_pr)} {_pr}%{_lead('BEAR')}")
+    lines.append(f"RANGE {make_prob_bar(_pg)} {_pg}%{_lead('RANGE')}")
+    lines.append(f"TRANS {make_prob_bar(_pt)} {_pt}%{_lead('TRANSITION')}")
     lines.append("")
 
     # ══════════════════════════════════════════════════════

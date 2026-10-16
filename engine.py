@@ -513,6 +513,17 @@ def bucket_health(bucket_history: dict, lookback: int = None) -> dict:
 # TRANSITION MATRIX (v3.3)
 # ============================================================
 
+def previous_regime(regime_log: list):
+    """Режим до текущего: последний в логе, отличный от последнего записанного."""
+    if not regime_log:
+        return None
+    current = regime_log[-1]
+    for r in reversed(regime_log):
+        if r != current:
+            return r
+    return None
+
+
 def compute_transition_matrix(regime_log: list, window: int = None) -> dict:
     """Empirical transition matrix from regime history."""
     window = window or cfg.TRANSITION_WINDOW
@@ -889,6 +900,9 @@ class RegimeEngine:
             "metadata": {
                 "model_version": self.VERSION,
                 "days_in_regime": self.state["days_in_regime"],
+                # для показа смены режима в сообщении; None — истории не хватило
+                "previous_regime": previous_regime(self.state["regime_log"]),
+                "regime_start_date": self.state.get("regime_start_date"),
                 "temperature": T,
                 "smoothing_alpha": alpha,
                 "vol_z": round(vol_z, 4),
