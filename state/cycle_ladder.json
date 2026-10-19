@@ -2,7 +2,7 @@
  "policy_version": "ladder-v1.0",
  "zone": "EXPANSION",
  "drawdown_call": "NOT_IN_DRAWDOWN",
- "mvrv": 1.509,
+ "mvrv": 1.521,
  "dca_multiplier": 1.0,
  "fixation_fraction": 0.0,
  "re_risk": true,
@@ -16,6 +16,6 @@
   "trigger": "no_event",
   "rationale": "Зона EXPANSION без события — держим план, не импровизируем"
  },
- "date_utc": "2026-10-18",
- "price": 81607.1
+ "date_utc": "2026-10-19",
+ "price": 82801.7
 }
