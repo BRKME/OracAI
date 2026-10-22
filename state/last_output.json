@@ -1,6 +1,6 @@
 {
   "risk": {
-    "risk_level": -0.1564,
+    "risk_level": -0.2387,
     "risk_state": "RISK_NEUTRAL",
     "strength": "mild",
     "risk_exposure_cap": 0.7,
@@ -11,89 +11,90 @@
   },
   "regime": "BEAR",
   "probabilities": {
-    "BULL": 0.304,
-    "BEAR": 0.4982,
-    "RANGE": 0.1471,
-    "TRANSITION": 0.0506
+    "BULL": 0.2631,
+    "BEAR": 0.5495,
+    "RANGE": 0.1381,
+    "TRANSITION": 0.0493
   },
   "confidence": {
-    "base": 0.2913,
-    "quality_adjusted": 0.1887,
+    "base": 0.4297,
+    "quality_adjusted": 0.321,
     "churn_penalty": 1.0,
     "switches_30d": 2
   },
   "buckets": {
-    "Momentum": -0.6145,
+    "Momentum": -0.6132,
     "Stability": 1.0,
-    "Rotation": 0.1995,
-    "Sentiment": 0.325,
-    "Macro": 0.0
+    "Rotation": 0.6633,
+    "Sentiment": 0.5695,
+    "Macro": -0.5078
   },
   "bucket_details": {
     "momentum": {
-      "roc_blend_z": -2.384303095832876,
-      "trend_strength_z": -1.977344151461628,
+      "roc_blend_z": -2.320139070431139,
+      "trend_strength_z": -1.8931503426203962,
       "alignment": 1.0,
-      "dtmc_z": -2.9598061496301615,
-      "absolute_momentum": 0.5420657104669186
+      "dtmc_z": -3.0,
+      "absolute_momentum": 0.5471636516432992
     },
     "stability": {
-      "neg_vol_z": 3.0,
-      "liquidity_z": 0.5286968603523587,
-      "depth_z": 2.581345934337432
+      "neg_vol_z": 2.729252044805749,
+      "liquidity_z": 0.8755295124455877,
+      "depth_z": 2.3461931153288433
     },
     "rotation": {
-      "velocity_z": -0.0642586600064866,
-      "accel_z": 0.5950584576608748
+      "velocity_z": -0.23026783597753123,
+      "accel_z": 2.0036235357768333
     },
     "sentiment": {
       "fg_score": 0.5,
       "funding_score": 1.0,
-      "oi_score": -1.0,
+      "oi_score": -0.02212759582642184,
       "fg_raw": 68
     },
     "macro": {
-      "dollar_signal": -0.2610363482716723,
-      "rate_signal": null,
-      "yc_z": null,
-      "m2_z": null
+      "dollar_signal": -0.48391260860544366,
+      "rate_signal": 0.04516173946545878,
+      "yc_z": -0.44033018531375684,
+      "m2_z": -1.1435385531740512
     }
   },
   "cross_asset": {
-    "corr_BTC_SPX": -0.238,
-    "corr_BTC_Gold": -0.048,
+    "corr_BTC_SPX": 0.014,
+    "corr_BTC_Gold": -0.079,
     "macro_weight_boost": 1.0
   },
   "bucket_health": {
     "effective_dimensionality": 4,
     "pairwise_correlations": {
-      "Momentum/Stability": -0.43,
-      "Momentum/Rotation": 0.1,
-      "Momentum/Sentiment": -0.747,
-      "Momentum/Macro": -0.454,
+      "Momentum/Stability": -0.443,
+      "Momentum/Rotation": 0.087,
+      "Momentum/Sentiment": -0.775,
+      "Momentum/Macro": -0.445,
       "Stability/Rotation": -0.326,
-      "Stability/Sentiment": 0.416,
-      "Stability/Macro": 0.45,
-      "Rotation/Sentiment": -0.296,
-      "Rotation/Macro": -0.04,
-      "Sentiment/Macro": 0.385
+      "Stability/Sentiment": 0.452,
+      "Stability/Macro": 0.442,
+      "Rotation/Sentiment": -0.273,
+      "Rotation/Macro": -0.062,
+      "Sentiment/Macro": 0.403
     },
     "flags": [
-      "ANOMALOUS_CORR_Momentum_Sentiment: -0.75",
-      "ANOMALOUS_CORR_Momentum_Macro: -0.45"
+      "ANOMALOUS_CORR_Momentum_Sentiment: -0.78",
+      "REDUNDANCY_Momentum_Sentiment: |corr|=0.78",
+      "ANOMALOUS_CORR_Momentum_Macro: -0.44"
     ]
   },
   "regime_dynamics": {
     "transition_matrix": {
       "from_BULL": {
-        "BULL": 0.915,
-        "BEAR": 0.085,
+        "BULL": 0.909,
+        "BEAR": 0.091,
         "RANGE": 0.0,
         "TRANSITION": 0.0
       },
       "from_BEAR": {
-        "BULL": 0.023,
-        "BEAR": 0.977,
+        "BULL": 0.022,
+        "BEAR": 0.978,
         "RANGE": 0.0,
         "TRANSITION": 0.0
       },
@@ -119,13 +120,13 @@
   },
   "exposure_cap": 0.5,
   "risk_flags": [
-    "MACRO_DATA_INSUFFICIENT",
-    "ANOMALOUS_CORR_Momentum_Sentiment: -0.75",
-    "ANOMALOUS_CORR_Momentum_Macro: -0.45"
+    "ANOMALOUS_CORR_Momentum_Sentiment: -0.78",
+    "REDUNDANCY_Momentum_Sentiment: |corr|=0.78",
+    "ANOMALOUS_CORR_Momentum_Macro: -0.44"
   ],
   "normalization": {
     "price_window": 30,
-    "macro_window": 180,
+    "macro_window": 30,
     "break_active": true
   },
   "metadata": {
@@ -135,34 +136,32 @@
     "regime_start_date": "2026-10-22",
     "temperature": 0.8,
     "smoothing_alpha": 0.2,
-    "vol_z": -3.0,
-    "data_completeness": 0.89,
-    "failed_sources": [
-      "FRED"
-    ],
-    "timestamp": "2026-10-22T04:41:11.650341",
-    "btc_price": 82674.09375,
+    "vol_z": -2.7293,
+    "data_completeness": 1.0,
+    "failed_sources": [],
+    "timestamp": "2026-10-22T13:38:37.326717",
+    "btc_price": 81634.6796875,
     "eth_price": null,
-    "returns_30d": -0.0406,
-    "drawdown_from_high_90d": -4.54,
-    "drawdown_from_ath": -27.78,
+    "returns_30d": -0.0326,
+    "drawdown_from_high_90d": -5.74,
+    "drawdown_from_ath": -28.69,
     "mvrv": 1.5604,
-    "sma200_ratio": 1.1368,
+    "sma200_ratio": 1.1214,
     "days_above_sma200": 60,
     "rsi": {
-      "rsi_1d": 56.36,
-      "rsi_2h": 47.59,
-      "rsi_1d_7": 52.8,
+      "rsi_1d": 52.21,
+      "rsi_2h": 32.66,
+      "rsi_1d_7": 45.09,
       "source": "none"
     }
   },
   "lp_policy": {
     "lp_regime": "BREAKOUT",
-    "risk_lp": 0.03,
-    "risk_quadrant": "Q2",
+    "risk_lp": -0.01,
+    "risk_quadrant": "Q4",
     "fee_variance_ratio": 5.0,
-    "uncertainty_value": 0.69,
-    "trend_persistence": 0.786,
+    "uncertainty_value": 0.59,
+    "trend_persistence": 0.785,
     "vol_structure": "LOW_VOL",
     "max_exposure": 0.2,
     "effective_exposure": 0.08,
@@ -170,10 +169,8 @@
     "rebalance": "cautious",
     "hedge_recommended": false,
     "signals": [
-      "High uncertainty \u2192 fee opportunity",
       "High trend persistence \u2192 IL risk",
       "Fee/Var 5.0x \u2192 profitable",
-      "Q2: Dir risk high, LP opportunity exists",
       "Structural break \u2192 conservative"
     ],
     "confidence": 0.55
@@ -182,22 +179,22 @@
     "btc": {
       "action": "HOLD",
       "size_pct": 0.0,
-      "confidence": 0.1887,
+      "confidence": 0.321,
       "stance": "RISK_NEUTRAL",
       "blocked_by": "CONFIDENCE",
       "reasoning": [
-        "Confidence 0.19 < 0.4",
+        "Confidence 0.32 < 0.4",
         "No action allowed below confidence gate"
       ]
     },
     "eth": {
       "action": "HOLD",
       "size_pct": 0.0,
-      "confidence": 0.1887,
+      "confidence": 0.321,
       "stance": "RISK_NEUTRAL",
       "blocked_by": "CONFIDENCE",
       "reasoning": [
-        "Confidence 0.19 < 0.4",
+        "Confidence 0.32 < 0.4",
         "No action allowed below confidence gate"
       ]
     },
@@ -211,15 +208,15 @@
   "cycle": {
     "phase": "MID_BULL",
     "phase_confidence": 0.7,
-    "cycle_position": 53.6,
+    "cycle_position": 52.1,
     "bottom_proximity": 0.0,
     "top_proximity": 0.07,
     "bottom_top_signal": "NO_SIGNAL",
     "signal_strength": 0.0,
     "action": "HOLD",
     "action_confidence": 0.5,
-    "rsi_d1": 53.99,
-    "vs_200ma_pct": 0.1357,
-    "vs_ath_pct": -0.2774
+    "rsi_d1": 50.48,
+    "vs_200ma_pct": 0.1239,
+    "vs_ath_pct": -0.285
   }
 }
