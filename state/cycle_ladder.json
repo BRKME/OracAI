@@ -2,7 +2,7 @@
  "policy_version": "ladder-v1.0",
  "zone": "NEUTRAL",
  "drawdown_call": "NOT_IN_DRAWDOWN",
- "mvrv": 1.497,
+ "mvrv": 1.493,
  "dca_multiplier": 1.5,
  "fixation_fraction": 0.0,
  "re_risk": true,
@@ -16,6 +16,6 @@
   "trigger": "no_event",
   "rationale": "Зона NEUTRAL без события — держим план, не импровизируем"
  },
- "date_utc": "2026-10-24",
- "price": 80692.1
+ "date_utc": "2026-10-25",
+ "price": 80508.0
 }
