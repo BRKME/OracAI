@@ -26,14 +26,15 @@ def _text(o):
     return format_output(o, None, o.get("asset_allocation"))
 
 
-def test_header_names_regime():
-    head = _text(_out()).splitlines()[0]
-    assert "BULL" in head and "🐂" in head
+def test_regime_line_near_top():
+    lines = _text(_out()).splitlines()
+    reg = next(i for i, l in enumerate(lines) if l.startswith("Режим:"))
+    assert reg <= 6 and "BULL" in lines[reg]
 
 
 def test_fresh_switch_line_near_top():
     lines = _text(_out()).splitlines()
-    top = "\n".join(lines[:4])
+    top = "\n".join(lines[:9])
     assert "🐻 BEAR → 🐂 BULL" in top
     assert "15.10" in top
     assert "низк" in top.lower()   # conf 28% — честно предупреждаем
@@ -42,20 +43,18 @@ def test_fresh_switch_line_near_top():
 def test_no_switch_line_when_regime_old():
     text = _text(_out(days=12))
     assert "Смена режима" not in text
-    assert "🐂" in text.splitlines()[0]
 
 
-def test_bear_header():
-    head = _text(_out(regime="BEAR", prev="BULL", days=0)).splitlines()[0]
-    assert "BEAR" in head and "🐻" in head
+def test_bear_switch_line():
+    text = _text(_out(regime="BEAR", prev="BULL", days=0))
+    assert "🐂 BULL → 🐻 BEAR" in text
 
 
 def test_missing_previous_regime_does_not_invent_it():
     o = _out()
     del o["metadata"]["previous_regime"]
     text = _text(o)
-    assert "🐻 BEAR → 🐂 BULL" not in text
-    assert "🐂" in text.splitlines()[0]
+    assert "Смена режима" not in text
 
 
 def test_leader_marked_in_probability_block():

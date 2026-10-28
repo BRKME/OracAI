@@ -107,6 +107,17 @@ def main():
             logger.error(f"Asset Allocation computation failed: {e}")
             allocation = None
 
+    # ── 4.5 Контекст для сообщения: нестабильность режима и прошлая доля ──
+    from prod_logger import count_regime_switches
+    output.setdefault("metadata", {})["regime_switches_14d"] = count_regime_switches(14)
+    _send_state = STATE_DIR / "regime_send_state.json"
+    try:
+        _prev_t = json.load(open(_send_state)).get("target_pos")
+        if _prev_t is not None:
+            output["metadata"]["prev_sent_target"] = _prev_t
+    except Exception:
+        pass
+
     # ── 5. Print output ───────────────────────────────────
     print("\n" + format_output(output, lp_policy, allocation))
 
@@ -199,7 +210,8 @@ def main():
         try:
             with open(SEND_STATE_FILE, "w") as f:
                 json.dump({"last_sent": msk_today,
-                           "last_sent_at": datetime.now(timezone.utc).isoformat()},
+                           "last_sent_at": datetime.now(timezone.utc).isoformat(),
+                           "target_pos": output.get("metadata", {}).get("target_pos")},
                           f, indent=2)
         except Exception as e:
             logger.warning(f"Не сохраняется {SEND_STATE_FILE}: {e}")

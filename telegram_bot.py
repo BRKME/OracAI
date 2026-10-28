@@ -43,7 +43,7 @@ RISK_LEVEL_INFO = {
         "action": "обычный режим — план работает как задумано",
     },
     "ELEVATED": {
-        "what": "повышенная волатильность (vol_z > 1.5) или слом структуры",
+        "what": "повышенная волатильность (vol_z > 1.5)",
         "action": "осторожнее с размером, шире стопы, не добавляй на всплесках",
     },
     "TAIL": {
@@ -316,16 +316,86 @@ def regime_percents(probs: list) -> list:
     return floors
 
 
+# Клип compute_fee_variance_ratio: значения на краях — «не меньше / не больше».
+FV_CLIP_LO, FV_CLIP_HI = 0.1, 5.0
+
+FG_RU = {"Extreme Fear": "сильный страх", "Fear": "страх", "Neutral": "нейтрально",
+         "Greed": "жадность", "Extreme Greed": "сильная жадность"}
+
+
+def _plural_smen(n: int) -> str:
+    if n % 10 == 1 and n % 100 != 11:
+        return "смена"
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return "смены"
+    return "смен"
+
+
+def regime_lines(regime: str, conf_pct: int, probs: dict, meta: dict) -> list:
+    """Строка режима (+ строка смены или нестабильности).
+
+    При уверенности < 30% режим назван «неясным» с перевесом по вероятностям —
+    так громко, как его знает система. Частые смены заменяют строку смены:
+    одно предупреждение вместо тревоги на каждом колебании.
+    """
+    from datetime import datetime as _dt
+    names = ["BULL", "BEAR", "RANGE", "TRANSITION"]
+    pct = dict(zip(names, regime_percents([probs.get(n, 0) for n in names])))
+    e = REGIME_EMOJI
+    if conf_pct < 30:
+        a, b = sorted(names, key=lambda n: pct[n], reverse=True)[:2]
+        out = [f"Режим: неясен — перевес {e[a]} {a} {pct[a]}% против "
+               f"{e[b]} {b} {pct[b]}% · уверенность {conf_pct}%"]
+    else:
+        out = [f"Режим: {e.get(regime, '')} {regime} {pct.get(regime, 0)}% · "
+               f"уверенность {conf_pct}%"]
+    sw = meta.get("regime_switches_14d")
+    prev = meta.get("previous_regime")
+    days = meta.get("days_in_regime", 0)
+    if sw is not None and sw >= 3:
+        out.append(f"⚠️ Режим неустойчив: {sw} {_plural_smen(sw)} за 14 дней — "
+                   "сигналам режима доверять меньше")
+    elif prev and prev != regime and days <= 3:
+        try:
+            since = " с " + _dt.strptime(meta.get("regime_start_date"),
+                                         "%Y-%m-%d").strftime("%d.%m")
+        except (TypeError, ValueError):
+            since = ""
+        low = " (низкая — может откатиться)" if conf_pct < 30 else ""
+        out.append(f"🔄 Смена режима: {e.get(prev, '')} {prev} → "
+                   f"{e.get(regime, '')} {regime}{since}{low}")
+    return out
+
+
+def indicators_line(rsi_1d, rsi_2h, fg_value, fg_class) -> str:
+    """RSI и страх/жадность — со словом, а не голым числом."""
+    parts = []
+    if rsi_1d is not None:
+        w = ("перепродан" if rsi_1d < 30 else "перегрет" if rsi_1d > 70
+             else "нейтрально")
+        parts.append(f"RSI {rsi_1d:.0f} ({w})")
+    if rsi_2h is not None:
+        _, d = calculate_rsi_status(rsi_2h)
+        parts.append(f"2ч {rsi_2h:.0f}{d}")
+    if fg_value is not None:
+        parts.append(f"страх/жадность {fg_value} ({FG_RU.get(fg_class, fg_class or '—')})")
+    return " · ".join(parts)
+
+
 def lp_fee_phrase(fv: float) -> str:
     """Строка о соотношении комиссий к IL. «С запасом» — только когда запас есть.
 
     fee_variance_ratio клипуется в [0.1, 5.0]; 0.1 — нижний клип, т.е.
     «не более 0.1x». Пороги значков — прежние (1.0 / 1.5).
     """
+    if fv >= FV_CLIP_HI:
+        return f"комиссии кроют IL с запасом (≥{FV_CLIP_HI:.0f}x, потолок шкалы) ✓"
     if fv > 1.5:
         return f"комиссии кроют IL с запасом {fv:.1f}x ✓"
     if fv > 1.0:
         return f"комиссии кроют IL впритык {fv:.1f}x ⚠️"
+    if fv <= FV_CLIP_LO:
+        return f"комиссии НЕ кроют IL (≤{FV_CLIP_LO}x, дно шкалы) ✗"
     return f"комиссии НЕ кроют IL ({fv:.1f}x) ✗"
 
 
@@ -430,22 +500,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     _hdr = f"🧭 OracAI · {_dt.now().strftime('%d.%m')}"
     if _dq < 100:
         _hdr += f" · data {_dq}%"   # показываем только при просадке качества
-    # v6.9: режим — в шапке. 16.10 смена BEAR → BULL была видна только в
-    # справке в самом конце сообщения.
-    _hdr += f" · {REGIME_EMOJI.get(regime, '')} {regime}".replace("  ", " ")
+    # v7.0: в шапке цена, а не режим. Режим при уверенности 18% в шапке
+    # звучал громче, чем его знает система (28.10). Он — отдельной строкой
+    # под действием, с оговоркой при низкой уверенности.
+    _price = meta.get("btc_price")
+    if _price:
+        _hdr += f" · BTC ${_price:,.0f}"
     lines.append(_hdr)
-    _prev = meta.get("previous_regime")
-    if _prev and _prev != regime and days <= 3:
-        _start = meta.get("regime_start_date")
-        try:
-            _since = f" с {_dt.strptime(_start, '%Y-%m-%d').strftime('%d.%m')}"
-        except (TypeError, ValueError):
-            _since = ""
-        _cp = int(conf.get("quality_adjusted", 0) * 100)
-        _low = " (низкая — смена может откатиться)" if _cp < 30 else ""
-        lines.append(f"🔄 Смена режима: {REGIME_EMOJI.get(_prev, '')} {_prev} → "
-                     f"{REGIME_EMOJI.get(regime, '')} {regime}{_since} · "
-                     f"уверенность {_cp}%{_low}")
     lines.append("")
 
     # Слот под блок действия: target_pos считается ниже, поэтому резервируем
@@ -456,18 +517,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append("")
     _phase_slot = len(lines)
     lines.append("")  # placeholder — phase считается ниже
-    summary = []
-    if rsi_1d is not None or rsi_2h is not None:
-        _, rsi_2h_dir = calculate_rsi_status(rsi_2h)
-        rsi_1d_str = f"{rsi_1d:.0f}" if rsi_1d else "N/A"
-        rsi_2h_str = f"{rsi_2h:.0f}{rsi_2h_dir}" if rsi_2h else "N/A"
-        summary.append(f"RSI {rsi_1d_str} · 2H {rsi_2h_str}")
-    if fg_value is not None:
-        summary.append(f"FG {fg_value} {fg_class or ''}".strip())
-    dir_word = "давление вниз" if risk_level < 0 else "давление вверх"
-    summary.append(f"слом структуры, {dir_word} {abs(risk_level):.2f}"
-                   if struct_break else f"{dir_word} {abs(risk_level):.2f}")
-    lines.append(" · ".join(summary))
+    lines.extend(regime_lines(regime, conf_pct, probs, meta))
+    lines.append(indicators_line(rsi_1d, rsi_2h, fg_value, fg_class))
     lines.append("")
 
     # ══════════════════════════════════════════════════════
@@ -514,7 +565,9 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     cycle_bar = "#" * cycle_filled + "." * (10 - cycle_filled)
     # v6.6: фаза называется словом; cycle_pos/cycle_bar больше не печатаются —
     # это константы на фазу, информации не несли (см. комментарий в шапке).
-    lines[_phase_slot] = f"Фаза: {phase}"
+    # v7.0: «Фаза: EARLY_BULL» убрана — это функция режима и дней в нём,
+    # повтор строки режима на жаргоне и с уверенностью, которой нет.
+    lines.pop(_phase_slot)
     # v6.2: строка «Цикл: ...» переехала в TL;DR-буллет вместе с баром
     
     # ══════════════════════════════════════════════════════
@@ -526,7 +579,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         risk_state = "CRISIS"
     elif tail_active:
         risk_state = "TAIL"
-    elif vol_z > 1.5 or struct_break:
+    # v7.0: флаг break_active не участвует — он стоит на 100% дней истории
+    # (t-тест сдвига среднего срабатывает на любом трендовом ряду), и ELEVATED
+    # был постоянным: «дёргается» и «хедж ОБЯЗАТЕЛЕН» в каждом сообщении.
+    elif vol_z > 1.5:
         risk_state = "ELEVATED"
     else:
         risk_state = "NORMAL"
@@ -821,12 +877,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # абзац под меткой действия. Раньше шли тремя строками с разными стойками,
     # и согласовывать их приходилось читателю.
     _b, _t = int(bottom_prox * 100), int(top_prox * 100)
+    # v7.0: одно число — дно и верх в сумме ≈100%, второе ничего не добавляло
     if _b - _t >= 10:
-        _cycle = f"Цикл ближе к дну ({_b}% против {_t}%)"
+        _cycle = f"Цикл ближе к дну ({_b}%)"
     elif _t - _b >= 10:
-        _cycle = f"Цикл ближе к вершине ({_t}% против {_b}%)"
+        _cycle = f"Цикл ближе к вершине ({_t}%)"
     else:
-        _cycle = f"Цикл в середине (дно {_b}% / верх {_t}%)"
+        _cycle = "Цикл в середине"
 
     _risk_short = {
         "ELEVATED": "рынок дёргается сильнее обычного",
@@ -841,7 +898,19 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     if _risk_short and any(w in action for w in ("ПОКУПАТЬ", "ДОКУПИТЬ")):
         _first = _first[:-1] + " — добирать ступенями, не на резких свечах."
 
-    _block = [f"{action} · {int(target_pos * 100)}%", _first, action_note]
+    meta["target_pos"] = target_pos   # main.py сохраняет для сравнения завтра
+    _head = f"{action} · {int(target_pos * 100)}%"
+    _prev_t = meta.get("prev_sent_target")
+    if _prev_t is not None:
+        _head += (" · без изменений" if abs(_prev_t - target_pos) < 0.01
+                  else f" · было {int(round(_prev_t * 100))}%")
+    # v7.0: «удерживаем по тренду» + «Удерживаем позицию» — одна мысль дважды.
+    # Когда долю держит восстановление, причина — аптренд, её и пишем.
+    if recovery_note and bottom_signal is None:
+        action_note = (f"Цена {days_above_sma200}д выше SMA200 — тренд вверх, "
+                       "держим без добора.")
+        recovery_note = None
+    _block = [_head, _first, action_note]
     if recovery_note:
         _block.append(recovery_note)
     if conflict_note:
@@ -882,7 +951,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         filled = min(width, pct * width // 100)
         return "[" + "#" * filled + "." * (width - filled) + "]"
 
-    lines.append(f"Режим рынка ({days}д, conf {conf_pct}%):")
+    lines.append("Вероятности режимов:")
     _pb, _pr, _pg, _pt = regime_percents([prob_bull, prob_bear, prob_range, prob_trans])
     def _lead(name):
         return " ◀" if regime == name else ""

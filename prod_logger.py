@@ -231,3 +231,22 @@ def log_engine_output(output: dict) -> None:
     except Exception as e:
         # Never let logging break production — just report and move on
         logger.warning(f"Prod logging failed (non-fatal): {e}")
+
+
+def count_regime_switches(days: int = 14, path: Path = LOG_FILE, now=None):
+    """Сколько раз режим менялся за последние `days` дней по prod_log.
+
+    Для строки «режим неустойчив» в сообщении. None — лога нет или он не
+    читается: тогда строку не показываем, а не выдумываем ноль.
+    """
+    import csv
+    from datetime import datetime, timedelta, timezone
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days)
+    try:
+        with open(path) as f:
+            regs = [r["regime"] for r in csv.DictReader(f)
+                    if datetime.fromisoformat(r["timestamp_utc"]) >= cutoff]
+    except Exception:
+        return None
+    return sum(a != b for a, b in zip(regs, regs[1:]))
