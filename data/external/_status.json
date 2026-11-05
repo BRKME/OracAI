@@ -1,13 +1,13 @@
 {
-  "last_run": "2026-11-04T08:21:06.437204+00:00",
+  "last_run": "2026-11-05T08:47:05.825372+00:00",
   "mode": "incremental",
   "sources": {
     "btc_ohlcv": "7 new rows",
     "eth_ohlcv": "7 new rows",
-    "funding_rate": "2055 new rows (proxy from BTC momentum)",
+    "funding_rate": "2056 new rows (proxy from BTC momentum)",
     "open_interest": "1 new rows (snapshot, accumulates daily)",
-    "fear_greed": "1224 total rows",
-    "btc_dominance": "10 new rows (CMC=10, CG=0)",
-    "fred_macro": "5 new rows"
+    "fear_greed": "1225 total rows",
+    "btc_dominance": "FAIL: Cannot compare tz-naive and tz-aware timestamps",
+    "fred_macro": "3 new rows"
   }
 }
