@@ -14,7 +14,8 @@ from telegram_bot import action_for
 class TestTailGatesAllIn:
     def test_strong_bottom_but_tail_is_laddered_not_all_in(self):
         action, note = action_for(target_pos=1.0, risk_state="TAIL",
-                                   dd_from_high=-50, bear_confirmation=True)
+                                   dd_from_high=-50, bear_confirmation=True,
+                                   bottom_signal="confirmed")
         assert "ПОКУПАТЬ" in action          # дно близко — покупка остаётся
         assert "не на всё сразу" in note.lower()  # явный запрет единовременной
         assert "ступен" in note.lower()       # вход лесенкой
@@ -22,7 +23,8 @@ class TestTailGatesAllIn:
 
     def test_strong_bottom_normal_risk_can_be_full(self):
         action, note = action_for(target_pos=1.0, risk_state="NORMAL",
-                                   dd_from_high=-50, bear_confirmation=True)
+                                   dd_from_high=-50, bear_confirmation=True,
+                                   bottom_signal="confirmed")
         assert "ПОКУПАТЬ" in action
         # при норме целевая 100% допустима, но всё равно через лестницу
         assert "лестниц" in note.lower() or "ступен" in note.lower()

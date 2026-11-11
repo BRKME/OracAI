@@ -12,7 +12,7 @@ def _report(positions, snapshot_fees):
     history = [{"timestamp": "2026-07-10T18:00:00+00:00", "fees": snapshot_fees,
                 "fees_cumulative": 483.0,
                 "positions_fees_tracking": {f"c:{i}": 50.0 for i in range(25)}}]
-    return format_unified_report(monitor_data, {"portfolio_apy": 111}, None, history)
+    return format_unified_report(monitor_data, {"portfolio_apy": 111}, history)
 
 
 def test_to_collect_uses_live_positions_not_snapshot_field():

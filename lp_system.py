@@ -122,7 +122,9 @@ def _corridor_suggestion_line(position: dict) -> Optional[str]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 HISTORY_FILE = "state/lp_history.json"
-MAX_HISTORY_DAYS = 90  # Keep 90 days of history
+# История — единственный источник для P&L. Раньше хранилось 90 дней, и всё
+# старше стиралось безвозвратно (аудит 11.11.2026). Снимок ~2 КБ в сутки.
+MAX_HISTORY_DAYS = 3650
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HISTORY MANAGEMENT
@@ -244,6 +246,22 @@ def prune_stale_tracking(tracking, last_seen, current_keys, now=None):
             {k: v for k, v in new_ls.items() if k in keep or k in current_keys})
 
 
+HARVEST_DROP_RATIO = 0.5
+
+
+def fee_delta(prev: float, cur: float) -> float:
+    """Прирост заработанных комиссий позиции между двумя замерами.
+
+    Рост — прирост. Падение больше чем вдвое — сбор: заработано то, что
+    наросло после него. Меньшее падение — переоценка, знак сохраняем.
+    """
+    if cur >= prev:
+        return cur - prev
+    if cur < prev * HARVEST_DROP_RATIO:
+        return cur
+    return cur - prev
+
+
 def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int, 
                  by_wallet: Dict[str, float], by_wallet_fees: Dict[str, float],
                  positions_fees: Dict[str, float] = None):
@@ -258,7 +276,14 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
 
     Пофиционные правила:
       - позиция уже известна и fees выросли -> delta = рост
-      - fees упали -> harvest ЭТОЙ позиции -> delta = её текущие fees
+      - fees упали БОЛЬШЕ ЧЕМ ВДВОЕ -> harvest ЭТОЙ позиции -> delta = её
+        текущие fees
+      - fees упали меньше -> это переоценка (комиссии считаются в долларах,
+        цена токена колеблется), delta отрицательная. Минус не теряется:
+        копится в fees_reval_debt и гасится следующим ростом, иначе колебания
+        цены накручивали бы счётчик храповиком. До 11.11.2026 любое падение
+        считалось сбором и доливало всю сумму заново: $987 за 37 часов при
+        реальном росте $177.
       - позиция впервые видна (новая или после миграции) -> baseline, delta 0
         (консервативно: лучше недосчитать один интервал, чем накрутить)
       - позиция отсутствует в этом прогоне (RPC-фейл кошелька / закрыта) ->
@@ -272,6 +297,7 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
     now = datetime.now(timezone.utc).isoformat()
     
     fees_cumulative = 0.0
+    reval_debt = 0.0
     prev_pos_fees: Dict[str, float] = {}
     legacy_note = {}
     
@@ -294,8 +320,12 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
             for key, cur in positions_fees.items():
                 if key in prev_pos_fees:
                     prev = prev_pos_fees[key]
-                    delta_total += (cur - prev) if cur >= prev else cur
+                    delta_total += fee_delta(prev, cur)
                 # новая позиция -> baseline, delta 0
+            # переоценка вниз: сначала гасим прошлый долг, остаток — в долг
+            delta_total -= float(prev_snapshot.get("fees_reval_debt", 0.0))
+            if delta_total < 0:
+                reval_debt, delta_total = -delta_total, 0.0
             # SANITY: суточный прирост fees > 1% TVL — это глитч данных
             max_delta = max(prev_tvl, tvl) * 0.01
             if delta_total > max_delta:
@@ -330,6 +360,7 @@ def add_snapshot(tvl: float, fees: float, positions_count: int, in_range: int,
         "tvl": tvl,
         "fees": fees,
         "fees_cumulative": fees_cumulative,
+        "fees_reval_debt": reval_debt,
         "positions_fees_tracking": tracking,
         "positions_last_seen": positions_last_seen,
         "positions_count": positions_count,

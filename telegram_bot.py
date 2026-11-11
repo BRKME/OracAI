@@ -899,6 +899,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         _first = _first[:-1] + " — добирать ступенями, не на резких свечах."
 
     meta["target_pos"] = target_pos   # main.py сохраняет для сравнения завтра
+    meta["action_label"] = action
     _head = f"{action} · {int(target_pos * 100)}%"
     _prev_t = meta.get("prev_sent_target")
     if _prev_t is not None:
@@ -965,6 +966,11 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # 7. DATA STATUS
     # ══════════════════════════════════════════════════════
     
+    # v7.1: счёт стратегии против удержания по журналу отправленных решений
+    if meta.get("score_line"):
+        lines.append(meta["score_line"])
+        lines.append("")
+
     data_quality = meta.get("data_completeness", 1.0)
     failed_sources = meta.get("failed_sources", [])
     

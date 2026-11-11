@@ -5,7 +5,7 @@
       "timestamp": "2026-08-13T23:31:18.060186+00:00",
       "tvl": 19635.151634821046,
       "fees": 89.21191563181046,
-      "fees_cumulative": 4808.891915701588,
+      "fees_cumulative": 0.0,
       "positions_fees_tracking": {
         "bsc:2553067": 4.448716182678375,
         "arbitrum:5628553": 24.740845077228094,
@@ -39,14 +39,16 @@
       "by_wallet_fees": {
         "MMA_1": 66.81745046861076,
         "MMA_3": 22.394465163199698
-      }
+      },
+      "fees_cumulative_inflated": 4808.891915701588,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-14",
       "timestamp": "2026-08-14T23:08:35.011878+00:00",
       "tvl": 19636.8900404028,
       "fees": 109.00220503646315,
-      "fees_cumulative": 4959.549290760351,
+      "fees_cumulative": 44.72,
       "positions_fees_tracking": {
         "bsc:2553067": 5.860183051788312,
         "arbitrum:5628553": 28.291037868704862,
@@ -76,14 +78,16 @@
       "by_wallet_fees": {
         "MMA_1": 68.50412405822324,
         "MMA_3": 40.49808097823991
-      }
+      },
+      "fees_cumulative_inflated": 4959.549290760351,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-15",
       "timestamp": "2026-08-15T23:09:19.977038+00:00",
       "tvl": 19697.374967589618,
       "fees": 12.759896523309116,
-      "fees_cumulative": 5023.2512299206755,
+      "fees_cumulative": 51.18,
       "positions_fees_tracking": {
         "bsc:2553067": 6.295748451231352,
         "arbitrum:5628553": 0.2976967152106518,
@@ -113,14 +117,16 @@
       "by_wallet_fees": {
         "MMA_1": 10.970424265218421,
         "MMA_3": 1.7894722580906957
-      }
+      },
+      "fees_cumulative_inflated": 5023.2512299206755,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-16",
       "timestamp": "2026-08-16T23:14:28.635168+00:00",
       "tvl": 19652.043116919405,
       "fees": 40.00193822184315,
-      "fees_cumulative": 5067.895956768463,
+      "fees_cumulative": 78.42,
       "positions_fees_tracking": {
         "bsc:2553067": 7.9378807320791775,
         "arbitrum:5628553": 1.615722347831793,
@@ -148,14 +154,16 @@
       "by_wallet_fees": {
         "MMA_1": 26.89858299343397,
         "MMA_3": 13.103355228409182
-      }
+      },
+      "fees_cumulative_inflated": 5067.895956768463,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-17",
       "timestamp": "2026-08-17T23:09:12.548427+00:00",
       "tvl": 20009.823188036866,
       "fees": 125.5359660536583,
-      "fees_cumulative": 5187.52106418738,
+      "fees_cumulative": 163.95,
       "positions_fees_tracking": {
         "bsc:2553067": 8.599710342035968,
         "arbitrum:5628553": 5.816873684496846,
@@ -181,14 +189,16 @@
       "by_wallet_fees": {
         "MMA_1": 79.94129127146908,
         "MMA_3": 45.59467478218921
-      }
+      },
+      "fees_cumulative_inflated": 5187.52106418738,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-18",
       "timestamp": "2026-08-18T23:06:36.213818+00:00",
       "tvl": 19977.17188952471,
       "fees": 153.2880624668844,
-      "fees_cumulative": 5360.14170169626,
+      "fees_cumulative": 218.07,
       "positions_fees_tracking": {
         "bsc:2553067": 11.360275180869088,
         "arbitrum:5628553": 0.2301304844195511,
@@ -216,14 +226,16 @@
       "by_wallet_fees": {
         "MMA_1": 85.76730464422663,
         "MMA_3": 67.5207578226578
-      }
+      },
+      "fees_cumulative_inflated": 5360.14170169626,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-19",
       "timestamp": "2026-08-19T23:09:06.235857+00:00",
       "tvl": 20182.93489633927,
       "fees": 51.603866289131,
-      "fees_cumulative": 5488.514046787329,
+      "fees_cumulative": 258.49,
       "positions_fees_tracking": {
         "bsc:2553067": 12.747314319643975,
         "arbitrum:5628553": 3.0764151907716633,
@@ -265,14 +277,16 @@
       "by_wallet_fees": {
         "MMA_1": 25.516025280258297,
         "MMA_3": 26.0878410088727
-      }
+      },
+      "fees_cumulative_inflated": 5488.514046787329,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-20",
       "timestamp": "2026-08-20T23:14:21.310338+00:00",
       "tvl": 20252.658016893864,
       "fees": 48.01477908953101,
-      "fees_cumulative": 5607.098407524327,
+      "fees_cumulative": 360.04,
       "positions_fees_tracking": {
         "bsc:2553067": 17.80486980830875,
         "arbitrum:5628553": 3.0764151907716633,
@@ -330,14 +344,16 @@
       "by_wallet_fees": {
         "MMA_1": 26.63524008512877,
         "MMA_3": 21.379539004402243
-      }
+      },
+      "fees_cumulative_inflated": 5607.098407524327,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-21",
       "timestamp": "2026-08-21T23:08:56.517979+00:00",
       "tvl": 20244.17050388045,
       "fees": 55.60104746226254,
-      "fees_cumulative": 5785.383686535845,
+      "fees_cumulative": 382.69,
       "positions_fees_tracking": {
         "bsc:2553067": 17.80486980830875,
         "arbitrum:5628553": 3.0764151907716633,
@@ -413,14 +429,16 @@
       "by_wallet_fees": {
         "MMA_1": 41.84307240522376,
         "MMA_3": 13.757975057038783
-      }
+      },
+      "fees_cumulative_inflated": 5785.383686535845,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-22",
       "timestamp": "2026-08-22T23:06:28.128033+00:00",
       "tvl": 20194.75122708257,
       "fees": 91.09831885610811,
-      "fees_cumulative": 5981.133998293492,
+      "fees_cumulative": 427.59,
       "positions_fees_tracking": {
         "bsc:2553067": 17.80486980830875,
         "bsc:2656808": 4.915434289046074,
@@ -492,14 +510,16 @@
       "by_wallet_fees": {
         "MMA_1": 69.07091419622722,
         "MMA_3": 22.027404659880883
-      }
+      },
+      "fees_cumulative_inflated": 5981.133998293492,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-23",
       "timestamp": "2026-08-23T23:09:37.988917+00:00",
       "tvl": 20328.830219851516,
       "fees": 49.33720334068672,
-      "fees_cumulative": 6112.010162706847,
+      "fees_cumulative": 503.16,
       "positions_fees_tracking": {
         "bsc:2656808": 4.915434289046074,
         "bsc:2657724": 1.803093134422857,
@@ -557,14 +577,16 @@
       "by_wallet_fees": {
         "MMA_1": 25.814633693074292,
         "MMA_3": 23.522569647612432
-      }
+      },
+      "fees_cumulative_inflated": 6112.010162706847,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-24",
       "timestamp": "2026-08-24T23:09:59.596503+00:00",
       "tvl": 20168.411164905454,
       "fees": 102.32474914380995,
-      "fees_cumulative": 6239.483377260439,
+      "fees_cumulative": 588.23,
       "positions_fees_tracking": {
         "bsc:2656808": 4.915434289046074,
         "arbitrum:5664020": 11.18810575718698,
@@ -604,14 +626,16 @@
       "by_wallet_fees": {
         "MMA_1": 38.38724786220555,
         "MMA_3": 63.9375012816044
-      }
+      },
+      "fees_cumulative_inflated": 6239.483377260439,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-25",
       "timestamp": "2026-08-25T23:11:35.931324+00:00",
       "tvl": 20049.236424657178,
       "fees": 152.77639313705708,
-      "fees_cumulative": 6366.064430858459,
+      "fees_cumulative": 663.19,
       "positions_fees_tracking": {
         "arbitrum:5664020": 11.18810575718698,
         "bsc:2665078": 28.301444511927897,
@@ -645,14 +669,16 @@
       "by_wallet_fees": {
         "MMA_1": 94.6437054871876,
         "MMA_3": 58.13268764986949
-      }
+      },
+      "fees_cumulative_inflated": 6366.064430858459,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-26",
       "timestamp": "2026-08-26T21:21:00.549300+00:00",
       "tvl": 20163.57233819266,
       "fees": 135.36356309055728,
-      "fees_cumulative": 6426.458213992354,
+      "fees_cumulative": 718.41,
       "positions_fees_tracking": {
         "arbitrum:5664020": 11.18810575718698,
         "bsc:2665078": 28.301444511927897,
@@ -686,14 +712,16 @@
       "by_wallet_fees": {
         "MMA_1": 133.76788432578294,
         "MMA_3": 1.5956787647743433
-      }
+      },
+      "fees_cumulative_inflated": 6426.458213992354,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-27",
       "timestamp": "2026-08-27T15:38:13.297313+00:00",
       "tvl": 20290.291419569003,
       "fees": 186.3480019681961,
-      "fees_cumulative": 6477.442652869993,
+      "fees_cumulative": 769.4,
       "positions_fees_tracking": {
         "bsc:2667384": 30.113846276991573,
         "bsc:2672319": 94.81406810945958,
@@ -723,14 +751,16 @@
       "by_wallet_fees": {
         "MMA_1": 165.43375611050755,
         "MMA_3": 20.914245857688538
-      }
+      },
+      "fees_cumulative_inflated": 6477.442652869993,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-28",
       "timestamp": "2026-08-28T23:45:58.675531+00:00",
       "tvl": 20008.185412017596,
       "fees": 43.52775813386666,
-      "fees_cumulative": 6550.852346468535,
+      "fees_cumulative": 777.8,
       "positions_fees_tracking": {
         "bsc:2672319": 2.2277369655007115,
         "bsc:2672278": 68.50867174904198,
@@ -762,14 +792,16 @@
       "by_wallet_fees": {
         "MMA_1": 5.775775218775015,
         "MMA_3": 37.751982915091645
-      }
+      },
+      "fees_cumulative_inflated": 6550.852346468535,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-29",
       "timestamp": "2026-08-29T21:21:17.968454+00:00",
       "tvl": 20099.260162315426,
       "fees": 47.62635645473963,
-      "fees_cumulative": 6578.510743397823,
+      "fees_cumulative": 805.46,
       "positions_fees_tracking": {
         "bsc:2672319": 12.500362980566933,
         "arbitrum:5670486": 3.921238458918294,
@@ -801,14 +833,16 @@
       "by_wallet_fees": {
         "MMA_1": 19.772612363051884,
         "MMA_3": 27.853744091687744
-      }
+      },
+      "fees_cumulative_inflated": 6578.510743397823,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-30",
       "timestamp": "2026-08-30T21:43:27.780101+00:00",
       "tvl": 20158.176067380886,
       "fees": 51.40575755388105,
-      "fees_cumulative": 6620.0345011759155,
+      "fees_cumulative": 836.24,
       "positions_fees_tracking": {
         "bsc:2672319": 25.757080785936985,
         "arbitrum:5670486": 12.716577233243324,
@@ -842,14 +876,16 @@
       "by_wallet_fees": {
         "MMA_1": 44.45604208445321,
         "MMA_3": 6.9497154694278525
-      }
+      },
+      "fees_cumulative_inflated": 6620.0345011759155,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-08-31",
       "timestamp": "2026-08-31T23:11:30.563261+00:00",
       "tvl": 20075.666288405522,
       "fees": 122.25920267958912,
-      "fees_cumulative": 6690.887946301623,
+      "fees_cumulative": 907.1,
       "positions_fees_tracking": {
         "bsc:2672319": 44.2396754249024,
         "arbitrum:5670486": 29.433538524492953,
@@ -883,14 +919,16 @@
       "by_wallet_fees": {
         "MMA_1": 85.39406644765846,
         "MMA_3": 36.86513623193066
-      }
+      },
+      "fees_cumulative_inflated": 6690.887946301623,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-01",
       "timestamp": "2026-09-01T21:26:39.928373+00:00",
       "tvl": 20208.57043954391,
       "fees": 98.30987256044251,
-      "fees_cumulative": 6740.305769115098,
+      "fees_cumulative": 942.99,
       "positions_fees_tracking": {
         "bsc:2672319": 2.9691257983893093,
         "arbitrum:5670486": 40.25082029441626,
@@ -924,14 +962,16 @@
       "by_wallet_fees": {
         "MMA_1": 57.734701326604416,
         "MMA_3": 40.575171233838105
-      }
+      },
+      "fees_cumulative_inflated": 6740.305769115098,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-02",
       "timestamp": "2026-09-02T21:23:48.677816+00:00",
       "tvl": 20237.36755223953,
       "fees": 161.82886477445916,
-      "fees_cumulative": 6945.317556857017,
+      "fees_cumulative": 1006.51,
       "positions_fees_tracking": {
         "bsc:2672319": 17.519953924479083,
         "arbitrum:5670486": 52.89741833933057,
@@ -959,14 +999,16 @@
       "by_wallet_fees": {
         "MMA_1": 88.7989046094248,
         "MMA_3": 73.02996016503435
-      }
+      },
+      "fees_cumulative_inflated": 6945.317556857017,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-03",
       "timestamp": "2026-09-03T22:54:18.322842+00:00",
       "tvl": 20682.228598757654,
       "fees": 17.99181247983362,
-      "fees_cumulative": 7070.402150599812,
+      "fees_cumulative": 1035.5,
       "positions_fees_tracking": {
         "bsc:2672319": 28.87406781053722,
         "arbitrum:5670486": 2.3925651719632515,
@@ -998,14 +1040,16 @@
       "by_wallet_fees": {
         "MMA_1": 7.923570579200877,
         "MMA_3": 10.06824190063274
-      }
+      },
+      "fees_cumulative_inflated": 7070.402150599812,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-04",
       "timestamp": "2026-09-04T22:38:57.079296+00:00",
       "tvl": 20620.000030373092,
       "fees": 62.58901990837364,
-      "fees_cumulative": 7152.366642284479,
+      "fees_cumulative": 1085.69,
       "positions_fees_tracking": {
         "bsc:2672319": 28.87406781053722,
         "arbitrum:5670486": 18.67579810983866,
@@ -1037,14 +1081,16 @@
       "by_wallet_fees": {
         "MMA_1": 36.21147021213807,
         "MMA_3": 26.377549696235572
-      }
+      },
+      "fees_cumulative_inflated": 7152.366642284479,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-05",
       "timestamp": "2026-09-05T22:25:50.691380+00:00",
       "tvl": 20993.158759010814,
       "fees": 40.54537290732523,
-      "fees_cumulative": 7261.43064594989,
+      "fees_cumulative": 1092.01,
       "positions_fees_tracking": {
         "bsc:2672319": 28.87406781053722,
         "arbitrum:5670486": 22.503715977984633,
@@ -1088,14 +1134,16 @@
       "by_wallet_fees": {
         "MMA_1": 30.08979917455246,
         "MMA_3": 10.45557373277277
-      }
+      },
+      "fees_cumulative_inflated": 7261.43064594989,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-06",
       "timestamp": "2026-09-06T20:55:44.790128+00:00",
       "tvl": 20951.742067364503,
       "fees": 70.34880239448788,
-      "fees_cumulative": 7400.025171346891,
+      "fees_cumulative": 1116.47,
       "positions_fees_tracking": {
         "arbitrum:5670486": 28.560646376606414,
         "bsc:2676104": 9.861483592586481,
@@ -1139,14 +1187,16 @@
       "by_wallet_fees": {
         "MMA_1": 53.60942912808705,
         "MMA_3": 16.739373266400822
-      }
+      },
+      "fees_cumulative_inflated": 7400.025171346891,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-07",
       "timestamp": "2026-09-07T23:07:42.479830+00:00",
       "tvl": 20702.273246886773,
       "fees": 389.4878946049079,
-      "fees_cumulative": 7992.291569792246,
+      "fees_cumulative": 1464.17,
       "positions_fees_tracking": {
         "arbitrum:5670486": 1.019609192871978,
         "bsc:2676104": 9.861483592586481,
@@ -1188,14 +1238,16 @@
       "by_wallet_fees": {
         "MMA_1": 217.45818362975484,
         "MMA_3": 172.02971097515305
-      }
+      },
+      "fees_cumulative_inflated": 7992.291569792246,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-08",
       "timestamp": "2026-09-08T21:31:23.223094+00:00",
       "tvl": 20811.268393255767,
       "fees": 501.75556561403687,
-      "fees_cumulative": 8322.395804908267,
+      "fees_cumulative": 1577.45,
       "positions_fees_tracking": {
         "arbitrum:5670486": 0.011340010645267165,
         "bsc:2708624": 5.016184863882495,
@@ -1229,14 +1281,16 @@
       "by_wallet_fees": {
         "MMA_1": 276.26558761083754,
         "MMA_3": 225.48997800319933
-      }
+      },
+      "fees_cumulative_inflated": 8322.395804908267,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-09",
       "timestamp": "2026-09-09T21:22:30.639125+00:00",
       "tvl": 20628.99652441117,
       "fees": 460.5611810388722,
-      "fees_cumulative": 8843.57881214482,
+      "fees_cumulative": 1662.76,
       "positions_fees_tracking": {
         "arbitrum:5670486": 6.979202166036166,
         "bsc:2711164": 14.991783860839043,
@@ -1268,14 +1322,16 @@
       "by_wallet_fees": {
         "MMA_1": 340.9392183203224,
         "MMA_3": 119.62196271854975
-      }
+      },
+      "fees_cumulative_inflated": 8843.57881214482,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-10",
       "timestamp": "2026-09-10T22:51:09.479764+00:00",
       "tvl": 20156.562403979784,
       "fees": 361.8960731002182,
-      "fees_cumulative": 9274.392645410006,
+      "fees_cumulative": 1727.04,
       "positions_fees_tracking": {
         "arbitrum:5670486": 15.112247194483881,
         "bsc:2711164": 18.507975439328803,
@@ -1313,14 +1369,16 @@
       "by_wallet_fees": {
         "MMA_1": 293.6676701737037,
         "MMA_3": 68.2284029265145
-      }
+      },
+      "fees_cumulative_inflated": 9274.392645410006,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-11",
       "timestamp": "2026-09-11T22:52:03.441614+00:00",
       "tvl": 20320.58353278255,
       "fees": 474.7232620890122,
-      "fees_cumulative": 9839.599407184143,
+      "fees_cumulative": 1854.98,
       "positions_fees_tracking": {
         "arbitrum:5670486": 0.0,
         "bsc:2711164": 23.34403573440809,
@@ -1358,14 +1416,16 @@
       "by_wallet_fees": {
         "MMA_1": 349.6681582914983,
         "MMA_3": 125.05510379751398
-      }
+      },
+      "fees_cumulative_inflated": 9839.599407184143,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-12",
       "timestamp": "2026-09-12T21:03:50.805944+00:00",
       "tvl": 20481.211382333597,
       "fees": 30.386887005656238,
-      "fees_cumulative": 9929.641432117081,
+      "fees_cumulative": 1885.37,
       "positions_fees_tracking": {
         "arbitrum:5670486": 1.390872171849034,
         "bsc:2711164": 0.8764629578428497,
@@ -1401,14 +1461,16 @@
       "by_wallet_fees": {
         "MMA_1": 20.244340298613068,
         "MMA_3": 10.14254670704317
-      }
+      },
+      "fees_cumulative_inflated": 9929.641432117081,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-13",
       "timestamp": "2026-09-13T22:46:19.304355+00:00",
       "tvl": 20167.800698638817,
       "fees": 73.64295608439544,
-      "fees_cumulative": 9999.750783897802,
+      "fees_cumulative": 1928.62,
       "positions_fees_tracking": {
         "arbitrum:5670486": 5.4323929384433125,
         "bsc:2711164": 1.8135231360227464,
@@ -1438,14 +1500,16 @@
       "by_wallet_fees": {
         "MMA_1": 38.6423825448693,
         "MMA_3": 35.00057353952614
-      }
+      },
+      "fees_cumulative_inflated": 9999.750783897802,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-14",
       "timestamp": "2026-09-14T23:38:38.394875+00:00",
       "tvl": 20560.122818602013,
       "fees": 90.51705630434233,
-      "fees_cumulative": 10085.901506085207,
+      "fees_cumulative": 2001.01,
       "positions_fees_tracking": {
         "arbitrum:5670486": 15.89220291956029,
         "bsc:2711164": 0.744045575811451,
@@ -1477,14 +1541,16 @@
       "by_wallet_fees": {
         "MMA_1": 83.63474444814177,
         "MMA_3": 6.8823118562005465
-      }
+      },
+      "fees_cumulative_inflated": 10085.901506085207,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-15",
       "timestamp": "2026-09-15T21:52:36.411504+00:00",
       "tvl": 20139.59763483284,
       "fees": 206.38122034375536,
-      "fees_cumulative": 10289.379514124856,
+      "fees_cumulative": 2116.87,
       "positions_fees_tracking": {
         "arbitrum:5670486": 30.909204503458653,
         "bsc:2711164": 3.8723751117437395,
@@ -1516,14 +1582,16 @@
       "by_wallet_fees": {
         "MMA_1": 146.7159149291528,
         "MMA_3": 59.665305414602585
-      }
+      },
+      "fees_cumulative_inflated": 10289.379514124856,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-16",
       "timestamp": "2026-09-16T21:17:19.144331+00:00",
       "tvl": 20429.370952040714,
       "fees": 209.77989303965086,
-      "fees_cumulative": 10466.51302103725,
+      "fees_cumulative": 2230.24,
       "positions_fees_tracking": {
         "arbitrum:5670486": 46.84040096621861,
         "bsc:2711164": 7.280571586700844,
@@ -1559,14 +1627,16 @@
       "by_wallet_fees": {
         "MMA_1": 119.66285319621618,
         "MMA_3": 90.11703984343465
-      }
+      },
+      "fees_cumulative_inflated": 10466.51302103725,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-17",
       "timestamp": "2026-09-17T23:15:21.336319+00:00",
       "tvl": 20872.077731118647,
       "fees": 121.65449449133779,
-      "fees_cumulative": 11170.77660606213,
+      "fees_cumulative": 2324.91,
       "positions_fees_tracking": {
         "arbitrum:5670486": 55.99645310849318,
         "bsc:2711164": 0.30154316690189614,
@@ -1612,14 +1682,16 @@
       "by_wallet_fees": {
         "MMA_1": 98.2518719533215,
         "MMA_3": 23.4026225380163
-      }
+      },
+      "fees_cumulative_inflated": 11170.77660606213,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-18",
       "timestamp": "2026-09-18T22:55:34.554931+00:00",
       "tvl": 21107.449073001964,
       "fees": 118.26475593335911,
-      "fees_cumulative": 11463.470474240281,
+      "fees_cumulative": 2397.58,
       "positions_fees_tracking": {
         "arbitrum:5670486": 67.53507665462365,
         "bsc:2711164": 0.563992204043518,
@@ -1679,14 +1751,16 @@
       "by_wallet_fees": {
         "MMA_1": 107.12665929352355,
         "MMA_3": 11.138096639835561
-      }
+      },
+      "fees_cumulative_inflated": 11463.470474240281,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-19",
       "timestamp": "2026-09-19T22:31:20.073336+00:00",
       "tvl": 20856.108775479348,
       "fees": 64.5655933728276,
-      "fees_cumulative": 11633.048447592617,
+      "fees_cumulative": 2428.49,
       "positions_fees_tracking": {
         "arbitrum:5670486": 67.53507665462365,
         "bsc:2711164": 0.6943333650516429,
@@ -1746,14 +1820,16 @@
       "by_wallet_fees": {
         "MMA_1": 41.388106786630814,
         "MMA_3": 23.1774865861968
-      }
+      },
+      "fees_cumulative_inflated": 11633.048447592617,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-20",
       "timestamp": "2026-09-20T22:48:47.331070+00:00",
       "tvl": 21006.964739368064,
       "fees": 110.24386405020952,
-      "fees_cumulative": 11741.574631719217,
+      "fees_cumulative": 2474.17,
       "positions_fees_tracking": {
         "arbitrum:5670486": 67.53507665462365,
         "bsc:2711164": 3.6726249969890223,
@@ -1801,14 +1877,16 @@
       "by_wallet_fees": {
         "MMA_1": 71.47386863667008,
         "MMA_3": 38.769995413539434
-      }
+      },
+      "fees_cumulative_inflated": 11741.574631719217,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-21",
       "timestamp": "2026-09-21T23:53:48.981872+00:00",
       "tvl": 21046.1187865316,
       "fees": 31.57317345003553,
-      "fees_cumulative": 12068.943928848163,
+      "fees_cumulative": 2497.63,
       "positions_fees_tracking": {
         "bsc:2711164": 5.407714840541088,
         "bsc:2763511": 5.146789306967168,
@@ -1850,14 +1928,16 @@
       "by_wallet_fees": {
         "MMA_1": 20.423939566434626,
         "MMA_3": 11.149233883600905
-      }
+      },
+      "fees_cumulative_inflated": 12068.943928848163,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-22",
       "timestamp": "2026-09-22T23:19:47.050062+00:00",
       "tvl": 21200.703907595926,
       "fees": 219.23252110525914,
-      "fees_cumulative": 12484.313130514483,
+      "fees_cumulative": 2685.28,
       "positions_fees_tracking": {
         "bsc:2711164": 5.407714840541088,
         "bsc:2763511": 26.040275590021544,
@@ -1895,14 +1975,16 @@
       "by_wallet_fees": {
         "MMA_1": 140.3706547635176,
         "MMA_3": 78.86186634174156
-      }
+      },
+      "fees_cumulative_inflated": 12484.313130514483,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-23",
       "timestamp": "2026-09-23T23:10:38.817866+00:00",
       "tvl": 20668.060786957823,
       "fees": 158.15920307391323,
-      "fees_cumulative": 12659.708609777103,
+      "fees_cumulative": 2724.66,
       "positions_fees_tracking": {
         "bsc:2711164": 5.407714840541088,
         "bsc:2763511": 25.809296570215217,
@@ -1948,14 +2030,16 @@
       "by_wallet_fees": {
         "MMA_1": 99.07488170749657,
         "MMA_3": 59.084321366416674
-      }
+      },
+      "fees_cumulative_inflated": 12659.708609777103,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-24",
       "timestamp": "2026-09-24T23:29:08.954619+00:00",
       "tvl": 20723.66638979265,
       "fees": 44.86479504224392,
-      "fees_cumulative": 12963.04141852427,
+      "fees_cumulative": 2724.66,
       "positions_fees_tracking": {
         "bsc:2763511": 25.809296570215217,
         "bsc:2764878": 21.452303277153987,
@@ -1993,14 +2077,16 @@
       "by_wallet_fees": {
         "MMA_1": 34.96330476369978,
         "MMA_3": 9.901490278544141
-      }
+      },
+      "fees_cumulative_inflated": 12963.04141852427,
+      "fees_reval_debt": 5.7388
     },
     {
       "date": "2026-09-25",
       "timestamp": "2026-09-25T23:34:43.355867+00:00",
       "tvl": 20881.246327125224,
       "fees": 152.77852491017327,
-      "fees_cumulative": 13358.71185259505,
+      "fees_cumulative": 2806.88,
       "positions_fees_tracking": {
         "bsc:2763511": 25.809296570215217,
         "bsc:2764878": 21.452303277153987,
@@ -2040,14 +2126,16 @@
       "by_wallet_fees": {
         "MMA_1": 101.71470384236886,
         "MMA_3": 51.063821067804405
-      }
+      },
+      "fees_cumulative_inflated": 13358.71185259505,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-26",
       "timestamp": "2026-09-26T23:11:35.102696+00:00",
       "tvl": 20945.798525318227,
       "fees": 30.4025418653789,
-      "fees_cumulative": 13405.316084371561,
+      "fees_cumulative": 2837.28,
       "positions_fees_tracking": {
         "bsc:2776770": 0.40591229321687905,
         "arbitrum:5706426": 2.2438544819397244,
@@ -2077,14 +2165,16 @@
       "by_wallet_fees": {
         "MMA_1": 17.609655012900262,
         "MMA_3": 12.792886852478638
-      }
+      },
+      "fees_cumulative_inflated": 13405.316084371561,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-27",
       "timestamp": "2026-09-27T23:29:58.879229+00:00",
       "tvl": 20844.961024889246,
       "fees": 56.66205513079653,
-      "fees_cumulative": 13487.211384623408,
+      "fees_cumulative": 2867.65,
       "positions_fees_tracking": {
         "bsc:2776770": 2.3987533072599434,
         "arbitrum:5706426": 9.165368058418675,
@@ -2118,14 +2208,16 @@
       "by_wallet_fees": {
         "MMA_1": 39.03162986671409,
         "MMA_3": 17.63042526408244
-      }
+      },
+      "fees_cumulative_inflated": 13487.211384623408,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-28",
       "timestamp": "2026-09-28T22:41:45.109562+00:00",
       "tvl": 20403.80856065194,
       "fees": 74.10028506347471,
-      "fees_cumulative": 13653.24544536631,
+      "fees_cumulative": 2948.29,
       "positions_fees_tracking": {
         "bsc:2776770": 0.24653974284968658,
         "arbitrum:5706426": 29.34892161572364,
@@ -2165,14 +2257,16 @@
       "by_wallet_fees": {
         "MMA_1": 68.91853029562273,
         "MMA_3": 5.1817547678519915
-      }
+      },
+      "fees_cumulative_inflated": 13653.24544536631,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-29",
       "timestamp": "2026-09-29T21:40:23.751137+00:00",
       "tvl": 20342.81157500524,
       "fees": 15.858948858637046,
-      "fees_cumulative": 13815.806230624408,
+      "fees_cumulative": 2961.18,
       "positions_fees_tracking": {
         "bsc:2776770": 0.2544492962616315,
         "arbitrum:5706426": 1.6225741308922608,
@@ -2222,14 +2316,16 @@
       "by_wallet_fees": {
         "MMA_1": 10.282631120791716,
         "MMA_3": 5.57631773784533
-      }
+      },
+      "fees_cumulative_inflated": 13815.806230624408,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-09-30",
       "timestamp": "2026-09-30T21:39:30.617378+00:00",
       "tvl": 20360.86723195672,
       "fees": 115.88107989259998,
-      "fees_cumulative": 13916.571220515787,
+      "fees_cumulative": 3061.2,
       "positions_fees_tracking": {
         "bsc:2776770": 3.088163067499211,
         "arbitrum:5706426": 15.645384134109054,
@@ -2275,14 +2371,16 @@
       "by_wallet_fees": {
         "MMA_1": 77.24766671114266,
         "MMA_3": 38.63341318145733
-      }
+      },
+      "fees_cumulative_inflated": 13916.571220515787,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-01",
       "timestamp": "2026-10-01T22:03:24.200478+00:00",
       "tvl": 20315.325321042128,
       "fees": 237.9788273325136,
-      "fees_cumulative": 14038.6689679557,
+      "fees_cumulative": 3183.3,
       "positions_fees_tracking": {
         "bsc:2776770": 5.225624500231847,
         "arbitrum:5706426": 29.631481422138435,
@@ -2320,14 +2418,16 @@
       "by_wallet_fees": {
         "MMA_1": 157.1390695441084,
         "MMA_3": 80.8397577884052
-      }
+      },
+      "fees_cumulative_inflated": 14038.6689679557,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-02",
       "timestamp": "2026-10-02T21:34:49.543549+00:00",
       "tvl": 19942.327400048172,
       "fees": 308.8081014679341,
-      "fees_cumulative": 14311.697526693002,
+      "fees_cumulative": 3290.13,
       "positions_fees_tracking": {
         "bsc:2776770": 7.586671757675969,
         "arbitrum:5706426": 15.283970288464797,
@@ -2361,14 +2461,16 @@
       "by_wallet_fees": {
         "MMA_1": 212.59124705510195,
         "MMA_3": 96.21685441283213
-      }
+      },
+      "fees_cumulative_inflated": 14311.697526693002,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-03",
       "timestamp": "2026-10-03T23:25:29.545056+00:00",
       "tvl": 20288.44629472519,
       "fees": 60.146723757885994,
-      "fees_cumulative": 14417.588085226633,
+      "fees_cumulative": 3337.48,
       "positions_fees_tracking": {
         "bsc:2776770": 1.0764891279562594,
         "arbitrum:5706426": 1.8236439051840143,
@@ -2402,14 +2504,16 @@
       "by_wallet_fees": {
         "MMA_1": 37.61147192950599,
         "MMA_3": 22.53525182838001
-      }
+      },
+      "fees_cumulative_inflated": 14417.588085226633,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-04",
       "timestamp": "2026-10-04T23:40:33.855772+00:00",
       "tvl": 20453.592809165468,
       "fees": 62.0027829513478,
-      "fees_cumulative": 14487.641015540523,
+      "fees_cumulative": 3371.29,
       "positions_fees_tracking": {
         "bsc:2776770": 2.1802547240403047,
         "arbitrum:5706426": 6.243750227185093,
@@ -2443,14 +2547,16 @@
       "by_wallet_fees": {
         "MMA_1": 24.93499859212715,
         "MMA_3": 37.067784359220646
-      }
+      },
+      "fees_cumulative_inflated": 14487.641015540523,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-05",
       "timestamp": "2026-10-05T23:29:15.812736+00:00",
       "tvl": 20400.188133774845,
       "fees": 138.67189458160627,
-      "fees_cumulative": 14597.948661332686,
+      "fees_cumulative": 3447.96,
       "positions_fees_tracking": {
         "bsc:2776770": 4.243814833862139,
         "arbitrum:5706426": 17.308461614558453,
@@ -2480,14 +2586,16 @@
       "by_wallet_fees": {
         "MMA_1": 78.1551988817127,
         "MMA_3": 60.51669569989357
-      }
+      },
+      "fees_cumulative_inflated": 14597.948661332686,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-06",
       "timestamp": "2026-10-06T22:01:16.755190+00:00",
       "tvl": 20163.87376758113,
       "fees": 136.58078632134266,
-      "fees_cumulative": 14795.005380202576,
+      "fees_cumulative": 3506.13,
       "positions_fees_tracking": {
         "bsc:2776770": 0.1370222037531496,
         "arbitrum:5706426": 23.80473331528915,
@@ -2519,14 +2627,16 @@
       "by_wallet_fees": {
         "MMA_1": 129.76504801595172,
         "MMA_3": 6.815738305390928
-      }
+      },
+      "fees_cumulative_inflated": 14795.005380202576,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-07",
       "timestamp": "2026-10-07T22:22:51.983802+00:00",
       "tvl": 19498.081234149962,
       "fees": 153.99603723740944,
-      "fees_cumulative": 14993.440171919066,
+      "fees_cumulative": 3578.37,
       "positions_fees_tracking": {
         "bsc:2776770": 2.8881305276257274,
         "arbitrum:5706426": 33.24941058879001,
@@ -2562,14 +2672,16 @@
       "by_wallet_fees": {
         "MMA_1": 122.51262810873587,
         "MMA_3": 31.48340912867358
-      }
+      },
+      "fees_cumulative_inflated": 14993.440171919066,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-08",
       "timestamp": "2026-10-08T22:30:13.128267+00:00",
       "tvl": 18602.2454389071,
       "fees": 28.70827902735408,
-      "fees_cumulative": 15675.537179337633,
+      "fees_cumulative": 3615.32,
       "positions_fees_tracking": {
         "bsc:2776770": 1.471719546911108,
         "arbitrum:5706426": 33.24941058879001,
@@ -2623,14 +2735,16 @@
       "by_wallet_fees": {
         "MMA_1": 12.578996114173915,
         "MMA_3": 16.129282913180162
-      }
+      },
+      "fees_cumulative_inflated": 15675.537179337633,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-09",
       "timestamp": "2026-10-09T22:00:11.538332+00:00",
       "tvl": 18686.885383495646,
       "fees": 97.2392411649188,
-      "fees_cumulative": 16028.567672577794,
+      "fees_cumulative": 3682.45,
       "positions_fees_tracking": {
         "bsc:2776770": 1.471719546911108,
         "arbitrum:5706426": 33.24941058879001,
@@ -2682,14 +2796,16 @@
       "by_wallet_fees": {
         "MMA_1": 63.51941880584976,
         "MMA_3": 33.71982235906904
-      }
+      },
+      "fees_cumulative_inflated": 16028.567672577794,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-10",
       "timestamp": "2026-10-10T23:53:35.811210+00:00",
       "tvl": 18956.082308513363,
       "fees": 17.5340817207456,
-      "fees_cumulative": 16100.64395463291,
+      "fees_cumulative": 3699.98,
       "positions_fees_tracking": {
         "bsc:2776770": 1.471719546911108,
         "bsc:2801080": 66.00083138173913,
@@ -2735,14 +2851,16 @@
       "by_wallet_fees": {
         "MMA_1": 14.007758319106493,
         "MMA_3": 3.5263234016391047
-      }
+      },
+      "fees_cumulative_inflated": 16100.64395463291,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-11",
       "timestamp": "2026-10-11T21:07:39.836673+00:00",
       "tvl": 19086.2602963313,
       "fees": 70.43478463983908,
-      "fees_cumulative": 16200.119536834309,
+      "fees_cumulative": 3744.19,
       "positions_fees_tracking": {
         "arbitrum:5723852": 8.013804343295993,
         "bsc:2825271": 1.833769447809713,
@@ -2776,14 +2894,16 @@
       "by_wallet_fees": {
         "MMA_1": 48.32117108710871,
         "MMA_3": 22.113613552730378
-      }
+      },
+      "fees_cumulative_inflated": 16200.119536834309,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-12",
       "timestamp": "2026-10-12T23:52:36.952450+00:00",
       "tvl": 18007.567832576446,
       "fees": 80.31422422422393,
-      "fees_cumulative": 16365.94743423509,
+      "fees_cumulative": 3775.98,
       "positions_fees_tracking": {
         "arbitrum:5723852": 26.9142375631541,
         "bsc:2825271": 1.833769447809713,
@@ -2823,14 +2943,16 @@
       "by_wallet_fees": {
         "MMA_1": 60.77484818895899,
         "MMA_3": 19.53937603526495
-      }
+      },
+      "fees_cumulative_inflated": 16365.94743423509,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-13",
       "timestamp": "2026-10-13T23:55:42.459462+00:00",
       "tvl": 18691.810758038966,
       "fees": 214.68832096156163,
-      "fees_cumulative": 16539.59135492559,
+      "fees_cumulative": 3910.36,
       "positions_fees_tracking": {
         "arbitrum:5723852": 50.49905105149473,
         "bsc:2825271": 1.833769447809713,
@@ -2870,14 +2992,16 @@
       "by_wallet_fees": {
         "MMA_1": 149.71819664566968,
         "MMA_3": 64.97012431589197
-      }
+      },
+      "fees_cumulative_inflated": 16539.59135492559,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-14",
       "timestamp": "2026-10-14T23:32:18.676259+00:00",
       "tvl": 18228.49547855466,
       "fees": 19.032808805939215,
-      "fees_cumulative": 16899.407147822527,
+      "fees_cumulative": 3946.46,
       "positions_fees_tracking": {
         "arbitrum:5723852": 4.652239100811736,
         "bsc:2825242": 0.7788938808064458,
@@ -2923,14 +3047,16 @@
       "by_wallet_fees": {
         "MMA_1": 13.438441963317953,
         "MMA_3": 5.594366842621263
-      }
+      },
+      "fees_cumulative_inflated": 16899.407147822527,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-15",
       "timestamp": "2026-10-15T23:20:54.130055+00:00",
       "tvl": 18274.170956397986,
       "fees": 23.2980518281288,
-      "fees_cumulative": 17076.8079231256,
+      "fees_cumulative": 3993.07,
       "positions_fees_tracking": {
         "arbitrum:5723852": 6.9872422548571045,
         "bsc:2825242": 0.8136096562843719,
@@ -2982,14 +3108,16 @@
       "by_wallet_fees": {
         "MMA_1": 13.663239008481419,
         "MMA_3": 9.634812819647381
-      }
+      },
+      "fees_cumulative_inflated": 17076.8079231256,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-16",
       "timestamp": "2026-10-16T23:04:27.149849+00:00",
       "tvl": 18046.94632695522,
       "fees": 14.560573223495634,
-      "fees_cumulative": 17226.97223980201,
+      "fees_cumulative": 4035.14,
       "positions_fees_tracking": {
         "arbitrum:5723852": 6.9872422548571045,
         "bsc:2825242": 0.46054729047312826,
@@ -3045,14 +3173,16 @@
       "by_wallet_fees": {
         "MMA_1": 10.102797736757779,
         "MMA_3": 4.457775486737855
-      }
+      },
+      "fees_cumulative_inflated": 17226.97223980201,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-17",
       "timestamp": "2026-10-17T22:40:29.850660+00:00",
       "tvl": 17950.253613385532,
       "fees": 73.71904348400582,
-      "fees_cumulative": 17297.23825288127,
+      "fees_cumulative": 4092.95,
       "positions_fees_tracking": {
         "arbitrum:5723852": 6.9872422548571045,
         "bsc:2825242": 2.7634707328420705,
@@ -3100,14 +3230,16 @@
       "by_wallet_fees": {
         "MMA_1": 52.74596988866817,
         "MMA_3": 20.97307359533765
-      }
+      },
+      "fees_cumulative_inflated": 17297.23825288127,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-18",
       "timestamp": "2026-10-18T22:39:13.461206+00:00",
       "tvl": 18022.785173387263,
       "fees": 58.50225621550981,
-      "fees_cumulative": 17502.316340720256,
+      "fees_cumulative": 4092.95,
       "positions_fees_tracking": {
         "bsc:2825242": 1.8765456699801937,
         "bsc:2825272": 3.96750604354518,
@@ -3141,14 +3273,16 @@
       "by_wallet_fees": {
         "MMA_1": 39.42318627130735,
         "MMA_3": 19.07906994420246
-      }
+      },
+      "fees_cumulative_inflated": 17502.316340720256,
+      "fees_reval_debt": 15.2168
     },
     {
       "date": "2026-10-19",
       "timestamp": "2026-10-19T21:50:15.796787+00:00",
       "tvl": 18205.797937554034,
       "fees": 182.1360660452718,
-      "fees_cumulative": 17625.950150550012,
+      "fees_cumulative": 4201.37,
       "positions_fees_tracking": {
         "bsc:2825242": 5.1015155834476325,
         "bsc:2825272": 10.78593195591239,
@@ -3178,14 +3312,16 @@
       "by_wallet_fees": {
         "MMA_1": 114.2271627259279,
         "MMA_3": 67.90890331934392
-      }
+      },
+      "fees_cumulative_inflated": 17625.950150550012,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-20",
       "timestamp": "2026-10-20T23:27:18.231060+00:00",
       "tvl": 18448.826806611094,
       "fees": 345.707924629332,
-      "fees_cumulative": 18061.488304902978,
+      "fees_cumulative": 4364.94,
       "positions_fees_tracking": {
         "bsc:2825242": 11.086595383658146,
         "bsc:2825272": 23.439948673068027,
@@ -3215,14 +3351,16 @@
       "by_wallet_fees": {
         "MMA_1": 215.85925936966834,
         "MMA_3": 129.84866525966365
-      }
+      },
+      "fees_cumulative_inflated": 18061.488304902978,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-21",
       "timestamp": "2026-10-21T23:41:32.542085+00:00",
       "tvl": 18679.32716675428,
       "fees": 89.05833848276538,
-      "fees_cumulative": 18516.743982538075,
+      "fees_cumulative": 4406.09,
       "positions_fees_tracking": {
         "bsc:2825242": 15.079020076123907,
         "bsc:2825272": 35.14166959387248,
@@ -3268,14 +3406,16 @@
       "by_wallet_fees": {
         "MMA_1": 57.22973474899549,
         "MMA_3": 31.82860373376989
-      }
+      },
+      "fees_cumulative_inflated": 18516.743982538075,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-22",
       "timestamp": "2026-10-22T23:38:45.770715+00:00",
       "tvl": 17863.375425398506,
       "fees": 75.44691505285287,
-      "fees_cumulative": 19033.051005636546,
+      "fees_cumulative": 4481.25,
       "positions_fees_tracking": {
         "bsc:2825242": 15.079020076123907,
         "bsc:2825272": 39.17874741252572,
@@ -3333,14 +3473,16 @@
       "by_wallet_fees": {
         "MMA_1": 59.03250458364994,
         "MMA_3": 16.414410469202938
-      }
+      },
+      "fees_cumulative_inflated": 19033.051005636546,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-23",
       "timestamp": "2026-10-23T23:34:29.586308+00:00",
       "tvl": 17662.1976296596,
       "fees": 186.4002059280027,
-      "fees_cumulative": 19282.54778846963,
+      "fees_cumulative": 4592.2,
       "positions_fees_tracking": {
         "bsc:2825242": 15.079020076123907,
         "bsc:2825272": 45.66313185085511,
@@ -3398,14 +3540,16 @@
       "by_wallet_fees": {
         "MMA_1": 129.31354539970135,
         "MMA_3": 57.08666052830135
-      }
+      },
+      "fees_cumulative_inflated": 19282.54778846963,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-24",
       "timestamp": "2026-10-24T22:46:38.536760+00:00",
       "tvl": 17685.323068490532,
       "fees": 42.00628062095161,
-      "fees_cumulative": 19477.423209868917,
+      "fees_cumulative": 4619.39,
       "positions_fees_tracking": {
         "bsc:2825272": 0.19451600664548058,
         "bsc:2846481": 5.417842019133182,
@@ -3463,14 +3607,16 @@
       "by_wallet_fees": {
         "MMA_1": 20.70751880769803,
         "MMA_3": 21.298761813253574
-      }
+      },
+      "fees_cumulative_inflated": 19477.423209868917,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-25",
       "timestamp": "2026-10-25T22:51:13.379475+00:00",
       "tvl": 17814.187142532588,
       "fees": 102.70160110775818,
-      "fees_cumulative": 19614.05919215344,
+      "fees_cumulative": 4680.09,
       "positions_fees_tracking": {
         "bsc:2825272": 0.19451600664548058,
         "bsc:2846481": 5.417842019133182,
@@ -3516,14 +3662,16 @@
       "by_wallet_fees": {
         "MMA_1": 59.11476496938914,
         "MMA_3": 43.586836138369044
-      }
+      },
+      "fees_cumulative_inflated": 19614.05919215344,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-26",
       "timestamp": "2026-10-26T21:59:00.890718+00:00",
       "tvl": 17759.61727496646,
       "fees": 218.3511214089983,
-      "fees_cumulative": 19739.50820626876,
+      "fees_cumulative": 4801.63,
       "positions_fees_tracking": {
         "bsc:2825272": 0.19451600664548058,
         "bsc:2846481": 5.417842019133182,
@@ -3571,14 +3719,16 @@
       "by_wallet_fees": {
         "MMA_1": 142.71614250283451,
         "MMA_3": 75.63497890616377
-      }
+      },
+      "fees_cumulative_inflated": 19739.50820626876,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-27",
       "timestamp": "2026-10-27T21:33:53.479387+00:00",
       "tvl": 18121.278159128247,
       "fees": 63.59162634641952,
-      "fees_cumulative": 19828.779046241725,
+      "fees_cumulative": 4869.66,
       "positions_fees_tracking": {
         "bsc:2862133": 12.036221195658367,
         "bsc:2862165": 19.598192217280328,
@@ -3610,14 +3760,16 @@
       "by_wallet_fees": {
         "MMA_1": 41.85372986273798,
         "MMA_3": 21.737896483681542
-      }
+      },
+      "fees_cumulative_inflated": 19828.779046241725,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-28",
       "timestamp": "2026-10-28T21:58:12.313870+00:00",
       "tvl": 18246.963555913913,
       "fees": 115.55224870539864,
-      "fees_cumulative": 19980.034074884148,
+      "fees_cumulative": 4933.08,
       "positions_fees_tracking": {
         "bsc:2862133": 12.036221195658367,
         "bsc:2862165": 23.193066870980978,
@@ -3653,14 +3805,16 @@
       "by_wallet_fees": {
         "MMA_1": 57.10969993103455,
         "MMA_3": 58.442548774364084
-      }
+      },
+      "fees_cumulative_inflated": 19980.034074884148,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-29",
       "timestamp": "2026-10-29T22:08:28.483534+00:00",
       "tvl": 15744.190268519587,
       "fees": 59.07117187552694,
-      "fees_cumulative": 20229.104238457152,
+      "fees_cumulative": 4961.32,
       "positions_fees_tracking": {
         "bsc:2862133": 12.036221195658367,
         "bsc:2862165": 23.193066870980978,
@@ -3700,14 +3854,16 @@
       "by_wallet_fees": {
         "MMA_1": 38.22864961162723,
         "MMA_3": 20.842522263899713
-      }
+      },
+      "fees_cumulative_inflated": 20229.104238457152,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-10-30",
       "timestamp": "2026-10-30T21:49:20.983625+00:00",
       "tvl": 17783.684632823104,
       "fees": 86.60192904767054,
-      "fees_cumulative": 20404.190104420362,
+      "fees_cumulative": 4961.32,
       "positions_fees_tracking": {
         "bsc:2862165": 23.193066870980978,
         "bsc:2866832": 33.626044207419646,
@@ -3755,14 +3911,16 @@
       "by_wallet_fees": {
         "MMA_1": 52.94322209954085,
         "MMA_3": 33.65870694812968
-      }
+      },
+      "fees_cumulative_inflated": 20404.190104420362,
+      "fees_reval_debt": 17.3558
     },
     {
       "date": "2026-10-31",
       "timestamp": "2026-10-31T23:47:42.003931+00:00",
       "tvl": 17953.501043718934,
       "fees": 73.26403850820375,
-      "fees_cumulative": 20585.60748310193,
+      "fees_cumulative": 4983.09,
       "positions_fees_tracking": {
         "bsc:2866832": 33.626044207419646,
         "bsc:2867165": 1.7151595674653701,
@@ -3810,14 +3968,16 @@
       "by_wallet_fees": {
         "MMA_1": 10.35146499877712,
         "MMA_3": 62.91257350942663
-      }
+      },
+      "fees_cumulative_inflated": 20585.60748310193,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-01",
       "timestamp": "2026-11-01T23:58:56.077798+00:00",
       "tvl": 17898.539803914224,
       "fees": 117.67719589910467,
-      "fees_cumulative": 20708.17114337157,
+      "fees_cumulative": 5027.5,
       "positions_fees_tracking": {
         "bsc:2867165": 1.7151595674653701,
         "arbitrum:5741327": 4.424517540456769,
@@ -3859,14 +4019,16 @@
       "by_wallet_fees": {
         "MMA_1": 41.9627157144266,
         "MMA_3": 75.71448018467808
-      }
+      },
+      "fees_cumulative_inflated": 20708.17114337157,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-02",
       "timestamp": "2026-11-02T20:36:32.176329+00:00",
       "tvl": 17481.730076568187,
       "fees": 34.00632124293876,
-      "fees_cumulative": 20853.442258795483,
+      "fees_cumulative": 5052.32,
       "positions_fees_tracking": {
         "bsc:2867165": 1.7151595674653701,
         "bsc:2880049": 40.34239551208975,
@@ -3916,14 +4078,16 @@
       "by_wallet_fees": {
         "MMA_1": 23.67232741279952,
         "MMA_3": 10.333993830139235
-      }
+      },
+      "fees_cumulative_inflated": 20853.442258795483,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-03",
       "timestamp": "2026-11-03T22:36:13.964682+00:00",
       "tvl": 17694.32074517857,
       "fees": 17.377946399912403,
-      "fees_cumulative": 21084.683707852266,
+      "fees_cumulative": 5080.07,
       "positions_fees_tracking": {
         "bsc:2880049": 40.34239551208975,
         "bsc:2881880": 11.881326680186996,
@@ -3975,14 +4139,16 @@
       "by_wallet_fees": {
         "MMA_1": 10.459891321150646,
         "MMA_3": 6.918055078761754
-      }
+      },
+      "fees_cumulative_inflated": 21084.683707852266,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-04",
       "timestamp": "2026-11-04T23:00:22.451325+00:00",
       "tvl": 17897.182325001457,
       "fees": 84.39309250436881,
-      "fees_cumulative": 21368.489169945264,
+      "fees_cumulative": 5192.21,
       "positions_fees_tracking": {
         "bsc:2880049": 40.34239551208975,
         "bsc:2881880": 11.881326680186996,
@@ -4042,14 +4208,16 @@
       "by_wallet_fees": {
         "MMA_1": 38.89324332539033,
         "MMA_3": 45.499849178978465
-      }
+      },
+      "fees_cumulative_inflated": 21368.489169945264,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-05",
       "timestamp": "2026-11-05T22:57:29.220547+00:00",
       "tvl": 17776.30368981673,
       "fees": 135.09006225179357,
-      "fees_cumulative": 21594.71380353486,
+      "fees_cumulative": 5294.15,
       "positions_fees_tracking": {
         "bsc:2887795": 9.40954593189474,
         "arbitrum:5748974": 6.5679635294668595,
@@ -4099,14 +4267,16 @@
       "by_wallet_fees": {
         "MMA_1": 116.4482349517495,
         "MMA_3": 18.641827300044074
-      }
+      },
+      "fees_cumulative_inflated": 21594.71380353486,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-06",
       "timestamp": "2026-11-06T22:26:21.257119+00:00",
       "tvl": 18104.239567711178,
       "fees": 98.09055522075282,
-      "fees_cumulative": 21973.42344165056,
+      "fees_cumulative": 5388.09,
       "positions_fees_tracking": {
         "bsc:2887795": 10.295515329813671,
         "arbitrum:5748974": 6.5679635294668595,
@@ -4154,14 +4324,16 @@
       "by_wallet_fees": {
         "MMA_1": 56.77677892928203,
         "MMA_3": 41.31377629147078
-      }
+      },
+      "fees_cumulative_inflated": 21973.42344165056,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-07",
       "timestamp": "2026-11-07T23:58:12.671364+00:00",
       "tvl": 17924.868089503976,
       "fees": 123.19910080938932,
-      "fees_cumulative": 22064.64680877748,
+      "fees_cumulative": 5437.53,
       "positions_fees_tracking": {
         "bsc:2887795": 10.295515329813671,
         "bsc:2897287": 2.752077345106608,
@@ -4201,14 +4373,16 @@
       "by_wallet_fees": {
         "MMA_1": 90.59868736008126,
         "MMA_3": 32.60041344930807
-      }
+      },
+      "fees_cumulative_inflated": 22064.64680877748,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-08",
       "timestamp": "2026-11-08T21:25:44.026747+00:00",
       "tvl": 17688.5242831963,
       "fees": 160.3605686542963,
-      "fees_cumulative": 22510.15643578622,
+      "fees_cumulative": 5474.69,
       "positions_fees_tracking": {
         "bsc:2887795": 10.295515329813671,
         "bsc:2901441": 115.72587152893387,
@@ -4242,14 +4416,16 @@
       "by_wallet_fees": {
         "MMA_1": 111.28323530852524,
         "MMA_3": 49.07733334577105
-      }
+      },
+      "fees_cumulative_inflated": 22510.15643578622,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-09",
       "timestamp": "2026-11-09T20:35:00.158403+00:00",
       "tvl": 17303.615909331358,
       "fees": 25.325402325682976,
-      "fees_cumulative": 22869.029359946304,
+      "fees_cumulative": 5482.05,
       "positions_fees_tracking": {
         "bsc:2904944": 1.4363469305710352,
         "bsc:2904895": 1.377208865197956,
@@ -4287,14 +4463,16 @@
       "by_wallet_fees": {
         "MMA_1": 20.762531569450665,
         "MMA_3": 4.562870756232309
-      }
+      },
+      "fees_cumulative_inflated": 22869.029359946304,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-10",
       "timestamp": "2026-11-10T22:36:46.015692+00:00",
       "tvl": 16294.825575246314,
       "fees": 39.909942637522235,
-      "fees_cumulative": 23392.310168281427,
+      "fees_cumulative": 5550.47,
       "positions_fees_tracking": {
         "bsc:2904944": 3.5391428161821836,
         "bsc:2904895": 3.761018376002049,
@@ -4342,14 +4520,16 @@
       "by_wallet_fees": {
         "MMA_1": 23.353921272454986,
         "MMA_3": 16.55602136506724
-      }
+      },
+      "fees_cumulative_inflated": 23392.310168281427,
+      "fees_reval_debt": 0.0
     },
     {
       "date": "2026-11-11",
       "timestamp": "2026-11-11T14:48:53.217142+00:00",
       "tvl": 15771.484988570399,
       "fees": 95.82404351209354,
-      "fees_cumulative": 23874.69448078624,
+      "fees_cumulative": 5606.38,
       "positions_fees_tracking": {
         "bsc:2904944": 10.184062535739997,
         "bsc:2904895": 10.270710957553007,
@@ -4397,7 +4577,9 @@
       "by_wallet_fees": {
         "MMA_1": 57.807499744717774,
         "MMA_3": 38.01654376737576
-      }
+      },
+      "fees_cumulative_inflated": 23874.69448078624,
+      "fees_reval_debt": 0.0
     }
   ],
   "updated": "2026-11-11T14:48:53.217401+00:00"

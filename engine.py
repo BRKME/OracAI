@@ -45,6 +45,33 @@ def _fetch_mvrv_safe():
         return None
 
 
+ATH_HISTORY_FILE = Path("data/external/btc_ohlcv.csv")
+_ath_cache = {}
+
+
+def _true_ath(close: np.ndarray, as_of: str) -> float:
+    """Исторический максимум закрытия на дату as_of.
+
+    Окно цен движка — год (в тесте 120 дней), и «просадка от ATH» незаметно
+    превращалась в просадку от годового максимума: 11.11.2026 это −27.6%
+    вместо −41%. Берём максимум из многолетнего файла цен, который обновляет
+    data_refresh, строго по дням не позже as_of (в тесте — без заглядывания
+    вперёд). Файла нет — честно остаётся максимум окна.
+    """
+    window_max = float(np.max(close))
+    try:
+        if "df" not in _ath_cache:
+            _ath_cache["df"] = pd.read_csv(
+                ATH_HISTORY_FILE, usecols=["date", "close"], parse_dates=["date"])
+        df = _ath_cache["df"]
+        hist_max = df.loc[df["date"] <= pd.Timestamp(as_of), "close"].max()
+        if pd.notna(hist_max):
+            return max(window_max, float(hist_max))
+    except Exception as e:
+        logger.warning(f"ATH из истории недоступен, берём максимум окна: {e}")
+    return window_max
+
+
 def _count_days_above_sma200(close: np.ndarray, max_lookback: int = 60) -> int:
     """Count consecutive trailing days where close > SMA-200.
     Returns 0 if most recent day is NOT above SMA200. Otherwise counts
@@ -629,12 +656,34 @@ class RegimeEngine:
         self.norm = AdaptiveNormalizer(cfg.NORM_WINDOW_DEFAULT)
         self.macro_norm = AdaptiveNormalizer(cfg.NORM_WINDOW_MACRO)
 
-    def process(self, raw_data: dict) -> dict:
+    def _begin_day(self, today: str):
+        """Один шаг в сутки. Первый запуск дня запоминает состояние на начало
+        суток; повторный — откатывается к нему и пересчитывает шаг заново.
+
+        Без этого каждый запуск (а public_channel запускается ежечасно)
+        добавлял шаг: сглаживание, «дни подтверждения» и история блоков
+        считались в запусках, а не в днях (аудит 11.11.2026).
+        """
+        import copy
+        start = self.state.get("_day_start")
+        if self.state.get("last_step_date") == today and start is not None:
+            self.state = copy.deepcopy(start)
+        else:
+            start = copy.deepcopy(
+                {k: v for k, v in self.state.items() if k != "_day_start"})
+        self.state["_day_start"] = start
+
+    def process(self, raw_data: dict, as_of: Optional[str] = None) -> dict:
         """
         Main pipeline. Takes raw_data from data_pipeline.fetch_all_data().
         Returns full output schema.
+
+        as_of — дата шага (YYYY-MM-DD). По умолчанию сегодня по UTC; тест на
+        истории передаёт дату прогоняемого дня.
         """
         flags = []
+        today = as_of or datetime.utcnow().date().isoformat()
+        self._begin_day(today)
 
         # ── 0. Extract and validate data ──────────────────────
         price_df = raw_data.get("price")
@@ -792,7 +841,6 @@ class RegimeEngine:
         new_regime = should_switch(P, current, holds)
 
         # Track days in regime (only increment once per day)
-        today = datetime.utcnow().date().isoformat()
         last_date = self.state.get("last_regime_date")
         
         if new_regime and new_regime != current:
@@ -861,6 +909,7 @@ class RegimeEngine:
         self.state["oi_history"] = oi_history.tolist()
         self.state["last_run"] = datetime.utcnow().isoformat()
 
+        self.state["last_step_date"] = today
         save_state(self.state)
 
         # ── 16. Output ────────────────────────────────────────
@@ -923,7 +972,7 @@ class RegimeEngine:
                 # telegram_bot.py). drawdown_from_high_90d выше — про защиту
                 # позиции, здесь нужен именно ATH-масштаб.
                 "drawdown_from_ath": round(
-                    (close[-1] / np.maximum.accumulate(close)[-1] - 1) * 100, 2
+                    (close[-1] / _true_ath(close, today) - 1) * 100, 2
                 ) if len(close) > 0 else 0.0,
                 "mvrv": _fetch_mvrv_safe(),
                 # v3.4 (Phase 4): SMA200 status for recovery override

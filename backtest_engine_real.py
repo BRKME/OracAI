@@ -197,7 +197,7 @@ def run_backtest(dfs: dict, start_date: Optional[str] = None,
         if raw is None:
             continue
         try:
-            out = eng.process(raw)
+            out = eng.process(raw, as_of=str(btc["date"].iloc[i].date()))
         except Exception as e:
             logger.warning(f"Day {i} ({btc['date'].iloc[i].date()}): engine failed: {e}")
             continue

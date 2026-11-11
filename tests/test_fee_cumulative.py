@@ -54,7 +54,9 @@ def test_real_harvest_counts_regrowth(hist):
 def test_migration_resets_inflated_legacy(hist):
     """Первый прогон после фикса: legacy-цифра архивируется, счёт с нуля."""
     # старый снапшот без positions_fees_tracking, с надутым cumulative
-    lp_system.save_history([{"date": "2026-07-01", "timestamp": "2026-07-01T00:00:00+00:00",
+    from datetime import datetime, timedelta, timezone
+    d = (datetime.now(timezone.utc) - timedelta(days=3))
+    lp_system.save_history([{"date": d.strftime("%Y-%m-%d"), "timestamp": d.isoformat(),
                              "tvl": 21000, "fees": 30, "fees_cumulative": 5999.0}])
     s = _snap(positions_fees={"bsc:1": 30.0})
     assert s["fees_cumulative"] == pytest.approx(0.0)
@@ -65,3 +67,37 @@ def test_sanity_cap_one_percent(hist):
     _snap(positions_fees={"bsc:1": 10.0})
     s = _snap(positions_fees={"bsc:1": 5000.0})   # глитч цены
     assert s["fees_cumulative"] <= 20000 * 0.01 + 1e-9
+
+
+class TestRevaluationIsNotHarvest:
+    """11.11.2026: несобранные комиссии учитываются в долларах. Цена токена
+    чуть упала -> сумма уменьшилась -> код считал это сбором и доливал ВСЮ
+    сумму заново. За 37 часов записано $987 при реальном росте $177; сильнее
+    всего у позиций вне диапазона (комиссии не растут, цена колеблется)."""
+
+    def test_small_drop_is_not_counted_as_harvest(self, hist):
+        _snap(positions_fees={"bsc:1": 21.17})
+        s = _snap(positions_fees={"bsc:1": 21.12})   # переоценка, не сбор
+        assert s["fees_cumulative"] == pytest.approx(0.0)
+
+    def test_oscillation_does_not_ratchet(self, hist):
+        """Цена туда-обратно: комиссий не прибавилось — и в копилке ноль."""
+        _snap(positions_fees={"bsc:1": 20.0})
+        for v in (19.8, 20.0, 19.7, 20.0, 19.9, 20.0):
+            s = _snap(positions_fees={"bsc:1": v})
+        assert s["fees_cumulative"] == pytest.approx(0.0, abs=1e-9)
+
+    def test_growth_after_revaluation_counts_only_net(self, hist):
+        _snap(positions_fees={"bsc:1": 20.0})
+        _snap(positions_fees={"bsc:1": 19.5})        # -0.5 переоценка
+        s = _snap(positions_fees={"bsc:1": 21.0})    # итог +1.0 к исходным 20
+        assert s["fees_cumulative"] == pytest.approx(1.0)
+
+    def test_revaluation_of_one_does_not_hide_growth_of_other(self, hist):
+        _snap(positions_fees={"bsc:1": 20.0, "bsc:2": 5.0})
+        s = _snap(positions_fees={"bsc:1": 19.9, "bsc:2": 8.0})
+        assert s["fees_cumulative"] == pytest.approx(2.9)
+
+    def test_history_is_not_pruned_at_90_days(self):
+        # история — единственный источник для P&L; 90 дней стирали всё старше
+        assert lp_system.MAX_HISTORY_DAYS >= 3650

@@ -110,6 +110,8 @@ def main():
     # ── 4.5 Контекст для сообщения: нестабильность режима и прошлая доля ──
     from prod_logger import count_regime_switches
     output.setdefault("metadata", {})["regime_switches_14d"] = count_regime_switches(14)
+    import signal_log
+    output["metadata"]["score_line"] = signal_log.score_line()
     _send_state = STATE_DIR / "regime_send_state.json"
     try:
         _prev_t = json.load(open(_send_state)).get("target_pos")
@@ -207,6 +209,15 @@ def main():
         logger.info(f"Сообщение за {msk_today} уже отправлено — пропускаем")
     else:
         send_telegram_with_chart(output, lp_policy, allocation)
+        try:
+            _m = output.get("metadata", {})
+            signal_log.append_signal(
+                date=msk_today, btc_price=_m.get("btc_price"),
+                target_pos=_m.get("target_pos"), label=_m.get("action_label"),
+                regime=output.get("regime"),
+                confidence=output.get("confidence", {}).get("quality_adjusted"))
+        except Exception as e:
+            logger.warning(f"signal_log не записан: {e}")
         try:
             with open(SEND_STATE_FILE, "w") as f:
                 json.dump({"last_sent": msk_today,

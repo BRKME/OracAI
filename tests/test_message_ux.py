@@ -115,3 +115,10 @@ def test_no_english_phase_jargon():
 def test_probability_block_kept():
     lines = _text(_out()).splitlines()
     assert any(l.startswith("BULL ") and "◀" in l for l in lines)
+
+
+def test_score_line_shown_when_present():
+    o = _out()
+    o["metadata"]["score_line"] = "Счёт с 21.04: стратегия −4.0% · держать −0.7%"
+    assert "Счёт с 21.04" in _text(o)
+    assert "Счёт" not in _text(_out())
