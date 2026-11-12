@@ -904,10 +904,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     meta["target_pos"] = target_pos   # main.py сохраняет для сравнения завтра
     meta["action_label"] = action
     _head = f"{action} · {int(target_pos * 100)}%"
-    _prev_t = meta.get("prev_sent_target")
-    if _prev_t is not None:
-        _head += (" · без изменений" if abs(_prev_t - target_pos) < 0.01
-                  else f" · было {int(round(_prev_t * 100))}%")
+    # v7.2: сравнение с прошлым сообщением («было 90%» / «без изменений»)
+    # убрано по решению оператора — в строке действия оно лишнее.
     # v7.0: «удерживаем по тренду» + «Удерживаем позицию» — одна мысль дважды.
     # Когда долю держит восстановление, причина — аптренд, её и пишем.
     if recovery_note and bottom_signal is None:

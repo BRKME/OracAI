@@ -101,10 +101,11 @@ def test_action_block_has_no_duplicates():
     assert t.lower().count("удерживаем позицию") <= 1
 
 
-def test_change_vs_previous_message():
-    assert "без изменений" in _text(_out(prev_target=0.95)).splitlines()[2]
-    assert "было 60%" in _text(_out(prev_target=0.60))
-    assert "без изменений" not in _text(_out())   # нет истории — не выдумываем
+def test_action_line_has_no_previous_value():
+    """12.11: «· было 90%» в строке действия оператору не нужно."""
+    for pt in (0.95, 0.60):
+        head = _text(_out(prev_target=pt)).splitlines()[2]
+        assert "было" not in head and "без изменений" not in head
 
 
 def test_no_english_phase_jargon():
