@@ -856,6 +856,16 @@ def format_unified_report(
     failed_wallets = monitor_data.get("failed_wallets", [])
     if failed_wallets:
         lines.append(f"НЕ ЗАГРУЖЕНЫ: {', '.join(failed_wallets)} — TVL неполный!")
+    else:
+        # Прибыль с учётом вводов/выводов из журнала (lp_pnl). При неполном
+        # TVL не считаем: недогруженный кошелёк выглядел бы выводом.
+        try:
+            import lp_pnl
+            _pl = lp_pnl.report_line(history, lp_pnl.load_flows(lp_pnl.FLOWS_FILE))
+            if _pl:
+                lines.append(_pl)
+        except Exception as e:
+            logger.warning(f"lp_pnl: {e}")
     
     # In-range status
     if in_range == count:
