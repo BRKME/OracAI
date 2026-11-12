@@ -286,6 +286,28 @@ def calculate_uncollected_fees(
 # PRICE SERVICE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+LLAMA_CHAIN = {"binance-smart-chain": "bsc", "arbitrum-one": "arbitrum",
+               "ethereum": "ethereum", "base": "base", "polygon-pos": "polygon"}
+
+
+def fill_missing_price(price0: float, price1: float, sqrt_price_x96: int,
+                       decimals0: int, decimals1: int) -> Tuple[float, float]:
+    """Недостающую цену одного токена пары берём из цены пула и цены другого.
+
+    Пул сам знает курс token0 в token1. Если внешние источники не дали цену
+    одного токена (12.11.2026: UNI на BSC), считать его нулём нельзя —
+    позиция выпадает из TVL. Оба нуля — остаются нулями (вызывающий пометит).
+    """
+    if (price0 > 0) == (price1 > 0):
+        return price0, price1
+    ratio = (sqrt_price_x96 / 2 ** 96) ** 2 * 10 ** (decimals0 - decimals1)
+    if ratio <= 0:
+        return price0, price1
+    if price0 > 0:
+        return price0, price0 / ratio
+    return price1 * ratio, price1
+
+
 class PriceService:
     """Token price fetcher with caching"""
     
@@ -316,18 +338,39 @@ class PriceService:
             }
             response = requests.get(url, params=params, timeout=10)
             
+            price = 0
             if response.status_code == 200:
-                data = response.json()
-                price = data.get(token_address.lower(), {}).get("usd", 0)
-                self.cache[cache_key] = (price, time.time())
-                return price
+                price = response.json().get(token_address.lower(), {}).get("usd", 0) or 0
             else:
                 logger.warning(f"CoinGecko error {response.status_code} for {token_address}")
-                return 0
-                
         except Exception as e:
             logger.warning(f"Price fetch error for {token_address}: {e}")
+            price = 0
+
+        if not price:
+            price = self._llama_price(platform, token_address)
+        if price:
+            # ноль не кэшируем: следующий запрос должен спросить снова
+            self.cache[cache_key] = (price, time.time())
+        return price
+
+    def _llama_price(self, platform: str, token_address: str) -> float:
+        """Запасной источник — DefiLlama (без ключа). 12.11.2026 CoinGecko
+        отдал пустой ответ на UNI в BSC, DefiLlama — цену."""
+        chain = LLAMA_CHAIN.get(platform)
+        if not chain:
             return 0
+        key = f"{chain}:{token_address.lower()}"
+        try:
+            r = requests.get(f"https://coins.llama.fi/prices/current/{key}", timeout=10)
+            if r.status_code == 200:
+                price = r.json().get("coins", {}).get(key, {}).get("price", 0) or 0
+                if price:
+                    logger.info(f"Цена {token_address} из DefiLlama: {price}")
+                return float(price)
+        except Exception as e:
+            logger.warning(f"DefiLlama price error for {token_address}: {e}")
+        return 0
     
     def get_prices_batch(self, platform: str, addresses: List[str]) -> Dict[str, float]:
         """Get prices for multiple tokens"""
@@ -392,6 +435,7 @@ class LPMonitor:
         self.price_service = PriceService()
         self.web3_clients: Dict[str, Web3] = {}
         self.positions: List[Position] = []
+        self.unpriced: List[str] = []
         
         # Empty-positions cache: tokenId которые уже отмечены liquidity=0,
         # пропускаем их в следующих прогонах. Сильно ускоряет когда на
@@ -449,6 +493,7 @@ class LPMonitor:
         """Scan all wallets on all chains"""
         self.positions = []
         self.failed_wallets = []
+        self.unpriced = []
         
         for chain_name, w3 in self.web3_clients.items():
             config = CHAINS[chain_name]
@@ -460,6 +505,7 @@ class LPMonitor:
             self.positions.extend(chain_positions)
             self.failed_wallets.extend(chain_failed)
         
+        self.failed_wallets.extend(sorted(set(self.unpriced)))
         if self.failed_wallets:
             logger.warning(f"⚠️ Failed wallets: {self.failed_wallets}")
         
@@ -691,6 +737,14 @@ class LPMonitor:
         # Get prices
         price0 = self.price_service.get_price(config["platform"], token0)
         price1 = self.price_service.get_price(config["platform"], token1)
+        price0, price1 = fill_missing_price(price0, price1, sqrt_price_x96,
+                                            decimals0, decimals1)
+        if (amount0 > 0 and not price0) or (amount1 > 0 and not price1):
+            # без цены позиция занижена — помечаем как неполный TVL,
+            # чтобы отчёт не показал это выводом или убытком
+            missing = symbol0 if amount0 > 0 and not price0 else symbol1
+            self.unpriced.append(f"{wallet_name}/{chain_name}: {missing} без цены")
+            logger.error(f"⚠️ {missing} без цены ({chain_name}:{token_id}) — TVL занижен")
         
         # Calculate USD values
         amount0_usd = amount0 * price0
