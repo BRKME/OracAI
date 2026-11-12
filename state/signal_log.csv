@@ -204,3 +204,4 @@ date,btc_price,target_pos,label,regime,confidence,source
 2026-11-09,74855.23,0.9,⚪ ДЕРЖАТЬ,TRANSITION,0.0559,reconstructed
 2026-11-10,74600.87,0.9,⚪ ДЕРЖАТЬ,TRANSITION,0.2029,reconstructed
 2026-11-11,73679.28,0.9,⚪ ДЕРЖАТЬ,TRANSITION,0.1751,reconstructed
+2026-11-12,73591.1171875,1.0,🟢 ПОКУПАТЬ,TRANSITION,0.0968,sent
