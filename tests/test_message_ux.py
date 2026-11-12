@@ -122,3 +122,15 @@ def test_score_line_shown_when_present():
     o["metadata"]["score_line"] = "Счёт с 21.04: стратегия −4.0% · держать −0.7%"
     assert "Счёт с 21.04" in _text(o)
     assert "Счёт" not in _text(_out())
+
+
+def test_tail_buy_says_ladder_once():
+    """12.11: «активен хвостовой риск … ступенями» стояло в двух строках подряд."""
+    o = _out(tail=True, regime="TRANSITION", conf=0.09)
+    o["metadata"]["rsi"]["rsi_1d"] = 25.8          # RSI < 28 + близость к дну > 45%
+    o["metadata"]["drawdown_from_ath"] = -41.0
+    o["metadata"]["mvrv"] = 1.37
+    t = _text(o)
+    assert "ПОКУПАТЬ" in t.splitlines()[2]
+    assert t.count("хвостовой риск") == 1
+    assert t.lower().count("ступен") == 1
