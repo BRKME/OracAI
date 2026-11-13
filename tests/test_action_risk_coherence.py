@@ -32,7 +32,8 @@ class TestTailGatesAllIn:
     def test_crisis_still_defense(self):
         action, note = action_for(target_pos=1.0, risk_state="CRISIS",
                                    dd_from_high=-60, bear_confirmation=True)
-        assert "ЗАЩИТА" in action
+        assert "ПРОДАВАТЬ" in action and "ЗАЩИТА" not in action   # 13.11: понятный глагол
+        assert "паник" in note.lower() and "стейбл" in note.lower()
 
     def test_hold_zone_unchanged(self):
         action, note = action_for(target_pos=0.90, risk_state="NORMAL",
