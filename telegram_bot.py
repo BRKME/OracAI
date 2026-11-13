@@ -578,7 +578,13 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # ══════════════════════════════════════════════════════
     
     # Determine risk state
-    if vol_z > 2.5 or (tail_active and vol_z > 2.0):
+    # v7.2 (13.11): кризис — только если цена за 7 дней упала. Всплеск
+    # волатильности бывает и на ралли: в 5 из 16 срабатываний 2021–2026
+    # правило продавало после роста на 10–27% за неделю. С условием итог на
+    # истории ×3.00 против ×2.98, оборот ниже. Нет данных — старое правило.
+    _r7 = meta.get("returns_7d")
+    _falling = _r7 is None or _r7 < 0
+    if _falling and (vol_z > 2.5 or (tail_active and vol_z > 2.0)):
         risk_state = "CRISIS"
     elif tail_active:
         risk_state = "TAIL"

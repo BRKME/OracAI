@@ -135,3 +135,36 @@ def test_tail_buy_says_ladder_once():
     assert "ПОКУПАТЬ" in t.splitlines()[2]
     assert t.count("хвостовой риск") == 1
     assert t.lower().count("ступен") == 1
+
+
+class TestCrisisOnlyOnFalls:
+    """Кризис (продажа до 20%) — только при падении цены за 7 дней.
+
+    Аудит 13.11: в 5 из 16 срабатываний 2021–2026 правило продавало после
+    роста на 10–27% за неделю — волатильность взлетает и на ралли. С условием
+    «цена за 7 дней упала» итог на истории ×3.00 против ×2.98, оборот ниже.
+    """
+
+    def _o(self, r7):
+        o = _out(vol_z=2.6)
+        o["metadata"]["returns_7d"] = r7
+        return o
+
+    def test_spike_on_rally_is_not_crisis(self):
+        t = _text(self._o(0.15))
+        assert "паника" not in t.lower()
+        assert "дёргается" in t                 # остаётся повышенный риск
+
+    def test_spike_on_fall_is_crisis(self):
+        t = _text(self._o(-0.08))
+        assert "ПРОДАВАТЬ" in t.splitlines()[2] and "паник" in t.lower()
+
+    def test_unknown_7d_return_keeps_old_rule(self):
+        o = _out(vol_z=2.6)
+        o["metadata"].pop("returns_7d", None)
+        assert "паник" in _text(o).lower()
+
+
+def test_engine_reports_7d_return():
+    import inspect, engine
+    assert '"returns_7d"' in inspect.getsource(engine.RegimeEngine.process)
