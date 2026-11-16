@@ -248,3 +248,38 @@ def test_fear_greed_has_its_own_bar_under_probabilities():
     assert j > i
     assert lines[j + 1].startswith("[######....] 63") and "жадность" in lines[j + 1]
     assert "страх/жадность" not in _text(_out())      # не дублируется в строке RSI
+
+
+class TestCapitulation:
+    """16.11.2026: кризис при RSI 20 и страхе 10 велел продать до 20% —
+    после падения на 20%. На истории кризис при RSI ≥ 25 оправдан (через
+    30 дней −2.7%), при RSI < 25 — поздний (+2.4%, через 90 дней +27.6%).
+    С условием «RSI < 25 → держим 90%» итог ×3.26 против ×2.95. Фильтр по
+    Fear & Greed проверен и НЕ подтвердился (×2.83 при ≤15, ×2.60 при ≤20):
+    сильный страх держится всё падение."""
+
+    def _o(self, rsi, fg=10):
+        o = _out(vol_z=2.6, tail=True)
+        m = o["metadata"]
+        m["returns_7d"] = -0.14
+        m["rsi"]["rsi_1d"] = rsi
+        m["drawdown_from_ath"] = -48.0
+        m["mvrv"] = 1.21
+        o["bucket_details"]["sentiment"]["fg_raw"] = fg
+        return o
+
+    def test_oversold_panic_holds_instead_of_selling(self):
+        lines = _text(self._o(20)).splitlines()
+        assert lines[2] == "⚪ ДЕРЖАТЬ · доля BTC 90%"
+        block = "\n".join(lines[2:5]).lower()
+        assert "паник" in block and "перепродан" in block
+        assert "не продаём" in block and "не докупаем" in block
+
+    def test_early_panic_still_sells(self):
+        assert _text(self._o(31)).splitlines()[2] == "🔴 ПРОДАВАТЬ · оставить 20% в BTC"
+
+    def test_fear_alone_does_not_cancel_the_sale(self):
+        assert "ПРОДАВАТЬ" in _text(self._o(31, fg=8)).splitlines()[2]
+
+    def test_hedge_stays_mandatory_in_capitulation(self):
+        assert "ОБЯЗАТЕЛЕН" in _text(self._o(20), _lp())

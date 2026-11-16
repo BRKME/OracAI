@@ -216,7 +216,8 @@ def action_for(target_pos: float, risk_state: str,
                bottom_signal: str = None,
                top_signal: bool = None,
                bear_regime: bool = None,
-               tail_cut: bool = None) -> tuple:
+               tail_cut: bool = None,
+               capitulation: bool = False) -> tuple:
     """Метка действия + примечание из целевой позиции и риск-состояния.
 
     Ключевое: блок действия НЕ должен противоречить риск-блоку. При TAIL/CRISIS
@@ -234,6 +235,11 @@ def action_for(target_pos: float, risk_state: str,
     # v6.2: процент целевой позиции печатается в TL;DR-буллете, поэтому
     # примечания содержат только ПРИЧИНУ, без повтора цифры.
 
+    if risk_state == "CRISIS" and capitulation:
+        return ("⚪ ДЕРЖАТЬ", (
+            "Паника, но рынок уже перепродан: на таких уровнях продажа "
+            "исторически была поздней. Не продаём и не докупаем, пока "
+            "волатильность не спадёт."))
     if risk_state == "CRISIS":
         # v7.2: «ЗАЩИТА» оператору непонятна (13.11). По сути это продажа до
         # 20% — так и называем, с причиной и условием возврата.
@@ -312,6 +318,16 @@ CRISIS_EXIT_VOL_Z = 1.5
 # пределах шума (×2.97–2.99), поэтому не используется.
 CRISIS_AT_BOTTOM_TARGET = None
 CRISIS_BLOCKS_RECOVERY = True
+# Капитуляция: кризис, когда рынок уже перепродан. Продавать поздно —
+# держим CRISIS_CAPITULATION_TARGET (None — долю задают остальные правила).
+# Проверка на истории 2021–2026 (итог при издержках 0.1%, база ×2.95):
+#   RSI < 25 → ×3.26   RSI < 28 → ×3.14   RSI < 30 → ×2.93
+#   Fear & Greed ≤ 15 → ×2.83   ≤ 20 → ×2.60   (хуже: страх держится всё падение)
+# Поэтому только RSI < 25. Это 7 дней в 4 эпизодах — мало; НЕ расширять
+# порог и не добавлять F&G без новой проверки.
+CRISIS_CAPITULATION_RSI = 25
+CRISIS_CAPITULATION_FG = None
+CRISIS_CAPITULATION_TARGET = 0.90
 
 REGIME_EMOJI = {"BULL": "🐂", "BEAR": "🐻", "RANGE": "↔️", "TRANSITION": "🔄"}
 
@@ -793,7 +809,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
         bottom_signal = "rsi_only"
     
     # Risk overrides
-    if risk_state == "CRISIS":
+    capitulation = risk_state == "CRISIS" and (
+        (CRISIS_CAPITULATION_RSI is not None and rsi_1d is not None
+         and rsi_1d < CRISIS_CAPITULATION_RSI)
+        or (CRISIS_CAPITULATION_FG is not None and fg_value is not None
+            and fg_value <= CRISIS_CAPITULATION_FG))
+    if capitulation:
+        if CRISIS_CAPITULATION_TARGET is not None:
+            target_pos = CRISIS_CAPITULATION_TARGET
+    elif risk_state == "CRISIS":
         target_pos = 0.20
         if bottom_signal == "confirmed" and CRISIS_AT_BOTTOM_TARGET is not None:
             target_pos = CRISIS_AT_BOTTOM_TARGET
@@ -874,7 +898,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
                                      bear_regime=(regime == "BEAR" and conf_pct > 30
                                                   and rsi_for_check > 40),
                                      tail_cut=(risk_state == "TAIL"
-                                               and rsi_for_check > 50))
+                                               and rsi_for_check > 50),
+                                     capitulation=capitulation)
     
     # v6: позиция в цикле — выводом, не голыми процентами
     # v6.1: вывод «зона накопления» требует АБСОЛЮТНОГО уровня, а не только
