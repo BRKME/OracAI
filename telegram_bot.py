@@ -398,9 +398,18 @@ def indicators_line(rsi_1d, rsi_2h, fg_value, fg_class) -> str:
     if rsi_2h is not None:
         _, d = calculate_rsi_status(rsi_2h)
         parts.append(f"2ч {rsi_2h:.0f}{d}")
-    if fg_value is not None:
-        parts.append(f"страх/жадность {fg_value} ({FG_RU.get(fg_class, fg_class or '—')})")
+    # Fear & Greed — отдельной полосой под вероятностями режимов (v7.4)
     return " · ".join(parts)
+
+
+def fear_greed_lines(fg_value, fg_class) -> list:
+    """Индекс страха и жадности полосой 0–100, как вероятности режимов."""
+    if fg_value is None:
+        return []
+    filled = max(0, min(10, int(fg_value) // 10))
+    bar = "[" + "#" * filled + "." * (10 - filled) + "]"
+    return ["Fear & Greed (0 — страх, 100 — жадность):",
+            f"{bar} {int(fg_value)} · {FG_RU.get(fg_class, fg_class or '—')}", ""]
 
 
 def lp_fee_phrase(fv: float) -> str:
@@ -939,7 +948,16 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     meta["target_pos"] = target_pos   # main.py сохраняет для сравнения завтра
     meta["action_label"] = action
     meta["risk_state_msg"] = risk_state
-    _head = f"{action} · {int(target_pos * 100)}%"
+    # v7.4: число — целевая доля BTC, а не сколько продать/купить. «ПРОДАВАТЬ
+    # · 20%» читалось как «продай 20%» (16.11), поэтому называем явно.
+    _pct = int(target_pos * 100)
+    if any(w in action for w in ("ПРОДАВАТЬ", "ФИКСИРОВАТЬ")):
+        _head = f"{action} · оставить {_pct}% в BTC"
+    elif any(w in action for w in ("ПОКУПАТЬ", "ДОКУПИТЬ")):
+        _head = f"{action} · довести BTC до {_pct}%"
+    else:
+        _head = f"{action} · доля BTC {_pct}%"
+    action_note = action_note.replace("до этой доли", f"до {_pct}%")
     # v7.2: сравнение с прошлым сообщением («было 90%» / «без изменений»)
     # убрано по решению оператора — в строке действия оно лишнее.
     # v7.0: «удерживаем по тренду» + «Удерживаем позицию» — одна мысль дважды.
@@ -998,6 +1016,7 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     lines.append(f"RANGE {make_prob_bar(_pg)} {_pg}%{_lead('RANGE')}")
     lines.append(f"TRANS {make_prob_bar(_pt)} {_pt}%{_lead('TRANSITION')}")
     lines.append("")
+    lines.extend(fear_greed_lines(fg_value, fg_class))
 
     # ══════════════════════════════════════════════════════
     # 7. DATA STATUS

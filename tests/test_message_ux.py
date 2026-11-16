@@ -223,3 +223,28 @@ def test_crisis_label_and_share_agree():
     o["metadata"]["returns_7d"] = -0.08
     head = _text(o).splitlines()[2]
     assert "ПРОДАВАТЬ" in head and "20%" in head
+
+
+class TestShareWording:
+    """16.11: «ПРОДАВАТЬ · 20%» читалось как «продай 20%», а примечание
+    говорило «сократи до этой доли». Число — целевая доля, и это должно быть
+    видно в самой строке."""
+
+    def test_sell_says_down_to(self):
+        o = _out(vol_z=2.6)
+        o["metadata"]["returns_7d"] = -0.08
+        lines = _text(o).splitlines()
+        assert lines[2] == "🔴 ПРОДАВАТЬ · оставить 20% в BTC"
+        assert "до 20%" in lines[4] and "этой доли" not in lines[4]
+
+    def test_hold_says_share(self):
+        assert _text(_out()).splitlines()[2] == "⚪ ДЕРЖАТЬ · доля BTC 95%"
+
+
+def test_fear_greed_has_its_own_bar_under_probabilities():
+    lines = _text(_out()).splitlines()
+    i = next(k for k, l in enumerate(lines) if l.startswith("TRANS "))
+    j = next(k for k, l in enumerate(lines) if l.startswith("Fear & Greed"))
+    assert j > i
+    assert lines[j + 1].startswith("[######....] 63") and "жадность" in lines[j + 1]
+    assert "страх/жадность" not in _text(_out())      # не дублируется в строке RSI
