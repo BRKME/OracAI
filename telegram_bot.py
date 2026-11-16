@@ -237,9 +237,12 @@ def action_for(target_pos: float, risk_state: str,
     if risk_state == "CRISIS":
         # v7.2: «ЗАЩИТА» оператору непонятна (13.11). По сути это продажа до
         # 20% — так и называем, с причиной и условием возврата.
+        _near = (" Это временная защита, а не смена взгляда: цикл близко к "
+                 "дну, вернёмся к покупке, когда волатильность спадёт."
+                 if near_bottom else " Покупки отложить, пока не успокоится.")
         return ("🔴 ПРОДАВАТЬ", (
-            "Паника на рынке: волатильность резко выросла — сократи BTC до этой "
-            "доли, остальное в стейблы. Покупки отложить, пока не успокоится."))
+            "Паника: цена падает, волатильность резко выросла — сократи BTC "
+            "до этой доли, остальное в стейблы." + _near))
     if target_pos >= 0.95:
         # v6.7: ярлык определяется ИСТОЧНИКОМ сигнала, а не уровнем доли.
         # На 0.95 могут привести три разные причины — сигнал дна по циклу,
@@ -300,6 +303,16 @@ def action_for(target_pos: float, risk_state: str,
     return ("🔴 ПРОДАВАТЬ", "Экстремальная вершина.")
 
 
+# Кризисное правило. Вход — vol_z > 2.5 или TAIL при vol_z > 2.0 (и цена за
+# 7 дней упала). Выход — только когда vol_z опустится ниже CRISIS_EXIT_VOL_Z:
+# 12–16.11.2026 vol_z ходил 2.04 / 1.97 / 1.95 / 2.11, и без зазора доля
+# прыгала 20 → 100 → 100 → 20%. На истории итог тот же (×3.01 против ×3.00).
+CRISIS_EXIT_VOL_Z = 1.5
+# Доля при кризисе у подтверждённого дна. Проверены 0.5 / 0.6 / 0.9 — в
+# пределах шума (×2.97–2.99), поэтому не используется.
+CRISIS_AT_BOTTOM_TARGET = None
+CRISIS_BLOCKS_RECOVERY = True
+
 REGIME_EMOJI = {"BULL": "🐂", "BEAR": "🐻", "RANGE": "↔️", "TRANSITION": "🔄"}
 
 
@@ -345,8 +358,13 @@ def regime_lines(regime: str, conf_pct: int, probs: dict, meta: dict) -> list:
     names = ["BULL", "BEAR", "RANGE", "TRANSITION"]
     pct = dict(zip(names, regime_percents([probs.get(n, 0) for n in names])))
     e = REGIME_EMOJI
-    if conf_pct < 30:
-        a, b = sorted(names, key=lambda n: pct[n], reverse=True)[:2]
+    a, b = sorted(names, key=lambda n: pct[n], reverse=True)[:2]
+    if a == "TRANSITION":
+        # TRANSITION и есть «переходный»: «неясен — перевес TRANSITION» —
+        # одно и то же дважды. Называем по-русски и даём уклон.
+        out = [f"Режим: переходный ({pct[a]}%), уклон к {e[b]} {b} {pct[b]}% · "
+               f"уверенность {conf_pct}%"]
+    elif conf_pct < 30:
         out = [f"Режим: неясен — перевес {e[a]} {a} {pct[a]}% против "
                f"{e[b]} {b} {pct[b]}% · уверенность {conf_pct}%"]
     else:
@@ -584,7 +602,10 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # истории ×3.00 против ×2.98, оборот ниже. Нет данных — старое правило.
     _r7 = meta.get("returns_7d")
     _falling = _r7 is None or _r7 < 0
-    if _falling and (vol_z > 2.5 or (tail_active and vol_z > 2.0)):
+    _enter = vol_z > 2.5 or (tail_active and vol_z > 2.0)
+    _stay = (CRISIS_EXIT_VOL_Z is not None and meta.get("prev_crisis")
+             and vol_z > CRISIS_EXIT_VOL_Z)
+    if _falling and (_enter or _stay):
         risk_state = "CRISIS"
     elif tail_active:
         risk_state = "TAIL"
@@ -765,6 +786,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Risk overrides
     if risk_state == "CRISIS":
         target_pos = 0.20
+        if bottom_signal == "confirmed" and CRISIS_AT_BOTTOM_TARGET is not None:
+            target_pos = CRISIS_AT_BOTTOM_TARGET
     elif risk_state == "TAIL" and rsi_for_check > 50:
         target_pos = min(target_pos, 0.55)
     
@@ -812,7 +835,8 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
             and sma200_ratio > 1.0
             and days_above_sma200 >= 10
             and not bear_confirmation
-            and not top_signal_fired):
+            and not top_signal_fired
+            and (risk_state != "CRISIS" or not CRISIS_BLOCKS_RECOVERY)):
         if target_pos < 0.95:
             target_pos = 0.95
             recovery_note = f"📈 Устойчивый аптренд: {days_above_sma200}д выше SMA200. Удерживаем позицию."
@@ -906,13 +930,15 @@ def format_output(output: dict, lp_policy=None, allocation=None) -> str:
     # Привязка к target_pos давала «добирать ступенями» рядом с «без добора».
     # v7.1: если примечание уже говорит про риск и ступени (покупка при TAIL),
     # первая строка называет только цикл — иначе одна мысль дважды (12.11).
-    if "ступен" in action_note.lower() and "риск" in action_note.lower():
-        _first = f"{_cycle}."
+    if ("ступен" in action_note.lower() and "риск" in action_note.lower()) \
+            or risk_state == "CRISIS":
+        _first = f"{_cycle}."   # причина уже названа в примечании
     elif _risk_short and any(w in action for w in ("ПОКУПАТЬ", "ДОКУПИТЬ")):
         _first = _first[:-1] + " — добирать ступенями, не на резких свечах."
 
     meta["target_pos"] = target_pos   # main.py сохраняет для сравнения завтра
     meta["action_label"] = action
+    meta["risk_state_msg"] = risk_state
     _head = f"{action} · {int(target_pos * 100)}%"
     # v7.2: сравнение с прошлым сообщением («было 90%» / «без изменений»)
     # убрано по решению оператора — в строке действия оно лишнее.

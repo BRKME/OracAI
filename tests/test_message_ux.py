@@ -168,3 +168,58 @@ class TestCrisisOnlyOnFalls:
 def test_engine_reports_7d_return():
     import inspect, engine
     assert '"returns_7d"' in inspect.getsource(engine.RegimeEngine.process)
+
+
+class TestCrisisHysteresis:
+    """12–16.11.2026: доля шла 100 → 20 → 100 → 100 → 20%. Волатильность
+    колебалась у порога входа в кризис (2.04 / 1.97 / 1.95 / 2.11), и разница
+    в 0.07 переворачивала решение на 80 пп. Вошли в кризис — остаёмся, пока
+    волатильность не опустится ниже 1.5. На истории итог тот же (×3.01
+    против ×3.00)."""
+
+    def _o(self, vol_z, prev, r7=-0.1):
+        o = _out(vol_z=vol_z, tail=True)
+        o["metadata"]["returns_7d"] = r7
+        o["metadata"]["prev_crisis"] = prev
+        return o
+
+    def test_stays_in_crisis_just_below_entry(self):
+        assert "паник" in _text(self._o(1.97, True)).lower()
+
+    def test_does_not_enter_below_entry(self):
+        assert "паник" not in _text(self._o(1.97, False)).lower()
+
+    def test_leaves_when_volatility_calms(self):
+        assert "паник" not in _text(self._o(1.4, True)).lower()
+
+    def test_leaves_when_price_recovers(self):
+        assert "паник" not in _text(self._o(1.97, True, r7=0.05)).lower()
+
+
+def test_crisis_block_says_panic_once_and_explains_bottom():
+    """16.11: «на рынке паника» дважды подряд, а «цикл ближе к дну» рядом с
+    «ПРОДАВАТЬ» читалось как противоречие."""
+    o = _out(vol_z=2.6, tail=True)
+    o["metadata"]["returns_7d"] = -0.14
+    o["metadata"]["drawdown_from_ath"] = -48.0
+    o["metadata"]["mvrv"] = 1.21
+    block = "\n".join(_text(o).splitlines()[2:5])
+    assert block.lower().count("паник") == 1
+    assert "временн" in block.lower()
+
+
+def test_transition_leader_is_not_called_unclear_twice():
+    """«Режим: неясен — перевес TRANSITION» — TRANSITION и значит «переходный»."""
+    o = _out(regime="TRANSITION", conf=0.25, probs=(0.05, 0.35, 0.04, 0.56))
+    line = next(l for l in _text(o).splitlines() if l.startswith("Режим:"))
+    assert "переходный" in line and "BEAR 35%" in line
+    assert "перевес 🔄 TRANSITION" not in line
+
+
+def test_crisis_label_and_share_agree():
+    """Кризис в аптренде: восстановление поднимало долю до 95%, а ярлык
+    оставался «ПРОДАВАТЬ» — «ПРОДАВАТЬ · 95%» (13 дней на истории)."""
+    o = _out(vol_z=2.6)
+    o["metadata"]["returns_7d"] = -0.08
+    head = _text(o).splitlines()[2]
+    assert "ПРОДАВАТЬ" in head and "20%" in head

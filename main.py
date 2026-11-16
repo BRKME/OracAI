@@ -114,9 +114,12 @@ def main():
     output["metadata"]["score_line"] = signal_log.score_line()
     _send_state = STATE_DIR / "regime_send_state.json"
     try:
-        _prev_t = json.load(open(_send_state)).get("target_pos")
+        _st = json.load(open(_send_state))
+        _prev_t = _st.get("target_pos")
         if _prev_t is not None:
             output["metadata"]["prev_sent_target"] = _prev_t
+        # зазор кризисного правила: были ли в кризисе в прошлом сообщении
+        output["metadata"]["prev_crisis"] = _st.get("risk_state") == "CRISIS"
     except Exception:
         pass
 
@@ -222,7 +225,8 @@ def main():
             with open(SEND_STATE_FILE, "w") as f:
                 json.dump({"last_sent": msk_today,
                            "last_sent_at": datetime.now(timezone.utc).isoformat(),
-                           "target_pos": output.get("metadata", {}).get("target_pos")},
+                           "target_pos": output.get("metadata", {}).get("target_pos"),
+                           "risk_state": output.get("metadata", {}).get("risk_state_msg")},
                           f, indent=2)
         except Exception as e:
             logger.warning(f"Не сохраняется {SEND_STATE_FILE}: {e}")
