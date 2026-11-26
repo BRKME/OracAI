@@ -1,11 +1,11 @@
 {
-  "timestamp": "2026-11-26T17:36:59.233084+00:00",
+  "timestamp": "2026-11-26T18:38:40.982334+00:00",
   "summary": {
-    "timestamp": "2026-11-26T17:36:59.233084+00:00",
+    "timestamp": "2026-11-26T18:38:40.982334+00:00",
     "regime": "TRANSITION",
     "regime_penalty": 0.35,
     "lp_score": null,
-    "total_pools_scanned": 14897,
+    "total_pools_scanned": 14881,
     "pools_after_filter": 29,
     "chains_scanned": [
       "Arbitrum",
